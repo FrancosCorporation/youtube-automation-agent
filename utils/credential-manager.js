@@ -1,22 +1,97 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { randomUUID } = require('crypto');
 const { google } = require('googleapis');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const { Logger } = require('./logger');
 const { PROVIDERS, GEMINI_MODELS, GEMINI_DEFAULT_MODEL } = require('./ai-text-service');
 
+async function ensurePrivateDirectory(directory) {
+  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  if (process.platform !== 'win32') {
+    await fs.chmod(directory, 0o700);
+  }
+}
+
+async function restrictPrivateFile(filePath) {
+  if (process.platform === 'win32') return;
+
+  try {
+    await fs.chmod(filePath, 0o600);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
+
+async function writePrivateJson(filePath, value) {
+  const directory = path.dirname(filePath);
+  await ensurePrivateDirectory(directory);
+
+  const temporaryPath = path.join(
+    directory,
+    `.${path.basename(filePath)}.${process.pid}.${randomUUID()}.tmp`,
+  );
+  let handle;
+
+  try {
+    handle = await fs.open(temporaryPath, 'wx', 0o600);
+    await handle.writeFile(`${JSON.stringify(value, null, 2)}\n`);
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
+    await fs.rename(temporaryPath, filePath);
+  } catch (error) {
+    if (handle) await handle.close().catch(() => {});
+    await fs.unlink(temporaryPath).catch(() => {});
+    throw error;
+  }
+}
+
+async function readJsonObject(filePath) {
+  let serialized;
+  try {
+    serialized = await fs.readFile(filePath, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return {};
+    throw new Error(`Unable to read ${path.basename(filePath)}.`, { cause: error });
+  }
+
+  let value;
+  try {
+    value = JSON.parse(serialized);
+  } catch (error) {
+    throw new Error(`${path.basename(filePath)} contains invalid JSON.`, {
+      cause: error,
+    });
+  }
+
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${path.basename(filePath)} must contain a JSON object.`);
+  }
+
+  return value;
+}
+
 class CredentialManager {
   constructor() {
     this.logger = new Logger('CredentialManager');
-    this.credentialsPath = path.join(__dirname, '..', 'config', 'credentials.json');
-    this.tokensPath = path.join(__dirname, '..', 'config', 'tokens.json');
+    // CREDENCIAIS POR RÉPLICA: cada tema publica no SEU canal do YouTube.
+    // CREDENTIALS_DIR aponta pro diretório da instância (default: config/ original).
+    const credDir = process.env.CREDENTIALS_DIR
+      ? path.resolve(process.env.CREDENTIALS_DIR)
+      : path.join(__dirname, '..', 'config');
+    this.credentialsPath = path.join(credDir, 'credentials.json');
+    this.tokensPath = path.join(credDir, 'tokens.json');
     this.credentials = {};
     this.tokens = {};
   }
 
   async initialize() {
     try {
+      await ensurePrivateDirectory(path.dirname(this.credentialsPath));
+      await restrictPrivateFile(this.credentialsPath);
+      await restrictPrivateFile(this.tokensPath);
       await this.loadCredentials();
       await this.loadTokens();
       return true;
@@ -27,31 +102,19 @@ class CredentialManager {
   }
 
   async loadCredentials() {
-    try {
-      const data = await fs.readFile(this.credentialsPath, 'utf8');
-      this.credentials = JSON.parse(data);
-    } catch (error) {
-      this.credentials = {};
-    }
+    this.credentials = await readJsonObject(this.credentialsPath);
   }
 
   async loadTokens() {
-    try {
-      const data = await fs.readFile(this.tokensPath, 'utf8');
-      this.tokens = JSON.parse(data);
-    } catch (error) {
-      this.tokens = {};
-    }
+    this.tokens = await readJsonObject(this.tokensPath);
   }
 
   async saveCredentials() {
-    await fs.mkdir(path.dirname(this.credentialsPath), { recursive: true });
-    await fs.writeFile(this.credentialsPath, JSON.stringify(this.credentials, null, 2));
+    await writePrivateJson(this.credentialsPath, this.credentials);
   }
 
   async saveTokens() {
-    await fs.mkdir(path.dirname(this.tokensPath), { recursive: true });
-    await fs.writeFile(this.tokensPath, JSON.stringify(this.tokens, null, 2));
+    await writePrivateJson(this.tokensPath, this.tokens);
   }
 
   // YouTube API Authentication
