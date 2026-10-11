@@ -72,7 +72,7 @@ class SEOOptimizerAgent {
           primaryKeyword: strategy.keywords[0],
           secondaryKeywords: strategy.keywords.slice(1, 5),
           targetLength: this.calculateOptimalLength(strategy.contentType),
-          language: 'en',
+          language: process.env.CONTENT_LANGUAGE || 'en',
           category: this.selectCategory(strategy)
         },
         createdAt: new Date().toISOString()
@@ -109,11 +109,12 @@ Angle: ${strategy.angle}
 Content type: ${strategy.contentType}
 Target audience: ${strategy.targetAudience}
 Keywords: ${(strategy.keywords || []).join(', ')}
+Content language: ${process.env.CONTENT_LANGUAGE || 'en'} — write title, description, and tags in this language (translate keyword ideas, keep them natural).
 Keep tags under YouTube's 500 character total guidance. Avoid fabricated statistics and unsupported claims.`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {
-        maxTokens: 1400,
+        maxTokens: 8000,
         temperature: 0.6
       });
       const parsed = this.parseAIJsonResponse(response);
@@ -240,7 +241,7 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
     
     // Timestamps/Chapters
     description += '⏱️ TIMESTAMPS:\n';
-    description += '00:00 Introduction\n';
+    description += `00:00 ${(process.env.CONTENT_LANGUAGE || 'en').toLowerCase().startsWith('pt') ? 'Introdução' : 'Introduction'}\n`;
     let timestamp = 20;
     if (script.mainContent && script.mainContent.sections) {
       script.mainContent.sections.forEach(section => {
@@ -376,7 +377,8 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
       'business': ['business', 'entrepreneur', 'startup', 'money', 'finance', 'invest'],
       'lifestyle': ['life', 'lifestyle', 'daily', 'routine', 'habit'],
       'health': ['health', 'fitness', 'workout', 'diet', 'nutrition', 'wellness'],
-      'entertainment': ['fun', 'comedy', 'entertainment', 'funny', 'laugh']
+      'entertainment': ['fun', 'comedy', 'entertainment', 'funny', 'laugh'],
+      'misterios': ['mistério', 'misterio', 'misterios', 'dark', 'paranormal', 'assustador', 'mystery', 'creepy', 'sobrenatural', 'inexplicado']
     };
     
     for (const [niche, keywords] of Object.entries(niches)) {
@@ -479,16 +481,14 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
       'business': ['#business', '#entrepreneur', '#success'],
       'lifestyle': ['#lifestyle', '#life', '#daily'],
       'health': ['#health', '#fitness', '#wellness'],
-      'entertainment': ['#entertainment', '#fun', '#funny']
+      'entertainment': ['#entertainment', '#fun', '#funny'],
+      'misterios': ['#misterios', '#paranormal', '#curiosidades']
     };
     
     const selectedNicheHashtags = nicheHashtags[niche] || [];
     hashtags.push(...selectedNicheHashtags.slice(0, 2));
     
-    // Add 2-3 trending hashtags
-    hashtags.push(...trendingHashtags.slice(0, 3));
-    
-    // Year hashtag
+    // Year hashtag (skip the #youtube/#youtuber/#subscribe spam)
     hashtags.push(`#${new Date().getFullYear()}`);
     
     // Limit to 15 hashtags (YouTube recommendation)
@@ -498,11 +498,12 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
   async generateChapters(script) {
     const chapters = [];
     let currentTime = 0;
-    
+    const isPt = (process.env.CONTENT_LANGUAGE || 'en').toLowerCase().startsWith('pt');
+
     // Introduction
     chapters.push({
       time: '00:00',
-      title: 'Introduction',
+      title: isPt ? 'Introdução' : 'Introduction',
       seconds: 0
     });
     
@@ -528,11 +529,11 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
     // Conclusion
     const conclusionMinutes = Math.floor(currentTime / 60);
     const conclusionSeconds = currentTime % 60;
-    chapters.push({
-      time: `${conclusionMinutes.toString().padStart(2, '0')}:${conclusionSeconds.toString().padStart(2, '0')}`,
-      title: 'Conclusion & Next Steps',
-      seconds: currentTime
-    });
+        chapters.push({
+          time: `${conclusionMinutes.toString().padStart(2, '0')}:${conclusionSeconds.toString().padStart(2, '0')}`,
+          title: isPt ? 'Conclusão e próximos passos' : 'Conclusion & Next Steps',
+          seconds: currentTime
+        });
     
     return chapters;
   }

@@ -106,6 +106,23 @@ const AI_PROVIDER_GUIDE = {
       credentials.aiProvider = { provider: 'glm', apiKey, model };
     },
     validationCreds: (apiKey, model) => ({ aiProvider: { provider: 'glm', apiKey, model } })
+  },
+  nvidia: {
+    label: 'NVIDIA NIM — Nemotron 3 family text models (free credits)',
+    keyUrl: 'https://build.nvidia.com',
+    keyHint: 'starts with "nvapi-"',
+    instructions: [
+      'Sign in at build.nvidia.com with an NVIDIA account',
+      'Open the API keys page and generate a key',
+      'Copy the key — it is shown only once'
+    ],
+    models: [...PROVIDERS.nvidia.models],
+    defaultModel: PROVIDERS.nvidia.defaultModel,
+    covers: 'scripts only (add a Gemini key for free voice narration; images use the local gradient fallback)',
+    save(credentials, apiKey, model) {
+      credentials.aiProvider = { provider: 'nvidia', apiKey, model };
+    },
+    validationCreds: (apiKey, model) => ({ aiProvider: { provider: 'nvidia', apiKey, model } })
   }
 };
 
@@ -330,7 +347,7 @@ class SetupWalkthrough {
 
     try {
       const service = new AITextService(guide.validationCreds(apiKey, model));
-      const reply = await service.generateText('Reply with the single word OK.', { maxTokens: 20, temperature: 0 });
+      const reply = await service.generateText('Reply with the single word OK.', { maxTokens: 4000, temperature: 0 });
       return typeof reply === 'string' && reply.length > 0;
     } catch (error) {
       console.log(chalk.red(`  ✗ ${error.message}`));

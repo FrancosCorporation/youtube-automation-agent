@@ -1,0 +1,260 @@
+{
+  "_comentario": "1 tema = 1 canal por plataforma (não misturar nichos). Um tema só 'enabled' quando tiver contas ligadas — o video gerado precisa de canal pra publicar. Onboarding: criar/logar contas → wire (perfis/OAuth) → flip enabled.",
+  "themes": [
+    {
+      "id": "ia",
+      "name": "Inteligência Artificial",
+      "brand": "Pulso IA",
+      "enabled": true,
+      "useHn": true,
+      "filter": "intelig[êe]ncia artificial|\\bIA\\b|\\bAI\\b|\\bGPT\\b|claude|gemini|\\bLLM\\b|openai|anthropic|deepseek|machine learning|chatbot|rob[oô]|algoritmo|NVIDIA|agente",
+      "reddit": [
+        "artificial",
+        "OpenAI",
+        "singularity",
+        "MachineLearning",
+        "LocalLLaMA",
+        "technology"
+      ],
+      "gnews": "inteligência artificial",
+      "feeds": [
+        [
+          "G1 Tecnologia",
+          "https://g1.globo.com/rss/g1/tecnologia/"
+        ],
+        [
+          "TecMundo",
+          "https://www.tecmundo.com.br/rss"
+        ],
+        [
+          "Canaltech",
+          "https://canaltech.com.br/rss/"
+        ],
+        [
+          "Olhar Digital",
+          "https://olhardigital.com.br/feed/"
+        ],
+        [
+          "BBC Technology",
+          "https://feeds.bbci.co.uk/news/technology/rss.xml"
+        ],
+        [
+          "TechCrunch AI",
+          "https://techcrunch.com/category/artificial-intelligence/feed/"
+        ],
+        [
+          "Wired AI",
+          "https://www.wired.com/feed/tag/ai/latest/rss"
+        ],
+        [
+          "MIT Tech Review",
+          "https://www.technologyreview.com/feed/"
+        ]
+      ],
+      "hashtags": "#ia #inteligenciaartificial #tecnologia",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL especializado em inteligência artificial e tecnologia, explicando notícias de IA para o público geral"
+    },
+    {
+      "id": "curiosidades",
+      "name": "Curiosidades insanas",
+      "brand": "Pulso Curiosidades",
+      "enabled": true,
+      "useHn": false,
+      "filter": "",
+      "reddit": [
+        "todayilearned",
+        "Damnthatsinteresting",
+        "interestingasfuck",
+        "BeAmazed",
+        "thatsinteresting"
+      ],
+      "gnews": "fato curioso OR descoberta surpreendente",
+      "feeds": [
+        [
+          "BBC Offbeat",
+          "https://feeds.bbci.co.uk/news/odd-but-true/rss.xml?edition=uk"
+        ]
+      ],
+      "hashtags": "#curiosidades #voceconhecia #fatossurpreendentes",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de curiosidades surpreendentes e fatos que ninguém conhece, estilo 'você não vai acreditar'"
+    },
+    {
+      "id": "dinheiro",
+      "name": "Dinheiro dos Ricos & Economia Bizarra",
+      "brand": "Pulso Dinheiro",
+      "enabled": true,
+      "useHn": false,
+      "filter": "bilion|milion|rico|economi|mercado|investi|fortuna|lucro|bolsa|dinheiro",
+      "reddit": [
+        "fatFIRE",
+        "economics",
+        "Bogleheads"
+      ],
+      "gnews": "bilionário OR economia mercado",
+      "feeds": [
+        [
+          "BBC Business",
+          "https://feeds.bbci.co.uk/news/business/rss.xml"
+        ]
+      ],
+      "hashtags": "#dinheiro #economia #bilionarios",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre o dinheiro dos ricos e curiosidades da economia, estilo 'é assim que os ricos fazem'",
+      "_monetizacao": "ebook de investimentos, curso de educação financeira"
+    },
+    {
+      "id": "saude",
+      "name": "Saúde & Bem-estar Surpreendente",
+      "brand": "Pulso Saúde",
+      "enabled": true,
+      "useHn": false,
+      "filter": "sa[uú]de|sono|emagrec|ansiedade|depress[aã]o|estresse|dieta|exerc[ií]cio|treino|c[eé]rebro|medita[cç][aã]o|longevidade|h[aá]bito|alimenta[cç][aã]o|jejum|suplement|horm[oô]nio",
+      "reddit": [
+        "scientificnutrition",
+        "Biohackers",
+        "sleep",
+        "Fitness",
+        "mentalhealth"
+      ],
+      "gnews": "saúde estudo OR emagrecimento OR ansiedade OR sono",
+      "feeds": [
+        [
+          "ScienceDaily Health",
+          "https://www.sciencedaily.com/rss/top/health_medicine.xml"
+        ]
+      ],
+      "hashtags": "#saude #bemestar #qualidadedevida",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de saúde e bem-estar surpreendente, estilo 'o estudo que mudou tudo'"
+    },
+    {
+      "id": "economize",
+      "name": "Economize dinheiro",
+      "brand": "Pulso Economia",
+      "enabled": true,
+      "useHn": false,
+      "filter": "dinheiro|economiz|desconto|grát|grátis|barato|promo|pagar|asssinatura|custar",
+      "reddit": [
+        "personalfinance",
+        "Frugal",
+        "povertyfinance",
+        "CanadaPersonalFinance"
+      ],
+      "gnews": "economizar dinheiro OR dica gasto",
+      "feeds": [],
+      "hashtags": "#economia #dinheiro #dicasdefinancas",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre economizar dinheiro e parar de pagar por coisas que deveriam ser grátis, estilo 'pare de pagar por isso'"
+    },
+    {
+      "id": "psicologia",
+      "name": "Psicologia & Mente Humana",
+      "brand": "Pulso Mente",
+      "enabled": true,
+      "useHn": false,
+      "filter": "psicolog|cérebro|comportament|mente|neuroci|emoç|vício|hábito|estudo revela",
+      "reddit": [
+        "psychology",
+        "scientificpsychology",
+        "Neuropsychology"
+      ],
+      "gnews": "psicologia OR estudo comportamento",
+      "feeds": [
+        [
+          "PsyPost",
+          "https://www.psypost.org/feed"
+        ]
+      ],
+      "hashtags": "#psicologia #mente #comportamento",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de psicologia e mente humana, estilo 'seu cérebro te engana'",
+      "_monetizacao": "ebook de hábitos, curso de produtividade mental, guia de ansiedade"
+    },
+    {
+      "id": "relacionamentos",
+      "name": "Psicologia dos Relacionamentos",
+      "brand": "Pulso Relações",
+      "enabled": true,
+      "useHn": false,
+      "filter": "relacionament|amor|paix[aã]o|casament|namor|atra[cç][aã]o|sedu[cç][aã]o|ci[uú]me|term|div[oó]rcio|red flag|green flag|personalidade",
+      "reddit": [
+        "relationships",
+        "dating",
+        "socialskills"
+      ],
+      "gnews": "relacionamento amoroso OR psicologia atração",
+      "feeds": [
+        [
+          "PsyPost",
+          "https://www.psypost.org/feed"
+        ]
+      ],
+      "hashtags": "#relacionamentos #psicologia #amor",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de psicologia dos relacionamentos, estilo 'o que a ciência diz sobre o amor'",
+      "_monetizacao": "ebook de comunicação no casamento, curso de sedução"
+    },
+    {
+      "id": "fitness",
+      "name": "Fitness & Treino Surpreendente",
+      "brand": "Pulso Fitness",
+      "enabled": true,
+      "useHn": false,
+      "filter": "treino|exerc[ií]cio|muscula[cç][aã]o|hipertrofia|emagrec|perda de peso|dieta|prote[ií]na|suplement|anabol|catabol|testosteron|horm[oô]nio|descans|sono|recupera|aer[oó]bic|corrida|correr|peso|levanta",
+      "reddit": [
+        "Fitness",
+        "bodyweight",
+        "AskDoctors",
+        "scientificnutrition",
+        "Biohackers"
+      ],
+      "gnews": "treino OR emagrecimento OR dieta fitness OR exercício",
+      "feeds": [
+        [
+          "ScienceDaily Health",
+          "https://www.sciencedaily.com/rss/top/health_medicine.xml"
+        ]
+      ],
+      "hashtags": "#fitness #treino #emagrecimento",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de fitness e treino surpreendente, estilo 'o estudo que mudou o treino'",
+      "_monetizacao": "ebook de treino, plano de emagrecimento, guia de suplementos"
+    },
+    {
+      "id": "misterios",
+      "name": "Mistérios sem solução",
+      "brand": "Pulso Mistérios",
+      "enabled": true,
+      "useHn": false,
+      "filter": "mistéri|misteri|desaparec|inexplic|estranh|sem solução|não explic|assustador|caso",
+      "reddit": [
+        "UnresolvedMysteries",
+        "glitch_in_the_matrix",
+        "RBI",
+        "missingpersons"
+      ],
+      "gnews": "mistério inexplicado OR desaparecimento",
+      "feeds": [],
+      "hashtags": "#misterios #assustador #inexplicavel",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de mistérios sem solução e casos inexplicáveis, estilo 'ninguém explica isso'"
+    },
+    {
+      "id": "carreira",
+      "name": "Carreira & Sucesso Profissional",
+      "brand": "Pulso Carreira",
+      "enabled": true,
+      "useHn": false,
+      "filter": "carreira|emprego|trabalho|entrevist|curr[ií]culo|promo[cç][aã]o|sal[aá]rio|chefe|demiss[aã]o|contrata|profiss[aã]o|networking|linkedin|s[uú]ndic|freelancer|home office",
+      "reddit": [
+        "careerguidance",
+        "jobs",
+        "LinkedInLunatics",
+        "recruiting"
+      ],
+      "gnews": "carreira OR emprego OR entrevista emprego OR mercado de trabalho",
+      "feeds": [
+        [
+          "BBC Work",
+          "https://feeds.bbci.co.uk/news/rss.xml"
+        ]
+      ],
+      "hashtags": "#carreira #emprego #sucesso",
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de carreira e sucesso profissional, estilo 'o que ninguém te conta sobre o mercado de trabalho'",
+      "_monetizacao": "ebook de entrevista, curso de currículo, guia de negociação salarial"
+    }
+  ]
+}

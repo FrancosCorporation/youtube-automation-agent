@@ -251,7 +251,7 @@ Comments: ${JSON.stringify(payload)}`;
       try {
         const response = await this.aiTextService.generateText(
           this.buildAnalysisPrompt(comments),
-          { maxTokens: 3000, temperature: 0.2 }
+          { maxTokens: 8000, temperature: 0.2 }
         );
         const parsed = this.parseAIJsonResponse(response);
         if (!parsed) throw new Error('The analysis response was not valid JSON');
@@ -433,7 +433,7 @@ Comments: ${JSON.stringify(payload)}`;
     const profile = await this.db.getChannelProfile();
     const response = await this.aiTextService.generateText(
       this.buildDraftPrompt(targets, profile, insight.title),
-      { maxTokens: 2500, temperature: 0.6 }
+      { maxTokens: 8000, temperature: 0.6 }
     );
     const entries = this.parseAIJsonResponse(response);
     const byId = new Map(targets.map(comment => [comment.commentId, comment]));

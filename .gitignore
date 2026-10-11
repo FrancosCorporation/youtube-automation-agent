@@ -71,6 +71,7 @@ build/
 !examples/*.png
 !examples/*.jpg
 !assets/youtube-automation-agent.jpg
+!assets/scenes/presenter-atlas.png
 
 # Backup files
 *.backup
@@ -87,6 +88,11 @@ data/captions/
 data/scripts/
 data/videos/
 data/thumbnails/
+
+# Local authenticated browser profiles and runtime publishing state
+data/browser-profiles/
+data/state/
+data/kwai-app.flag
 
 # Claude worktrees
 .claude/worktrees/

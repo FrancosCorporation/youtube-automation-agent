@@ -356,7 +356,7 @@ Operator-approved performance learnings to apply: ${JSON.stringify(research.appr
 Do not invent trend data, statistics, sources, URLs, or factual claims. Use only exact URLs from the supplied source catalog. Apply only the supplied approved learnings; pending or rejected recommendations are not authorized. Prefer evergreen topics when the supplied signals are weak. Learnings with category "audience_demand" are audience-requested topics mined from real comments on published videos; prefer planning a video that directly answers one when it fits the channel objective, and cite it in the rationale.`;
 
     try {
-      const response = await this.aiTextService.generateText(prompt, { maxTokens: 1800, temperature: 0.65 });
+      const response = await this.aiTextService.generateText(prompt, { maxTokens: 8000, temperature: 0.65 });
       const parsed = this.parseAIJsonResponse(response);
       return Array.isArray(parsed) ? parsed : Array.isArray(parsed.plan) ? parsed.plan : [];
     } catch (error) {
@@ -443,11 +443,12 @@ Return only valid JSON with this exact shape:
 Requested topic: ${requestedTopic || 'none'}
 Trending topics available: ${trendingTopics || 'Technology Trends'}
 Channel target audience: ${process.env.TARGET_AUDIENCE || 'General audience interested in educational content'}
+Content language: ${process.env.CONTENT_LANGUAGE || 'en'} — write every string field (topic, angle, targetAudience, keywords) in this language.
 Avoid fabricated claims and unsupported numbers.`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {
-        maxTokens: 1000,
+        maxTokens: 8000,
         temperature: 0.7
       });
       const parsed = this.parseAIJsonResponse(response);

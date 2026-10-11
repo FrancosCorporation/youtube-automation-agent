@@ -7,9 +7,11 @@
     "start": "node index.js",
     "setup": "node setup.js",
     "walkthrough": "node walkthrough.js",
+    "gemini-login": "node scripts/gemini-login.js",
     "growth:snapshot": "node scripts/growth/snapshot-github.js",
     "scheduler": "node schedules/daily-automation.js",
     "test": "node test.js",
+    "test:pipeline": "node tests/pipeline-smoke.js",
     "agent:strategy": "node agents/content-strategy-agent.js",
     "agent:script": "node agents/script-writer-agent.js",
     "agent:thumbnail": "node agents/thumbnail-designer-agent.js",
@@ -18,7 +20,8 @@
     "agent:publishing": "node agents/publishing-scheduling-agent.js",
     "agent:analytics": "node agents/analytics-optimization-agent.js",
     "credentials:setup": "node utils/credential-manager.js setup",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "social:login": "node scripts/social-login.js"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.0",
@@ -34,19 +37,19 @@
     "moment": "^2.29.4",
     "node-cron": "^3.0.2",
     "openai": "^6.0.0",
-    "playwright": "^1.54.2",
+    "playwright": "^1.63.0",
     "replicate": "^1.4.0",
+    "sharp": "^0.33.0",
     "sqlite3": "^5.1.6",
-    "winston": "^3.11.0",
-    "sharp": "^0.33.0"
+    "winston": "^3.11.0"
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "@eslint/js": "9.39.4",
     "eslint": "9.39.4",
-    "@eslint/js": "9.39.4"
+    "nodemon": "^3.0.2"
   },
   "engines": {
     "node": ">=18.0.0"

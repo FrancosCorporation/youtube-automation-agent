@@ -1,0 +1,24 @@
+services:
+  kwai-emulator:
+    # Android 14 + Play Store + serviços Google (MindTheGapps) — o app atualiza
+    # pela Play Store oficial e o login com Google funciona.
+    # o surfaceflinger/zygote com o kernel/GPU atual). Volume kwai-data14.
+    image: redroid14-gapps:latest
+    container_name: kwai-emulator
+    # On-demand: o scheduler sobe antes do upload e derruba depois (baseline 0 MB de RAM).
+    # Nunca sobe junto com o pipeline principal.
+    privileged: true
+    restart: "no"
+    mem_limit: 3g
+    memswap_limit: 3g
+    ports:
+      - "127.0.0.1:5555:5555"
+    volumes:
+      - kwai-data14:/data
+    command:
+      - androidboot.redroid_width=720
+      - androidboot.redroid_height=1280
+      - androidboot.redroid_dpi=320
+      - androidboot.redroid_gpu_mode=host
+volumes:
+  kwai-data14:

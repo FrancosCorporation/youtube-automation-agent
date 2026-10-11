@@ -260,6 +260,11 @@ Additional integrations: Anthropic Claude (`claude-fable-5`), ElevenLabs (Eleven
 
 Local slideshow rendering remains the default, so upgrading does not start paid video requests. Choose a provider in **Channel setup**, set a paid-seconds cap, then run the separately opted-in paid video readiness probe.
 
+The local slideshow has two styles (`SLIDESHOW_STYLE` / dashboard `slideshow_style` setting):
+
+- **`dynamic` (default)** — generates one image every few seconds of narration (tune with `SLIDESHOW_SECONDS_PER_IMAGE`, default 3.5; use 1–2 for fast AI-video pacing) and assembles them with Ken Burns zoom/pan moves and quick crossfade/dissolve/wipe transitions, producing a motion video instead of static slides. Image sources, in order: OpenAI → Gemini API → **Gemini web** (free, automated Chromium profile on gemini.google.com — `npm run gemini-login` imports an existing Google session or opens a one-time login; `GEMINI_WEB=0` disables it) → **free stock photos** (keyword-matched, no key) so every shot always gets a unique frame. If literally everything fails, the text slides still get a subtle Ken Burns zoom instead of sitting static.
+- **`classic`** — text slides rendered with Playwright and joined with crossfades (fully offline).
+
 | Provider | Default model | Best fit | Clip limits |
 | --- | --- | --- | --- |
 | ByteDance | `bytedance/seedance-2.5` through Replicate | Cinematic long scenes and large reference sets | 4–30 seconds |

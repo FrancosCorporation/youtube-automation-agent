@@ -48,6 +48,8 @@ class SystemTest {
       { name: 'Gemini Media Provider Selection', test: () => this.testGeminiMediaProvider() },
       { name: 'Slideshow Duration Selection', test: () => this.testSlideshowDurationSelection() },
       { name: 'Slideshow Renderer', test: () => this.testSlideshowRenderer() },
+      { name: 'Dynamic Slideshow Renderer', test: () => this.testDynamicSlideshowRenderer() },
+      { name: 'Gemini Web Image Provider', test: () => this.testGeminiWebImageProvider() },
       { name: 'Evergreen Template Topics', test: () => this.testEvergreenTopics() },
       { name: 'Walkthrough Module', test: () => this.testWalkthroughModule() },
       { name: 'Logger System', test: () => this.testLogger() },
@@ -270,11 +272,18 @@ class SystemTest {
   async testOperatorWorkflowAPI() {
     const { YouTubeAutomationAgent } = require('./index');
     const { OperatorService } = require('./utils/operator-service');
+    const { PROVIDERS } = require('./utils/ai-text-service');
     const db = new Database();
     await db.initialize();
     let server;
     let job;
     let learningRecommendation;
+    const providerEnvKeys = [...Object.values(PROVIDERS).map(p => p.envKey), 'GEMINI_API_KEY', 'API_KEY'];
+    const savedProviderEnv = {};
+    for (const key of providerEnvKeys) {
+      savedProviderEnv[key] = process.env[key];
+      delete process.env[key];
+    }
 
     try {
       job = await db.createGenerationJob({ topic: 'Operator workflow test', style: 'explainer', length: 'short' });
@@ -352,6 +361,10 @@ class SystemTest {
         throw new Error('Learning recommendation review API did not persist approval');
       }
     } finally {
+      for (const key of providerEnvKeys) {
+        if (savedProviderEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = savedProviderEnv[key];
+      }
       if (server) await new Promise(resolve => server.close(resolve));
       if (job) await db.executeQuery('DELETE FROM generation_jobs WHERE id = ?', [job.id]);
       if (learningRecommendation) await db.executeQuery('DELETE FROM learning_recommendations WHERE id = ?', [learningRecommendation.id]);
@@ -2805,6 +2818,128 @@ class SystemTest {
     this.logger.info('Slideshow duration selection test completed successfully');
   }
 
+  async testDynamicSlideshowRenderer() {
+    const { AIVideoGenerator } = require('./utils/ai-video-generator');
+    const { checkFFmpeg, getMediaDuration } = require('./utils/ffmpeg');
+    const fs = require('fs').promises;
+    const os = require('os');
+
+    if (!(await checkFFmpeg())) {
+      this.logger.warn('FFmpeg unavailable — skipping dynamic slideshow renderer test');
+      return;
+    }
+
+    const sharp = require('sharp');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'yaa-dyn-slides-'));
+
+    try {
+      const generator = new AIVideoGenerator({});
+
+      // Shot plan: scenes split into ~secondsPerImage shots covering the narration
+      const script = {
+        title: 'Test Video',
+        hook: { text: 'An amazing story begins right now' },
+        mainContent: { sections: [
+          { title: 'Part one', content: 'First we explore the basics of the topic in detail with examples' },
+          { title: 'Part two', content: 'Then we dive deeper into advanced concepts and practical tips' }
+        ] },
+        conclusion: { finalThought: 'And that is how it all works' }
+      };
+      const plan = generator.buildDynamicShotPlan(script, 12, 2);
+      if (!plan.length || plan.length < 4) throw new Error('Dynamic shot plan did not split scenes into multiple shots');
+      const planned = plan.reduce((sum, shot) => sum + shot.duration, 0);
+      if (Math.abs(planned - 12) > 2) throw new Error(`Shot plan duration drifted from narration: ${planned}`);
+      if (!plan.every(shot => shot.prompt.includes('shot'))) throw new Error('Shot plan is missing camera variation prompts');
+
+      // Render synthetic stills through the Ken Burns sequence renderer
+      const shots = [];
+      for (let i = 0; i < 4; i++) {
+        const stillPath = path.join(dir, `dyn_${i}.png`);
+        await sharp({
+          create: { width: 640, height: 360, channels: 3, background: { r: 40 + 50 * i, g: 90, b: 140 - 20 * i } }
+        }).png().toFile(stillPath);
+        shots.push({ label: `Shot ${i}`, prompt: 'test', duration: 2, path: stillPath });
+      }
+
+      const videoPath = path.join(dir, 'dyn.mp4');
+      await generator.renderDynamicSequence(shots, videoPath, 8);
+      const stats = await fs.stat(videoPath);
+      if (!stats.size) throw new Error('Rendered dynamic slideshow video is empty');
+
+      const duration = await getMediaDuration(videoPath);
+      if (!Number.isFinite(duration) || duration < 6) {
+        throw new Error(`Rendered dynamic slideshow is too short: ${duration}s (expected ~8s including crossfade padding)`);
+      }
+
+      const singlePath = path.join(dir, 'dyn_single.mp4');
+      await generator.renderDynamicSequence([shots[0]], singlePath, 2);
+      if (!(await fs.stat(singlePath)).size) throw new Error('Single-shot dynamic render is empty');
+
+      // Gentle mode (motion used on text slides when no image provider is set)
+      const gentlePath = path.join(dir, 'dyn_gentle.mp4');
+      await generator.renderDynamicSequence(shots, gentlePath, 8, { gentle: true });
+      if (!(await fs.stat(gentlePath)).size) throw new Error('Gentle dynamic render is empty');
+
+      // The rendered video must actually move: two frames 1s apart cannot be identical
+      const frameA = path.join(dir, 'frame_a.png');
+      const frameB = path.join(dir, 'frame_b.png');
+      const { runFFmpeg } = require('./utils/ffmpeg');
+      await runFFmpeg(['-y', '-ss', '0.5', '-i', videoPath, '-frames:v', '1', frameA]);
+      await runFFmpeg(['-y', '-ss', '1.5', '-i', videoPath, '-frames:v', '1', frameB]);
+      const [bufA, bufB] = await Promise.all([fs.readFile(frameA), fs.readFile(frameB)]);
+      if (bufA.equals(bufB)) throw new Error('Dynamic render produced a static video (identical frames)');
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+
+    this.logger.info('Dynamic slideshow renderer test completed successfully');
+  }
+
+  async testGeminiWebImageProvider() {
+    const fs = require('fs').promises;
+    const os = require('os');
+
+    // Disabled via env: provider must report unavailable without launching a browser
+    process.env.GEMINI_WEB = '0';
+    const { GeminiWebImageGenerator } = require('./utils/gemini-web-image');
+    const disabled = new GeminiWebImageGenerator({ profileDir: path.join(os.tmpdir(), 'gemini-web-off') });
+    if (await disabled.isAvailable() !== false) {
+      throw new Error('Gemini web provider must stay disabled when GEMINI_WEB=0');
+    }
+    delete process.env.GEMINI_WEB;
+
+    // Enabled on a fresh (never logged in) profile: must answer false
+    // (anonymous sessions show a sign-in entry point) without throwing.
+    process.env.GEMINI_WEB_TIMEOUT_MS = '15000';
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gemini-web-test-'));
+    try {
+      const provider = new GeminiWebImageGenerator({ profileDir: dir, timeoutMs: 15000 });
+      const available = await provider.isAvailable();
+      if (typeof available !== 'boolean') throw new Error('Gemini web availability probe did not return a boolean');
+      await provider.close();
+    } finally {
+      delete process.env.GEMINI_WEB_TIMEOUT_MS;
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
+
+    // With no API key and Gemini web unavailable, generateImage must still
+    // deliver a unique stock image (last-resort provider) — never crash.
+    const { AIVideoGenerator } = require('./utils/ai-video-generator');
+    const generator = new AIVideoGenerator({});
+    generator.geminiWeb = { isAvailable: async () => false, generateImage: async () => { throw new Error('should not be called'); } };
+    const stockPath = path.join(os.tmpdir(), `stock-fallback-${Date.now()}.png`);
+    try {
+      await generator.generateImage('a lighthouse on a cliff at golden hour', stockPath);
+      const sharp = require('sharp');
+      const meta = await sharp(stockPath).metadata();
+      if (!meta.width || !meta.height) throw new Error('Stock fallback image is invalid');
+    } finally {
+      await fs.rm(stockPath, { force: true }).catch(() => {});
+    }
+
+    this.logger.info('Gemini web image provider test completed successfully');
+  }
+
   async testEvergreenTopics() {
     const { ContentStrategyAgent } = require('./agents/content-strategy-agent');
     const agent = new ContentStrategyAgent(null, {});
@@ -3461,14 +3596,18 @@ class SystemTest {
   }
 
   async testEngagementAIProviderWiring() {
-    const { AITextService } = require('./utils/ai-text-service');
+    const { AITextService, PROVIDERS } = require('./utils/ai-text-service');
 
     // Regression: index.js must hand AITextService the unwrapped credentials object
     // (manager.credentials), the shape the walkthrough writes to credentials.json.
     // Passing the CredentialManager itself leaves the engagement studio permanently
     // in fallback mode on installs with no provider environment variables.
-    const savedEnv = process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_API_KEY;
+    const providerEnvKeys = [...Object.values(PROVIDERS).map(p => p.envKey), 'GEMINI_API_KEY'];
+    const savedEnv = {};
+    for (const key of providerEnvKeys) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
     try {
       const configured = new AITextService({
         aiProvider: { provider: 'openai', apiKey: 'test-key', model: 'gpt-5.6' }
@@ -3484,8 +3623,10 @@ class SystemTest {
         throw new Error('A CredentialManager-shaped argument must not look configured; index.js has to unwrap it');
       }
     } finally {
-      if (savedEnv === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = savedEnv;
+      for (const key of providerEnvKeys) {
+        if (savedEnv[key] === undefined) delete process.env[key];
+        else process.env[key] = savedEnv[key];
+      }
     }
   }
 

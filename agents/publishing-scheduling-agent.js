@@ -244,9 +244,14 @@ class PublishingSchedulingAgent {
     scheduleEntry.error = null;
     await this.db.updateScheduleEntry(scheduleEntry);
     
-    // Upload thumbnail
-    if (metadata.thumbnail && metadata.thumbnail.path) {
-      await this.uploadThumbnail(videoId, metadata.thumbnail.path);
+    // Upload thumbnail (metadata.path can be a simulated .info marker — pick a real image)
+    if (metadata.thumbnail) {
+      const thumbPath = await this.resolveThumbnailFile(metadata.thumbnail);
+      if (thumbPath) {
+        await this.uploadThumbnail(videoId, thumbPath);
+      } else {
+        this.logger.warn('No usable thumbnail image found; skipping thumbnail upload');
+      }
     }
     
     // Upload captions
@@ -322,6 +327,18 @@ class PublishingSchedulingAgent {
       throw new Error('video file not found — refusing to upload placeholder');
     }
   }
+  async resolveThumbnailFile(thumbnail = {}) {
+    const candidates = [thumbnail.path, thumbnail.originalPath].filter(p => typeof p === 'string' && p);
+    for (const candidate of candidates) {
+      if (!/\.(jpe?g|png|webp)$/i.test(candidate)) continue;
+      try {
+        const stats = await fs.stat(candidate);
+        if (stats.isFile() && stats.size > 10240) return candidate;
+      } catch (_error) { /* try next candidate */ }
+    }
+    return null;
+  }
+
   async uploadThumbnail(videoId, thumbnailPath) {
     try {
       const thumbnailBuffer = await fs.readFile(thumbnailPath);

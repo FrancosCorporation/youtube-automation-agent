@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const sharp = require('sharp');
+const { spawn } = require('child_process');
 const { Logger } = require('./logger');
 const { runFFmpeg, getMediaDuration, checkFFmpeg, ffmpegInstallHint } = require('./ffmpeg');
 const { MediaGenerationService } = require('./media-generation-service');
@@ -55,6 +56,15 @@ class AIVideoGenerator {
     // Azure Speech configuration
     this.azureSpeechKey = resolvedCredentials.azure?.speechKey || process.env.AZURE_SPEECH_KEY;
     this.azureSpeechRegion = resolvedCredentials.azure?.speechRegion || process.env.AZURE_SPEECH_REGION;
+
+    // Edge-TTS (Microsoft neural voices via local edge-tts CLI) — free local narration
+    this.edgeTtsBin = this._resolveEdgeTtsBin();
+    this.edgeTtsVoice = process.env.EDGE_TTS_VOICE || 'pt-BR-FranciscaNeural';
+    this.edgeTtsRate = process.env.EDGE_TTS_RATE || '';
+    this.edgeTtsPitch = process.env.EDGE_TTS_PITCH || '';
+    if (this.edgeTtsBin) {
+      this.logger.info(`Edge-TTS initialized (voice: ${this.edgeTtsVoice})`);
+    }
     this.mediaGeneration = options.mediaGeneration || (this.db
       ? new MediaGenerationService(this.db, resolvedCredentials, { logger: this.logger })
       : null);
@@ -68,7 +78,11 @@ class AIVideoGenerator {
 
     try {
       let generatedPath;
-      if (this.elevenLabsApiKey && this.elevenLabsVoiceId) {
+      if (this.edgeTtsBin) {
+        provider = 'edge-tts';
+        model = this.edgeTtsVoice;
+        generatedPath = await this.generateEdgeTTS(text, outputPath);
+      } else if (this.elevenLabsApiKey && this.elevenLabsVoiceId) {
         provider = 'elevenlabs';
         model = this.elevenLabsModel;
         generatedPath = await this.generateElevenLabsTTS(text, outputPath);
@@ -105,6 +119,50 @@ class AIVideoGenerator {
       this.logger.error('TTS generation failed:', error);
       throw error;
     }
+  }
+
+  _resolveEdgeTtsBin() {
+    const os = require('os');
+    const fsSync = require('fs');
+    const candidates = [
+      process.env.EDGE_TTS_PATH,
+      path.join(os.homedir(), '.local', 'bin', 'edge-tts'),
+    ].filter(Boolean);
+    for (const candidate of candidates) {
+      try {
+        if (fsSync.existsSync(candidate)) return candidate;
+      } catch (_error) { /* try the next candidate */ }
+    }
+    try {
+      const probe = require('child_process').spawnSync('edge-tts', ['--help'], { timeout: 15000 });
+      if (!probe.error && probe.status === 0) return 'edge-tts';
+    } catch (_error) { /* not on PATH */ }
+    return null;
+  }
+
+  async generateEdgeTTS(text, outputPath) {
+    const textPath = `${outputPath}.txt`;
+    await fs.writeFile(textPath, text, 'utf8');
+    const args = ['--voice', this.edgeTtsVoice, '--file', textPath, '--write-media', outputPath];
+    if (this.edgeTtsRate) args.push('--rate', this.edgeTtsRate);
+    if (this.edgeTtsPitch) args.push('--pitch', this.edgeTtsPitch);
+    try {
+      await new Promise((resolve, reject) => {
+        const child = spawn(this.edgeTtsBin, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        let stderr = '';
+        child.stdout.resume();
+        child.stderr.on('data', chunk => { stderr += chunk.toString(); });
+        child.on('error', reject);
+        child.on('close', code => {
+          if (code === 0) resolve();
+          else reject(new Error(`edge-tts exited with code ${code}: ${stderr.slice(0, 300)}`));
+        });
+      });
+    } finally {
+      await fs.unlink(textPath).catch(() => {});
+    }
+    this.logger.info('Edge-TTS generation complete');
+    return outputPath;
   }
 
   async generateElevenLabsTTS(text, outputPath) {
@@ -217,6 +275,15 @@ class AIVideoGenerator {
     }
   }
 
+  async _geminiWebAvailable() {
+    if (process.env.GEMINI_WEB === '0') return false;
+    if (!this.geminiWeb) {
+      const { GeminiWebImageGenerator } = require('./gemini-web-image');
+      this.geminiWeb = new GeminiWebImageGenerator({ logger: this.logger });
+    }
+    return this.geminiWeb.isAvailable();
+  }
+
   async generateImage(prompt, imagePath) {
     await fs.mkdir(path.dirname(imagePath), { recursive: true });
 
@@ -224,11 +291,67 @@ class AIVideoGenerator {
       return await this.generateOpenAIImage(prompt, imagePath);
     }
 
-    if (this.gemini) {
-      return await this.generateGeminiImage(prompt, imagePath);
+    if (this.gemini && !this._geminiImageQuotaExceeded) {
+      try {
+        return await this.generateGeminiImage(prompt, imagePath);
+      } catch (error) {
+        if (/quota|429|rate.?limit|RESOURCE_EXHAUSTED/i.test(error.message || String(error))) {
+          this._geminiImageQuotaExceeded = true;
+          this.logger.warn('Gemini API image quota exhausted — using the Gemini web provider for the rest of this run');
+        } else {
+          throw error;
+        }
+      }
     }
 
-    throw new Error('No image generation provider configured');
+    if (process.env.GEMINI_WEB !== '0' && await this._geminiWebAvailable()) {
+      try {
+        return await this.geminiWeb.generateImage(prompt, imagePath);
+      } catch (error) {
+        this.logger.warn(`Gemini web image failed: ${error.message} — using a stock photo for this shot`);
+        if (/has been closed|Target closed/i.test(error.message || String(error))) {
+          // The browser crashed (OOM etc.) — drop it so the next shot relaunches fresh.
+          await this.geminiWeb.close().catch(() => {});
+          this.geminiWeb = null;
+        }
+      }
+    }
+
+    // Last resort that still keeps every shot unique: free stock photo matched
+    // to the scene keywords (no account/quota needed).
+    return await this.generateStockImage(prompt, imagePath);
+  }
+
+  // Free stock photo fallback, no account/quota needed. Tries keyword-matched
+  // LoremFlickr (CC images) first, then a random Picsum photo — every shot
+  // still gets a unique real image.
+  async generateStockImage(prompt, imagePath) {
+    const stop = new Set(['the', 'a', 'an', 'de', 'do', 'da', 'and', 'with', 'in', 'on', 'at', 'of', 'to', 'um', 'uma', 'o', 'as', 'no', 'na']);
+    const keywords = String(prompt || 'cinematic scene')
+      .toLowerCase().replace(/[^a-zà-ÿ\s]/g, ' ').split(/\s+/)
+      .filter(word => word.length > 3 && !stop.has(word)).slice(0, 3).join(',');
+    let hash = 0;
+    for (const ch of String(prompt)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+
+    const sources = [
+      `https://loremflickr.com/1920/1080/${encodeURIComponent(keywords || 'nature,landscape')}?lock=${hash % 100000}`,
+      `https://picsum.photos/seed/${hash % 100000}/1920/1080`
+    ];
+    const headers = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36' };
+
+    for (const url of sources) {
+      try {
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000, maxRedirects: 5, headers });
+        const buffer = Buffer.from(response.data);
+        const metadata = await sharp(buffer, { failOn: 'error' }).metadata();
+        if (!metadata.width || !metadata.height) continue;
+        await sharp(buffer).png().toFile(imagePath);
+        return imagePath;
+      } catch (error) {
+        this.logger.warn(`Stock image source failed (${url.split('/')[2]}): ${error.message}`);
+      }
+    }
+    throw new Error('No stock image source responded');
   }
 
   async generateOpenAIImage(prompt, imagePath) {
@@ -474,16 +597,67 @@ class AIVideoGenerator {
       throw new Error(ffmpegInstallHint());
     }
 
-    const { chromium } = require('playwright');
-    const browser = await chromium.launch();
+    const settings = await this.resolveSlideshowSettings();
+    if (settings.style === 'animated') {
+      try {
+        const { AnimatedSceneRenderer } = require('./animated-scene-renderer');
+        const renderer = new AnimatedSceneRenderer({ logger: this.logger });
+        return await renderer.render({ script, audioPath, outputPath });
+      } catch (error) {
+        this.logger.error(`Animated scene render failed; falling back to dynamic: ${error.message}`);
+      }
+    }
+    if (settings.style === 'dynamic') {
+      try {
+        const produced = await this.generateDynamicSlideshow(script, visualAssets, audioPath, outputPath, settings.secondsPerImage);
+        if (produced) return produced;
+        // No AI image provider: still render the classic slides, but with
+        // gentle Ken Burns motion so the video is not a static deck.
+        this.logger.info('No AI image provider — applying gentle motion to the text slides');
+        return await this.generateGentleMotionSlides(script, visualAssets, audioPath, outputPath);
+      } catch (error) {
+        this.logger.error(`Dynamic slideshow failed; using classic slides: ${error.message}`);
+      }
+    }
+
     const slidesDir = path.join(path.dirname(outputPath), 'slides');
 
+    try {
+      // Create HTML for slideshow (only real image files can be embedded)
+      const imageAssets = await this.filterImageAssets(visualAssets);
+      const stills = await this.captureSlideStills(script, imageAssets, slidesDir);
+
+      const videoPath = outputPath.replace('.mp4', '_visual.mp4');
+      const duration = await this.narrationDuration(script, audioPath);
+      await this.renderSlidesToVideo(stills, duration, videoPath);
+
+      // Add audio
+      await this.addAudioToVideo(videoPath, audioPath, outputPath);
+
+      return outputPath;
+    } finally {
+      await this.cleanupDirectory(slidesDir);
+    }
+  }
+
+  async narrationDuration(script, audioPath) {
+    let duration = this.calculateScriptDuration(script);
+    try {
+      // Prefer the real narration length so visuals cover the whole audio
+      // (script word-count estimates diverge from edge-tts output).
+      const audioDuration = await getMediaDuration(audioPath);
+      if (Number.isFinite(audioDuration) && audioDuration > 0) duration = Math.ceil(audioDuration);
+    } catch (_error) { /* keep the estimate */ }
+    return duration;
+  }
+
+  async captureSlideStills(script, imageAssets, slidesDir) {
+    const { chromium } = require('playwright');
+    const browser = await chromium.launch();
     try {
       const page = await browser.newPage();
       await page.setViewportSize({ width: 1920, height: 1080 });
 
-      // Create HTML for slideshow (only real image files can be embedded)
-      const imageAssets = await this.filterImageAssets(visualAssets);
       await page.setContent(this.createSlideshowHTML(script, imageAssets));
 
       // Freeze CSS transitions/animations so each still is captured fully rendered
@@ -491,7 +665,7 @@ class AIVideoGenerator {
       await page.waitForTimeout(1000); // Wait for assets to load
 
       // Capture ONE still per slide instead of screenshotting at 30fps —
-      // FFmpeg turns the stills into a crossfaded video in seconds.
+      // FFmpeg turns the stills into a video in seconds.
       const slideCount = await page.evaluate(() => document.querySelectorAll('.slide').length);
       await fs.mkdir(slidesDir, { recursive: true });
 
@@ -507,17 +681,28 @@ class AIVideoGenerator {
         await page.screenshot({ path: stillPath });
         stills.push(stillPath);
       }
-
-      const videoPath = outputPath.replace('.mp4', '_visual.mp4');
-      const duration = await this.resolveSlideshowDuration(script, audioPath);
-      await this.renderSlidesToVideo(stills, duration, videoPath);
-
-      // Add audio
-      await this.addAudioToVideo(videoPath, audioPath, outputPath);
-
-      return outputPath;
+      return stills;
     } finally {
       await browser.close().catch(() => {});
+    }
+  }
+
+  // Classic text slides, sequenced with a subtle slow zoom instead of static
+  // crossfades — used when no AI image provider key is configured.
+  async generateGentleMotionSlides(script, visualAssets, audioPath, outputPath) {
+    const slidesDir = path.join(path.dirname(outputPath), 'slides');
+    try {
+      const imageAssets = await this.filterImageAssets(visualAssets);
+      const stills = await this.captureSlideStills(script, imageAssets, slidesDir);
+      const duration = await this.narrationDuration(script, audioPath);
+      const shots = stills.map(still => ({ path: still, duration: duration / stills.length }));
+
+      const videoPath = outputPath.replace('.mp4', '_visual.mp4');
+      await this.renderDynamicSequence(shots, videoPath, duration, { gentle: true });
+      await this.addAudioToVideo(videoPath, audioPath, outputPath);
+      await fs.unlink(videoPath).catch(() => {});
+      return outputPath;
+    } finally {
       await this.cleanupDirectory(slidesDir);
     }
   }
@@ -537,6 +722,8 @@ class AIVideoGenerator {
     }
 
     const fade = 0.5;
+    // Crossfades shorten the chain by (n-1)*fade; pad each slide so the final
+    // video still reaches totalDuration (otherwise -shortest truncates narration).
     const overlapDuration = fade * Math.max(0, stills.length - 1);
     const perSlide = Math.max(2, (totalDuration + overlapDuration) / stills.length);
 
@@ -570,6 +757,184 @@ class AIVideoGenerator {
       videoPath
     );
 
+    await runFFmpeg(args);
+    return videoPath;
+  }
+
+  async resolveSlideshowSettings() {
+    const stored = this.db?.getAllSettings ? await this.db.getAllSettings() : {};
+    const style = String(process.env.SLIDESHOW_STYLE || stored.slideshow_style || 'dynamic').toLowerCase();
+    const secondsPerImage = Math.max(1, Number(process.env.SLIDESHOW_SECONDS_PER_IMAGE || stored.slideshow_seconds_per_image || 3.5));
+    const normalized = ['classic', 'animated'].includes(style) ? style : 'dynamic';
+    return { style: normalized, secondsPerImage };
+  }
+
+  // Split the script into timed shots: every scene becomes one or more images
+  // (a new picture every `secondsPerImage` seconds), each with a slightly
+  // different camera angle so the sequence reads as motion instead of slides.
+  buildDynamicShotPlan(script = {}, totalDuration, secondsPerImage = 3.5) {
+    const variants = [
+      'wide establishing shot',
+      'medium shot, slightly different camera angle',
+      'close-up detail shot',
+      'overhead top-down view',
+      'low angle shot',
+      'lateral dolly shot perspective',
+      'shallow depth of field detail',
+      'dramatic rim lighting shot'
+    ];
+
+    const scenes = [];
+    const sceneText = section => typeof section.content === 'string'
+      ? section.content
+      : (section.items || section.steps || []).map(item => `${item.title || ''} ${item.description || ''}`).join(' ');
+
+    if (script.hook?.text || script.title) {
+      scenes.push({ label: 'Hook', text: script.hook?.text || script.title, prompt: `${script.hook?.text || script.title}. Cinematic opening shot, clear subject, no text, no captions.` });
+    }
+    for (const section of script.mainContent?.sections || []) {
+      scenes.push({ label: section.title || 'Scene', text: `${section.title || ''} ${sceneText(section)}`, prompt: `${section.title || ''}. ${sceneText(section)}. Cinematic explanatory shot, no text, no captions.`.trim() });
+    }
+    if (script.conclusion?.finalThought) {
+      scenes.push({ label: 'Conclusion', text: script.conclusion.finalThought, prompt: `${script.conclusion.finalThought}. Memorable cinematic closing shot, no text, no captions.` });
+    }
+    if (!scenes.length) scenes.push({ label: 'Scene', text: script.title || 'story', prompt: `${script.title || 'story'}. Cinematic shot, no text, no captions.` });
+
+    const weights = scenes.map(scene => Math.max(8, scene.text.split(/\s+/).filter(Boolean).length));
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    const shots = [];
+    scenes.forEach((scene) => {
+      const sceneDuration = Math.max(2, totalDuration * (weights[scenes.indexOf(scene)] / totalWeight));
+      const shotCount = Math.max(1, Math.round(sceneDuration / secondsPerImage));
+      const shotDuration = sceneDuration / shotCount;
+      for (let i = 0; i < shotCount; i++) {
+        const variant = variants[shots.length % variants.length];
+        shots.push({ label: scene.label, prompt: `${scene.prompt} ${variant}.`, duration: shotDuration });
+      }
+    });
+    return shots;
+  }
+
+  async generateDynamicSlideshow(script, visualAssets, audioPath, outputPath, secondsPerImage) {
+    // Every shot always gets an image: OpenAI → Gemini API → Gemini web
+    // (logged-in browser profile) → free stock photo. Whatever the source, the
+    // result is a unique frame per shot instead of static text slides.
+    const totalDuration = await this.narrationDuration(script, audioPath);
+
+    const shots = this.buildDynamicShotPlan(script, totalDuration, secondsPerImage);
+    const fallbackImages = await this.filterLocalImageAssets(visualAssets);
+    const slidesDir = path.join(path.dirname(outputPath), `dyn_shots_${Date.now()}`);
+
+    this.logger.info(`Dynamic slideshow: generating ${shots.length} images (~${secondsPerImage}s per image, ${totalDuration}s total)...`);
+
+    try {
+      await fs.mkdir(slidesDir, { recursive: true });
+      const rendered = [];
+      let lastImage = fallbackImages[0] || null;
+      let consecutiveFailures = 0;
+      for (const shot of shots) {
+        let imagePath = null;
+        if (consecutiveFailures < 2) {
+          try {
+            imagePath = path.join(slidesDir, `shot_${String(rendered.length).padStart(3, '0')}.png`);
+            await this.generateImage(this.enhanceVisualPrompt(shot.prompt, 'cinematic'), imagePath);
+            consecutiveFailures = 0;
+            // Stay friendly with image provider rate limits
+            await new Promise(resolve => setTimeout(resolve, 350));
+          } catch (error) {
+            consecutiveFailures += 1;
+            this.logger.warn(`Shot image generation failed (${shot.label}): ${error.message}`);
+            if (consecutiveFailures >= 2 && this.geminiWeb) await this.geminiWeb.close();
+            imagePath = fallbackImages[rendered.length % Math.max(1, fallbackImages.length)] || lastImage;
+          }
+        } else {
+          imagePath = fallbackImages[rendered.length % Math.max(1, fallbackImages.length)] || lastImage;
+        }
+        if (!imagePath) continue;
+        if (await fs.access(imagePath).then(() => true).catch(() => false)) {
+          lastImage = imagePath;
+          rendered.push({ ...shot, path: imagePath });
+        }
+      }
+
+      if (!rendered.length) {
+        this.logger.warn('No AI images could be generated for the dynamic slideshow');
+        return null;
+      }
+
+      const videoPath = outputPath.replace('.mp4', '_visual.mp4');
+      await this.renderDynamicSequence(rendered, videoPath, totalDuration);
+      await this.addAudioToVideo(videoPath, audioPath, outputPath);
+      await fs.unlink(videoPath).catch(() => {});
+      return outputPath;
+    } finally {
+      await this.cleanupDirectory(slidesDir);
+    }
+  }
+
+  // Turn one image per shot into a moving video: Ken Burns zoom/pan per image
+  // (alternate directions) chained with short xfade transitions.
+  // options.gentle: subtle central zoom only + soft fades — safe for slides
+  // that contain text, where pans and strong zooms could crop the content.
+  async renderDynamicSequence(shots, videoPath, totalDuration = null, options = {}) {
+    if (!shots.length) throw new Error('No images to render');
+
+    const gentle = options.gentle === true;
+    const fps = 30;
+    const minDuration = Math.min(...shots.map(shot => shot.duration));
+    const fade = Math.min(0.5, Math.max(0.2, minDuration / 2.2));
+
+    // Crossfades shorten the final video by (n-1)*fade — pad the shots evenly
+    // so the assembled video still covers the whole narration.
+    let padded = shots.map(shot => ({ ...shot }));
+    const target = Number(totalDuration) > 0 ? Number(totalDuration) : padded.reduce((sum, shot) => sum + shot.duration, 0);
+    const deficit = target - (padded.reduce((sum, shot) => sum + shot.duration, 0) - fade * (padded.length - 1));
+    if (deficit > 0) padded = padded.map(shot => ({ ...shot, duration: shot.duration + deficit / padded.length }));
+
+    const motions = gentle
+      ? [
+        `zoompan=z='min(1+0.0007*on,1.09)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,
+        `zoompan=z='if(eq(on,0),1.09,max(1.09-0.0007*on,1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`
+      ]
+      : [
+        `zoompan=z='min(1+0.0011*on,1.3)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,
+        `zoompan=z='if(eq(on,0),1.3,max(1.3-0.0011*on,1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,
+        `zoompan=z='1.22':x='(iw-iw/zoom)*on/{F}':y='(ih-ih/zoom)/2'`,
+        `zoompan=z='1.22':x='(iw-iw/zoom)*(1-on/{F})':y='(ih-ih/zoom)/2'`,
+        `zoompan=z='min(1.08+0.0006*on,1.28)':x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*on/{F}'`,
+        `zoompan=z='1.22':x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(1-on/{F})'`
+      ];
+    const transitions = gentle
+      ? ['fade', 'dissolve']
+      : ['fade', 'dissolve', 'wipeleft', 'wipeup', 'slideright', 'wipedown', 'slideleft', 'fadeblack'];
+
+    const args = ['-y'];
+    const filters = [];
+    for (let i = 0; i < padded.length; i++) {
+      const frames = Math.max(1, Math.round(padded[i].duration * fps));
+      const motion = motions[i % motions.length].replaceAll('{F}', String(Math.max(1, frames - 1)));
+      args.push('-i', padded[i].path);
+      filters.push(`[${i}:v]scale=3072:1728:force_original_aspect_ratio=increase,crop=3072:1728,${motion}:d=${frames}:s=1920x1080:fps=${fps},format=yuv420p,setsar=1[v${i}]`);
+    }
+
+    if (padded.length === 1) {
+      args.push('-filter_complex', `${filters[0].replace('[v0]', '[vout]')}`, '-map', '[vout]', '-c:v', 'libx264', '-r', String(fps), videoPath);
+      await runFFmpeg(args);
+      return videoPath;
+    }
+
+    let prev = '[v0]';
+    let offset = padded[0].duration - fade;
+    for (let i = 1; i < padded.length; i++) {
+      const out = i === padded.length - 1 ? '[vout]' : `[x${i}]`;
+      const transition = transitions[(i - 1) % transitions.length];
+      filters.push(`${prev}[v${i}]xfade=transition=${transition}:duration=${fade.toFixed(2)}:offset=${offset.toFixed(2)}${out}`);
+      offset += padded[i].duration - fade;
+      prev = out;
+    }
+
+    args.push('-filter_complex', filters.join(';'), '-map', '[vout]', '-c:v', 'libx264', '-r', String(fps), videoPath);
     await runFFmpeg(args);
     return videoPath;
   }
@@ -801,6 +1166,10 @@ class AIVideoGenerator {
       script.mainContent.sections.forEach(section => {
         if (typeof section.content === 'string') {
           totalWords += section.content.split(' ').length;
+        } else if (Array.isArray(section.content)) {
+          section.content.forEach(chunk => {
+            if (typeof chunk === 'string') totalWords += chunk.split(' ').length;
+          });
         }
         if (section.items) {
           section.items.forEach(item => {

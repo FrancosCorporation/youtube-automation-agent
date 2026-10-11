@@ -172,8 +172,12 @@ class ProductionManagementAgent {
     
     // Add main content
     if (script.mainContent && script.mainContent.sections) {
-      script.mainContent.sections.forEach((section, index) => {
-        ttsText += `Section ${index + 1}: ${section.title}\n`;
+      script.mainContent.sections.forEach((section) => {
+        // Narration must sound natural — the on-screen order carries the
+        // structure, so we never read out "Section N:" headers.
+        if (typeof section.content === 'string' && !section.content.trim()) {
+          ttsText += `${section.title}.\n`;
+        }
         
         if (Array.isArray(section.content)) {
           section.content.forEach(line => {

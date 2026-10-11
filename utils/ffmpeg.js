@@ -79,6 +79,43 @@ async function getMediaDuration(filePath) {
   throw new Error(`Could not determine media duration for ${filePath}`);
 }
 
+/**
+ * QA de sanidade pré-publicação: confirma que o mp4 final tem duração
+ * plausível e uma trilha de áudio real antes de qualquer upload.
+ * Não substitui revisão humana de conteúdo — só pega "vídeo quebrado".
+ */
+async function probeVideoHealth(filePath, { minDurationSec = 15, maxDurationSec = 1800 } = {}) {
+  const issues = [];
+  let duration = null;
+  try {
+    duration = await getMediaDuration(filePath);
+  } catch (error) {
+    issues.push(`duração ilegível: ${error.message}`);
+  }
+  if (duration != null) {
+    if (duration < minDurationSec) issues.push(`duração muito curta (${duration.toFixed(1)}s < ${minDurationSec}s)`);
+    if (duration > maxDurationSec) issues.push(`duração muito longa (${duration.toFixed(1)}s > ${maxDurationSec}s)`);
+  }
+
+  let hasAudio = false;
+  try {
+    const { stdout } = await execFileAsync(getFFprobePath(), [
+      '-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=codec_type',
+      '-of', 'default=noprint_wrappers=1:nokey=1', filePath
+    ]);
+    hasAudio = /audio/.test(String(stdout || ''));
+  } catch (_error) {
+    // ffprobe ausente/erro — não bloqueia por si só, mas sinaliza se não achou áudio.
+  }
+  if (!hasAudio) issues.push('nenhuma trilha de áudio detectada');
+
+  let sizeBytes = 0;
+  try { sizeBytes = fs.statSync(filePath).size; } catch (_e) { /* ignore */ }
+  if (sizeBytes < 50 * 1024) issues.push(`arquivo suspeito de corrompido (${sizeBytes} bytes)`);
+
+  return { ok: issues.length === 0, issues, duration, sizeBytes };
+}
+
 function ffmpegInstallHint() {
   const hints = {
     win32: 'winget install Gyan.FFmpeg (then restart your terminal)',
@@ -90,4 +127,4 @@ function ffmpegInstallHint() {
   return `FFmpeg not found. Install it with: ${platformHint} — or run "npm install" again to fetch the bundled ffmpeg-static binary, or set FFMPEG_PATH to your ffmpeg executable.`;
 }
 
-module.exports = { getFFmpegPath, getFFprobePath, getMediaDuration, checkFFmpeg, runFFmpeg, ffmpegInstallHint };
+module.exports = { getFFmpegPath, getFFprobePath, getMediaDuration, checkFFmpeg, runFFmpeg, ffmpegInstallHint, probeVideoHealth };

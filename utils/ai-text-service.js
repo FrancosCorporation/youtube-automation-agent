@@ -44,6 +44,17 @@ const PROVIDERS = {
     models: ['glm-5.3', 'glm-5.2', 'glm-5.1'],
     envKey: 'GLM_API_KEY',
   },
+  nvidia: {
+    name: 'NVIDIA NIM',
+    baseURL: 'https://integrate.api.nvidia.com/v1',
+    defaultModel: 'nvidia/nemotron-3-super-120b-a12b',
+    models: [
+      'nvidia/nemotron-3-super-120b-a12b',
+      'nvidia/nemotron-3-ultra-550b-a55b',
+      'nvidia/nemotron-3.5-lightning-30b-a3b',
+    ],
+    envKey: 'NVIDIA_API_KEY',
+  },
 };
 
 class AITextService {
@@ -102,7 +113,9 @@ class AITextService {
 
   async generateText(prompt, options = {}) {
     const model = options.model || this.model;
-    const maxTokens = options.maxTokens || 2048;
+    // Default must accommodate reasoning models (nemotron-3 etc.) that spend
+    // tokens thinking before answering; explicit options.maxTokens is honored as-is.
+    const maxTokens = options.maxTokens || 8000;
     const temperature = options.temperature ?? 0.7;
 
     if (this.gemini) {
