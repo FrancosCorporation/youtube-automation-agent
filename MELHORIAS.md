@@ -11,6 +11,15 @@
 - **Estado:** implementado. O `tokens.json` local foi restrito a `0600`; credenciais continuam em JSON sem criptografia em repouso.
 - **Verificação estática:** `node --check utils/credential-manager.js`; `stat -c '%a %n' config/credentials.json config/tokens.json`.
 
+### BUG-01 · Fluxo OAuth manual não completava o callback · [P0]
+
+- **Arquivo:** `utils/credential-manager.js:setupYouTubeCredentials()`
+- **Evidência:** o assistente exibia uma URL com redirect local e pedia um código manual, sem um servidor callback compatível com OAuth Desktop.
+- **Mudança:** usar `@google-cloud/local-auth` com callback loopback efêmero; gerar o JSON temporário de cliente dentro da pasta privada e removê-lo ao concluir ou falhar.
+- **Aceite:** o usuário autoriza no navegador e os tokens são salvos com modo privado.
+- **Estado:** código implementado; autorização real não foi exercitada sem consentimento e conta Google.
+- **Verificação estática:** `node --check utils/credential-manager.js`; `rg -n 'authenticate\(|run_console|getToken\(code\)' utils/credential-manager.js`.
+
 ### Limites não alterados nesta rodada
 
 - Os escopos OAuth cobrem upload, gerenciamento, leitura e analytics porque o produto usa essas ações; redução por função exige mapear e validar cada endpoint.

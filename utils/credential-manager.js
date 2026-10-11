@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { randomUUID } = require('crypto');
 const { google } = require('googleapis');
+const { authenticate } = require('@google-cloud/local-auth');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const { Logger } = require('./logger');
@@ -128,43 +129,30 @@ class CredentialManager {
         type: 'input',
         name: 'clientId',
         message: 'Enter your YouTube API Client ID:',
-        validate: input => input.length > 0 || 'Client ID is required'
+        validate: input => input.trim().length > 0 || 'Client ID is required'
       },
       {
         type: 'password',
         name: 'clientSecret',
         message: 'Enter your YouTube API Client Secret:',
-        validate: input => input.length > 0 || 'Client Secret is required'
-      },
-      {
-        type: 'input',
-        name: 'redirectUri',
-        message: 'Enter your redirect URI:',
-        default: 'http://localhost:8080/oauth2callback'
+        validate: input => input.trim().length > 0 || 'Client Secret is required'
       }
     ]);
 
     this.credentials.youtube = {
-      client_id: answers.clientId,
-      client_secret: answers.clientSecret,
-      redirect_uris: [answers.redirectUri]
+      client_id: answers.clientId.trim(),
+      client_secret: answers.clientSecret.trim(),
+      redirect_uris: ['http://localhost']
     };
 
     await this.saveCredentials();
-    
-    // Authenticate and get tokens
+
     await this.authenticateYouTube();
     
     console.log(chalk.green('✅ YouTube credentials configured successfully!'));
   }
 
   async authenticateYouTube() {
-    const oauth2Client = new google.auth.OAuth2(
-      this.credentials.youtube.client_id,
-      this.credentials.youtube.client_secret,
-      this.credentials.youtube.redirect_uris[0]
-    );
-
     const scopes = [
       'https://www.googleapis.com/auth/youtube.upload',
       'https://www.googleapis.com/auth/youtube',
@@ -172,31 +160,33 @@ class CredentialManager {
       'https://www.googleapis.com/auth/yt-analytics.readonly',
       'https://www.googleapis.com/auth/youtube.force-ssl'
     ];
+    const temporaryClientFile = path.join(
+      path.dirname(this.credentialsPath),
+      `.youtube-oauth-${process.pid}-${randomUUID()}.json`,
+    );
+    const youtubeCredentials = this.credentials.youtube;
 
-    const authUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: scopes,
+    await writePrivateJson(temporaryClientFile, {
+      installed: {
+        client_id: youtubeCredentials.client_id,
+        client_secret: youtubeCredentials.client_secret,
+        redirect_uris: ['http://localhost'],
+      },
     });
 
-    console.log(chalk.cyan('\n🔗 Please visit this URL to authorize the application:'));
-    console.log(chalk.blue(authUrl));
+    try {
+      console.log(chalk.cyan('\nOpening the Google authorization page in your browser...'));
+      const oauth2Client = await authenticate({
+        keyfilePath: temporaryClientFile,
+        scopes,
+      });
 
-    const { code } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'code',
-        message: 'Enter the authorization code:',
-        validate: input => input.length > 0 || 'Authorization code is required'
-      }
-    ]);
-
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    this.tokens.youtube = tokens;
-    await this.saveTokens();
-
-    console.log(chalk.green('✅ YouTube authentication completed!'));
+      this.tokens.youtube = oauth2Client.credentials;
+      await this.saveTokens();
+      console.log(chalk.green('✅ YouTube authentication completed!'));
+    } finally {
+      await fs.unlink(temporaryClientFile).catch(() => {});
+    }
   }
 
   getYouTubeAuth() {
