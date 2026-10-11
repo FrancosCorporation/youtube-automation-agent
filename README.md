@@ -55,11 +55,14 @@ See the complete release history in [CHANGELOG.md](CHANGELOG.md).
 git clone https://github.com/darkzOGx/youtube-automation-agent.git
 cd youtube-automation-agent
 npm install
+npm run setup:hyperframes
 npm run walkthrough
 npm start
 ```
 
 Open `http://localhost:3456`. The walkthrough explains each provider choice, tests credentials, and guides YouTube authorization.
+
+The animated production renderer also needs its pinned local runtime. `npm run setup:hyperframes` installs the isolated GSAP, Three.js, and esbuild dependencies used by the approved presenter; run it again after a clean checkout or when the lockfile changes.
 
 Already know what you are doing? `npm run setup` offers a shorter classic flow, and `.env.example` documents every setting.
 
@@ -555,6 +558,7 @@ youtube-automation-agent/
 |---------|-----|
 | `Missing credentials for: an AI provider` | Configure any one provider with `npm run credentials:setup` — OpenAI is not required |
 | `'ffmpeg' is not recognized` / no .mp4 produced | Run `npm install` (fetches the bundled binary), or install FFmpeg and set `FFMPEG_PATH` |
+| `Cannot find module 'esbuild'` or `gsap.min.js` missing during animated render | Run `npm run setup:hyperframes` from the repository root |
 | Video marked `simulated`, nothing uploads | Check the ✗ lines in the startup capability check — a key or FFmpeg is missing |
 | "Processing publish queue" but nothing publishes | The queue log now shows what's waiting; content publishes at its scheduled time (default: next day 2 PM) |
 | YouTube API quota exceeded | Check quotas in Google Cloud Console; reduce posting frequency |

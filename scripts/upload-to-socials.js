@@ -24,7 +24,7 @@ const PROFILES_ROOT = process.env.PROFILES_DIR
   : path.join(ROOT, 'data', 'browser-profiles');
 const PROFILE_DIR = platform => path.join(PROFILES_ROOT, platform);
 // Plataformas desligadas via SOCIALS_DISABLED=kwai,x — não tentam upload e não bloqueiam a limpeza
-const DISABLED_PLATFORMS = (process.env.SOCIALS_DISABLED || '').split(',').map(s => s.trim()).filter(Boolean);
+const DISABLED_PLATFORMS = (process.env.SOCIALS_DISABLED || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 // Kwai não usa mais browser: publica pelo app dentro do emulador Android (redroid).
 // "Logado" = flag escrita depois do login manual (scripts/kwai-emulator.js login|confirm).
@@ -613,7 +613,8 @@ async function uploadToAll({ videoPath, clips = [], title, hashtags = '#ia #inte
   }
 
   // 2) Cortes → Shorts (API, limitado p/ cota) + TikTok + Kwai + IG + X
-  const shortsCount = Math.min(clips.length, Math.max(0, maxShorts));
+  const parsedMaxShorts = Number(maxShorts);
+  const shortsCount = Math.min(clips.length, Math.max(0, Number.isFinite(parsedMaxShorts) ? Math.floor(parsedMaxShorts) : 1));
   for (let i = 0; i < clips.length; i++) {
     const clip = clips[i];
     const clipTitle = `${clip.title} ${hashtags} #shorts`;
@@ -643,7 +644,7 @@ async function uploadToAll({ videoPath, clips = [], title, hashtags = '#ia #inte
   }
 
   // 3) Longo nas redes de vídeo longo (Telegram só se configurado no .env)
-  if (process.env.TELEGRAM_CHANNEL) {
+  if (process.env.TELEGRAM_CHANNEL && !DISABLED_PLATFORMS.includes('telegram')) {
     if (!isLogged('telegram')) { results.long.telegram = 'não logado'; }
     else {
       try {
@@ -659,4 +660,81 @@ async function uploadToAll({ videoPath, clips = [], title, hashtags = '#ia #inte
   return results;
 }
 
-module.exports = { uploadToAll, uploadTikTok, uploadKwai, uploadInstagram, uploadX, uploadTelegram, isLogged };
+async function retryPendingYouTubeShorts({ entry, results, maxShorts = Number(process.env.MAX_SHORTS || 1), maxUploads = 1 }) {
+  const next = {
+    ...(results || {}),
+    long: { ...(results?.long || {}) },
+    clips: { ...(results?.clips || {}) }
+  };
+  const confirmedLong = /^https?:\/\//i.test(String(next.long.youtube || entry?.ytUrl || '').trim());
+  if (!confirmedLong || !entry) return next;
+
+  const clips = (entry.clips || []).map(clip => typeof clip === 'string' ? { path: clip, title: entry.title } : clip)
+    .filter(clip => clip && typeof clip.path === 'string' && clip.path);
+  const parsedMaxShorts = Number(maxShorts);
+  const shortsCount = Math.min(clips.length, Math.max(0, Number.isFinite(parsedMaxShorts) ? Math.floor(parsedMaxShorts) : 1));
+  const parsedMaxUploads = Number(maxUploads);
+  const uploadLimit = Math.max(1, Number.isFinite(parsedMaxUploads) ? Math.floor(parsedMaxUploads) : 1);
+  const mediaRoot = path.resolve(ROOT, 'data', 'videos');
+  const withinMedia = candidate => candidate === mediaRoot || candidate.startsWith(`${mediaRoot}${path.sep}`);
+  const { publicationSucceeded } = require('../utils/publication-status');
+
+  let uploadsAttempted = 0;
+  for (let index = 0; index < shortsCount; index++) {
+    const clip = clips[index];
+    const match = Object.entries(next.clips).find(([resultPath]) => {
+      const left = path.isAbsolute(resultPath) ? path.resolve(resultPath) : path.resolve(ROOT, resultPath);
+      const right = path.isAbsolute(clip.path) ? path.resolve(clip.path) : path.resolve(ROOT, clip.path);
+      return left === right;
+    });
+    const resultKey = match?.[0] || clip.path;
+    const clipResult = { ...(match?.[1] || {}) };
+    if (publicationSucceeded(clipResult.shorts) || /^desativado$/i.test(String(clipResult.shorts || '').trim())) continue;
+
+    const videoPath = path.isAbsolute(clip.path) ? path.resolve(clip.path) : path.resolve(ROOT, clip.path);
+    if (!withinMedia(videoPath)) {
+      clipResult.shorts = 'ERRO: caminho do corte fora de data/videos';
+      next.clips[resultKey] = clipResult;
+      continue;
+    }
+    try {
+      const realProjectRoot = await fs.promises.realpath(ROOT);
+      const realMediaRoot = await fs.promises.realpath(mediaRoot);
+      const expectedMediaRoot = path.resolve(realProjectRoot, path.relative(path.resolve(ROOT), mediaRoot));
+      const expectedVideoPath = path.resolve(realMediaRoot, path.relative(mediaRoot, videoPath));
+      if (realMediaRoot !== expectedMediaRoot || await fs.promises.realpath(videoPath) !== expectedVideoPath
+        || !(await fs.promises.lstat(videoPath)).isFile()) {
+        throw new Error('arquivo fora da raiz de mídia gerenciada');
+      }
+    } catch (error) {
+      clipResult.shorts = `ERRO: ${String(error.message || error).slice(0, 120)}`;
+      next.clips[resultKey] = clipResult;
+      continue;
+    }
+
+    const hashtags = entry.seo?.hashtags || '#ia #inteligenciaartificial #tecnologia';
+    const canonicalTitle = entry.seo?.youtubeTitle || entry.title || 'Pulso IA';
+    const clipTitle = `${clip.title || canonicalTitle} ${hashtags} #shorts`;
+    const description = [canonicalTitle, entry.url ? `Fonte: ${entry.url}` : '', captionOf({ title: canonicalTitle, hashtags })].filter(Boolean).join('\n\n');
+    try {
+      uploadsAttempted++;
+      const uploaded = await withBudget(uploadVideo({
+        videoPath,
+        title: clipTitle.slice(0, 100),
+        description,
+        tags: ['shorts', 'ia', 'inteligencia artificial'],
+        privacyStatus: process.env.YT_PRIVACY || 'public'
+      }), 'youtube', PLATFORM_BUDGET_MS.youtube);
+      clipResult.shorts = uploaded.url;
+      console.log(`  [shorts retry ${index + 1}] ${uploaded.url}`);
+    } catch (error) {
+      clipResult.shorts = `ERRO: ${String(error.message || error).slice(0, 120)}`;
+      console.warn(`  [shorts retry ${index + 1}] ${String(error.message || error).slice(0, 120)}`);
+    }
+    next.clips[resultKey] = clipResult;
+    if (uploadsAttempted >= uploadLimit || /exceeded the number of videos/i.test(String(clipResult.shorts))) break;
+  }
+  return next;
+}
+
+module.exports = { uploadToAll, retryPendingYouTubeShorts, uploadTikTok, uploadKwai, uploadInstagram, uploadX, uploadTelegram, isLogged };

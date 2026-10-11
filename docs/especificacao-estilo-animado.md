@@ -65,37 +65,37 @@ No nosso caso a narração é gerada por nós (edge-tts), então já temos o tex
 |---|---|
 | Narração | `edge-tts` (já usado) → MP3 + `.srt` (frase); opcional **faster-whisper** local p/ timestamps por palavra |
 | Planejamento de cenas | LLM (Gemini/NVIDIA) → JSON de cenas: componentes, textos, tempos, accent |
-| Render de cena | **HTML/CSS/JS** + Playwright/Chromium determinístico (advance da timeline via Web Animations API `currentTime`) → PNG por frame (`frame_%05d.png`) **ou** CDP screencast |
-| Montagem | FFmpeg (concat, xfade, glitch via `rgbashift`/`tblend`, overlay PiP, burn-in de legendas libass) |
+| Render de cena | **HyperFrames 0.8.149** com HTML/CSS/JS, timeline GSAP pausada e runtime Three.js local para o robô aprovado; o renderer busca cada frame por timestamp |
+| Montagem e áudio | HyperFrames para captura/encode; `utils/audio-mix.js` para trilha, ducking e masterização da narração |
 | Imagens de apoio | Gemini web (já integrado) + stock (Pexels/Picsum) como fundo de cards |
 
-**Determinismo**: cada cena é uma página com `window.renderAt(ms)` que posiciona todas as animações (WAAPI/AX) no tempo `t`; o capturador avança `t` em `1000/fps` e tira screenshot — independe da velocidade da máquina (ao contrário de screen-record).
+**Determinismo**: a composição tem uma timeline raiz GSAP pausada registrada em `window.__timelines.main`. Ao buscar um timestamp, ela seleciona a cena e chama `window.renderAt(ms)` no kit visual; o runtime Three.js do robô também desenha diretamente a partir do tempo recebido. O HyperFrames captura e codifica o MP4.
 
 ## 7. Integração no repositório
 
-- Novo modo: `SLIDESHOW_STYLE=animated` (junto de `dynamic`/`classic`), selecionável por canal.
-- `utils/animated-scene-renderer.js`: engine cena→frames→vídeo.
-- `utils/scene-templates/` (ou `assets/scenes/`): componentes (bento-card, step-chart, node-flow, caption, highlight, kinetic-number, pip, glitch) em HTML/CSS/JS.
+- Modo de produção: `SLIDESHOW_STYLE=animated` usa `utils/hyperframes-video-renderer.js` e o CLI oficial do HyperFrames.
+- `utils/scene-plan-builder.js`: cria cenas determinísticas a partir do roteiro.
+- `assets/scenes/kit.js` e `kit.css`: componentes (bento-card, step-chart, node-flow, caption, highlight, kinetic-number, pip, glitch) em HTML/CSS/JS.
+- `experiments/hyperframes-pulso-pilot/src/presenter-robot.js`: fonte do mascote oficial; o projeto-piloto também contém a composição de referência.
 - Entrada: JSON de cenas derivado do roteiro (`script-writer`) — cada seção vira 1+ cenas com componentes escolhidos por heurística do conteúdo (número→kinetic number, comparação→bento, processo→node flow, citação→caption+highlight).
 - Legendas: reaproveitar `.srt` do edge-tts; estilo Linear (sans, branco, contorno, palavra-chave em accent).
-- Fallback: se o render animado falhar → modo `dynamic` (Ken Burns) → slides com zoom.
+- Falha de render HyperFrames interrompe essa geração; não troca silenciosamente para um visual diferente do aprovado.
 
 ## 8. Contratos técnicos (dev-ready)
 
 ### 8.1 Estrutura de pastas
 ```
-utils/animated-scene-renderer.js      # orquestra: cenas -> frames -> mp4
-utils/scene-capture.js                # Playwright: renderAt(t) por frame
+utils/hyperframes-video-renderer.js   # monta e renderiza a composição HyperFrames
+utils/scene-plan-builder.js           # planeja cenas e tempos a partir do roteiro
+experiments/hyperframes-pulso-pilot/  # fonte do robô aprovado e composição de referência
 assets/scenes/
-  index.html                          # shell que carrega o kit + recebe a cena
-  kit.css                             # tokens (cores/tipografia/grid) + animações
-  kit.js                              # componentes + window.renderAt(ms)
-  fonts/Inter-*.woff2                 # fontes locais (sem depender de rede)
-scenes/                               # JSON de cenas gerados por produção
+  kit.css                             # estilos e tokens visuais
+  kit.js                              # componentes + renderAt(ms) determinístico
+data/videos/                          # renders e mídia sob a política de retenção
 ```
 
 ### 8.2 Contrato `window.renderAt(ms)`
-A página expõe uma única função determinística; o capturador avança o tempo e tira print. Sem `requestAnimationFrame`, sem timers reais:
+A função interna do kit é determinística e não usa relógios ou timers. O HyperFrames controla o tempo pelo root GSAP e chama o kit ao buscar cada frame:
 ```js
 // kit.js
 const TIMELINE = []; // { el, prop, from, to, start, dur, ease }

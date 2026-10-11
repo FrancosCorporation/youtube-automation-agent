@@ -142,7 +142,7 @@ async function makeClips({ videoPath, script, outDir, maxClips = 3 }) {
  * makeVerticalClips({ script, slug, imagesDir, ttsDir, outDir, maxClips })
  */
 const { getMediaDuration } = require('./ffmpeg');
-const { AnimatedSceneRenderer } = require('./animated-scene-renderer');
+const { HyperFramesVideoRenderer } = require('./hyperframes-video-renderer');
 
 /**
  * Quebra o texto em slides curtos (~7 palavras) — menos texto por tela,
@@ -201,10 +201,10 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
   for (let i = 0; i < picks.length; i++) {
     const pick = picks[i];
     const outPath = path.join(outDir, `${baseName}_corte${i + 1}.mp4`);
+    const clipAudio = path.join(outDir, `${baseName}_c${i + 1}.mp3`);
     try {
       // 1) Áudio da frase: recorta do mp3 do grupo correspondente
       const groupAudio = path.join(ttsDir, `g${pick.gi}.mp3`);
-      const clipAudio = path.join(outDir, `${baseName}_c${i + 1}.mp3`);
       const start = Math.max(0, pick.startMs / 1000 - 0.25).toFixed(2);
       const durSec = (pick.durMs / 1000 + 0.7).toFixed(2);
       await runFFmpeg(['-y', '-ss', start, '-t', durSec, '-i', groupAudio, '-c', 'copy', clipAudio]);
@@ -293,6 +293,8 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       const mini = {
         hook: sentences[0] ? sentences[0].text : pick.text,
         channel: script.channel || 'Pulso IA',
+        themeId: script.themeId || 'ia',
+        visualPalettes: script.visualPalettes || null,
         seed: script.seed,
         forceLayout: 'hero',
         minimal: true,
@@ -304,14 +306,15 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       };
 
       // 4) Renderiza NATIVO em 1080x1920 + mux com o áudio recortado
-      const renderer = new AnimatedSceneRenderer({ width: 1080, height: 1920, fps: 24 });
+      const renderer = new HyperFramesVideoRenderer({ width: 1080, height: 1920, fps: 24 });
       await renderer.render({ script: mini, audioPath: clipAudio, outputPath: outPath, images: images.sources.length ? { 0: images } : {} });
 
-      await fs.unlink(clipAudio).catch(() => {});
       clips.push({ path: outPath, title: pick.text.slice(0, 90), sentence: pick.text, section: pick.gi });
       console.log(`      corte vertical ${i + 1}/${picks.length} ok: "${pick.text.slice(0, 55)}…"`);
     } catch (error) {
       console.warn(`      corte vertical ${i + 1}/${picks.length} falhou: ${error.message.slice(0, 150)}`);
+    } finally {
+      await fs.unlink(clipAudio).catch(() => {});
     }
   }
   return clips;

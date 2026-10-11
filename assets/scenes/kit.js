@@ -63,7 +63,8 @@
 
     highlight: (props) => {
       const wrap = el('div', 'highlight ' + (props.color === 'dark' ? 'dark' : props.color === 'yellow' ? '' : ''));
-      const span = el('span', 'hl-text', props.text || '');
+      const span = el('span', 'hl-text');
+      span.appendChild(el('span', 'hl-copy', props.text || ''));
       wrap.appendChild(span);
       const start = props.revealAtMs || 0;
       tween(wrap, 'opacity', 0, 1, start, 120);
@@ -103,11 +104,9 @@
       wrap.appendChild(svg);
       const start = props.revealAtMs || 0;
       tween(wrap, 'opacity', 0, 1, start, 220);
-      requestAnimationFrame(() => {
-        const len = path.getTotalLength ? path.getTotalLength() : 1000;
-        path.style.strokeDasharray = String(len);
-        tween({ style: path.style }, 'dashoffset', len, 0, start, props.durationMs || 900, 'easeInOut');
-      });
+      path.setAttribute('pathLength', '1000');
+      path.style.strokeDasharray = '1000';
+      tween({ style: path.style }, 'dashoffset', 1000, 0, start, props.durationMs || 900, 'easeInOut');
       return wrap;
     },
 
@@ -156,20 +155,6 @@
       tween(img, 'scale', 1.06, 1.12, 0, props.durMs || 6000, 'linear');
       tween(wrap, 'opacity', 0, 1, start, 360);
       tween(wrap, 'translateY', 24, 0, start, 480, 'expoOut');
-      return wrap;
-    },
-
-    'presenter-avatar': (props) => {
-      const wrap = el('div', 'presenter-avatar');
-      wrap.dataset.emotion = props.emotion || 'curiosity';
-      wrap.dataset.phase = String(props.phase || 0);
-      wrap.dataset.atlasUrl = window.PRESENTER_ATLAS_URL || '';
-      wrap.style.backgroundImage = `url("${wrap.dataset.atlasUrl}")`;
-      wrap.setAttribute('aria-hidden', 'true');
-      const start = props.revealAtMs || 120;
-      tween(wrap, 'opacity', 0, 1, start, 300);
-      tween(wrap, 'translateX', 70, 0, start, 460, 'expoOut');
-      tween(wrap, 'scale', 0.94, 1, start, 460, 'expoOut');
       return wrap;
     },
 
@@ -406,7 +391,9 @@
 
   window.buildScene = function (scene) {
     TIMELINE = [];
-    document.body.innerHTML = '';
+    window.SPEECH_ENVELOPE = scene.speechEnvelope || null;
+    const sceneRoot = document.getElementById('scene-root') || document.body;
+    sceneRoot.innerHTML = '';
     const root = el('div', 'scene');
     if (scene.split) root.classList.add('split');
     if (scene.splitLeft) root.classList.add('splitL');
@@ -419,23 +406,14 @@
       const render = COMPONENTS[component.type];
       if (render) root.appendChild(render(component));
     });
-    document.body.appendChild(root);
+    sceneRoot.appendChild(root);
     return true;
   };
 
   window.waitForImages = function () {
     const imgs = Array.from(document.images || []);
     const imageLoads = imgs.map(im => im.complete ? 1 : new Promise(r => { im.onload = im.onerror = r; }));
-    const atlasLoads = Array.from(document.querySelectorAll('.presenter-avatar'))
-      .map(node => node.dataset.atlasUrl)
-      .filter(Boolean)
-      .map(src => new Promise(resolve => {
-        const image = new Image();
-        image.onload = image.onerror = () => resolve(1);
-        image.src = src;
-        if (image.complete) resolve(1);
-      }));
-    return Promise.all([...imageLoads, ...atlasLoads]);
+    return Promise.all(imageLoads);
   };
 
   window.renderAt = function (ms) {
@@ -463,20 +441,6 @@
       if (ms >= e) { word.classList.add('spoken'); word.classList.remove('active'); }
       else if (ms >= s) { word.classList.add('active'); word.classList.remove('spoken'); }
       else { word.classList.remove('active', 'spoken'); }
-    }
-    const emotionRows = { curiosity: 0, surprise: 1, tension: 2, empathy: 3, wonder: 4, confidence: 5, focus: 6 };
-    const activeWord = document.querySelector('.caption .word.active');
-    for (const avatar of document.querySelectorAll('.presenter-avatar')) {
-      const row = emotionRows[avatar.dataset.emotion] ?? 0;
-      let col = 0;
-      if (activeWord) {
-        const start = Number(activeWord.dataset.start || ms);
-        const phase = Number(avatar.dataset.phase || 0);
-        const mouthFrames = [1, 2, 3, 2, 0, 1, 3, 2];
-        col = mouthFrames[(Math.floor((ms - start + phase) / 125) % mouthFrames.length + mouthFrames.length) % mouthFrames.length];
-      }
-      avatar.style.backgroundPosition = `${col * 33.333333}% ${row * 16.666667}%`;
-      avatar.style.translate = `0 ${Math.sin((ms + Number(avatar.dataset.phase || 0)) / 235) * 3}px`;
     }
     return true;
   };

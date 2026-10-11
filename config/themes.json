@@ -52,7 +52,35 @@
         ]
       ],
       "hashtags": "#ia #inteligenciaartificial #tecnologia",
-      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL especializado em inteligência artificial e tecnologia, explicando notícias de IA para o público geral"
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL especializado em inteligência artificial e tecnologia, explicando notícias de IA para o público geral",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#5EEAD4",
+              "#60A5FA",
+              "#A78BFA",
+              "#FBBF24"
+            ]
+          },
+          {
+            "accents": [
+              "#22D3EE",
+              "#818CF8",
+              "#4ADE80",
+              "#F8C172"
+            ]
+          },
+          {
+            "accents": [
+              "#2DD4BF",
+              "#38BDF8",
+              "#C084FC",
+              "#F472B6"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "curiosidades",
@@ -76,7 +104,35 @@
         ]
       ],
       "hashtags": "#curiosidades #voceconhecia #fatossurpreendentes",
-      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de curiosidades surpreendentes e fatos que ninguém conhece, estilo 'você não vai acreditar'"
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de curiosidades surpreendentes e fatos que ninguém conhece, estilo 'você não vai acreditar'",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#FBBF24",
+              "#FB7185",
+              "#A78BFA",
+              "#22D3EE"
+            ]
+          },
+          {
+            "accents": [
+              "#F97316",
+              "#FACC15",
+              "#F472B6",
+              "#38BDF8"
+            ]
+          },
+          {
+            "accents": [
+              "#FB923C",
+              "#FDE047",
+              "#C084FC",
+              "#2DD4BF"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "dinheiro",
@@ -99,7 +155,35 @@
       ],
       "hashtags": "#dinheiro #economia #bilionarios",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre o dinheiro dos ricos e curiosidades da economia, estilo 'é assim que os ricos fazem'",
-      "_monetizacao": "ebook de investimentos, curso de educação financeira"
+      "_monetizacao": "ebook de investimentos, curso de educação financeira",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#34D399",
+              "#FBBF24",
+              "#60A5FA",
+              "#A3E635"
+            ]
+          },
+          {
+            "accents": [
+              "#22C55E",
+              "#F59E0B",
+              "#38BDF8",
+              "#84CC16"
+            ]
+          },
+          {
+            "accents": [
+              "#10B981",
+              "#FACC15",
+              "#818CF8",
+              "#2DD4BF"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "saude",
@@ -123,7 +207,35 @@
         ]
       ],
       "hashtags": "#saude #bemestar #qualidadedevida",
-      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de saúde e bem-estar surpreendente, estilo 'o estudo que mudou tudo'"
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de saúde e bem-estar surpreendente, estilo 'o estudo que mudou tudo'",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#2DD4BF",
+              "#4ADE80",
+              "#60A5FA",
+              "#F472B6"
+            ]
+          },
+          {
+            "accents": [
+              "#34D399",
+              "#22D3EE",
+              "#A3E635",
+              "#818CF8"
+            ]
+          },
+          {
+            "accents": [
+              "#14B8A6",
+              "#86EFAC",
+              "#38BDF8",
+              "#FBBF24"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "economize",
@@ -141,7 +253,35 @@
       "gnews": "economizar dinheiro OR dica gasto",
       "feeds": [],
       "hashtags": "#economia #dinheiro #dicasdefinancas",
-      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre economizar dinheiro e parar de pagar por coisas que deveriam ser grátis, estilo 'pare de pagar por isso'"
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre economizar dinheiro e parar de pagar por coisas que deveriam ser grátis, estilo 'pare de pagar por isso'",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#22C55E",
+              "#FACC15",
+              "#38BDF8",
+              "#F97316"
+            ]
+          },
+          {
+            "accents": [
+              "#84CC16",
+              "#FBBF24",
+              "#2DD4BF",
+              "#60A5FA"
+            ]
+          },
+          {
+            "accents": [
+              "#16A34A",
+              "#FDE047",
+              "#0EA5E9",
+              "#FB923C"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "psicologia",
@@ -164,7 +304,35 @@
       ],
       "hashtags": "#psicologia #mente #comportamento",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de psicologia e mente humana, estilo 'seu cérebro te engana'",
-      "_monetizacao": "ebook de hábitos, curso de produtividade mental, guia de ansiedade"
+      "_monetizacao": "ebook de hábitos, curso de produtividade mental, guia de ansiedade",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#A78BFA",
+              "#C084FC",
+              "#60A5FA",
+              "#F472B6"
+            ]
+          },
+          {
+            "accents": [
+              "#8B5CF6",
+              "#818CF8",
+              "#22D3EE",
+              "#F9A8D4"
+            ]
+          },
+          {
+            "accents": [
+              "#C084FC",
+              "#6366F1",
+              "#2DD4BF",
+              "#FB7185"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "relacionamentos",
@@ -187,7 +355,35 @@
       ],
       "hashtags": "#relacionamentos #psicologia #amor",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de psicologia dos relacionamentos, estilo 'o que a ciência diz sobre o amor'",
-      "_monetizacao": "ebook de comunicação no casamento, curso de sedução"
+      "_monetizacao": "ebook de comunicação no casamento, curso de sedução",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#FB7185",
+              "#F472B6",
+              "#C084FC",
+              "#FDBA74"
+            ]
+          },
+          {
+            "accents": [
+              "#F43F5E",
+              "#FDA4AF",
+              "#A78BFA",
+              "#FBBF24"
+            ]
+          },
+          {
+            "accents": [
+              "#EC4899",
+              "#FB923C",
+              "#818CF8",
+              "#F9A8D4"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "fitness",
@@ -212,7 +408,35 @@
       ],
       "hashtags": "#fitness #treino #emagrecimento",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de fitness e treino surpreendente, estilo 'o estudo que mudou o treino'",
-      "_monetizacao": "ebook de treino, plano de emagrecimento, guia de suplementos"
+      "_monetizacao": "ebook de treino, plano de emagrecimento, guia de suplementos",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#84CC16",
+              "#22D3EE",
+              "#FB923C",
+              "#34D399"
+            ]
+          },
+          {
+            "accents": [
+              "#4ADE80",
+              "#F97316",
+              "#38BDF8",
+              "#FACC15"
+            ]
+          },
+          {
+            "accents": [
+              "#A3E635",
+              "#14B8A6",
+              "#FBBF24",
+              "#60A5FA"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "misterios",
@@ -230,7 +454,35 @@
       "gnews": "mistério inexplicado OR desaparecimento",
       "feeds": [],
       "hashtags": "#misterios #assustador #inexplicavel",
-      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de mistérios sem solução e casos inexplicáveis, estilo 'ninguém explica isso'"
+      "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de mistérios sem solução e casos inexplicáveis, estilo 'ninguém explica isso'",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#8B5CF6",
+              "#6366F1",
+              "#22D3EE",
+              "#F472B6"
+            ]
+          },
+          {
+            "accents": [
+              "#7C3AED",
+              "#818CF8",
+              "#38BDF8",
+              "#FB7185"
+            ]
+          },
+          {
+            "accents": [
+              "#A78BFA",
+              "#4F46E5",
+              "#2DD4BF",
+              "#FBBF24"
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "carreira",
@@ -254,7 +506,35 @@
       ],
       "hashtags": "#carreira #emprego #sucesso",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de carreira e sucesso profissional, estilo 'o que ninguém te conta sobre o mercado de trabalho'",
-      "_monetizacao": "ebook de entrevista, curso de currículo, guia de negociação salarial"
+      "_monetizacao": "ebook de entrevista, curso de currículo, guia de negociação salarial",
+      "visualPalettes": {
+        "variants": [
+          {
+            "accents": [
+              "#60A5FA",
+              "#6366F1",
+              "#FBBF24",
+              "#2DD4BF"
+            ]
+          },
+          {
+            "accents": [
+              "#3B82F6",
+              "#818CF8",
+              "#F59E0B",
+              "#34D399"
+            ]
+          },
+          {
+            "accents": [
+              "#38BDF8",
+              "#4F46E5",
+              "#FACC15",
+              "#A78BFA"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

@@ -25,6 +25,57 @@
 - Os escopos OAuth cobrem upload, gerenciamento, leitura e analytics porque o produto usa essas ações; redução por função exige mapear e validar cada endpoint.
 - Não foram adicionados nem executados testes nesta rodada.
 
+## Revisão de produção — 2026-10-11
+
+### SEC-03 · Fontes de imagem do renderer · [P1]
+
+- **Arquivo:** `utils/hyperframes-video-renderer.js`
+- **Risco:** buscar URLs arbitrárias permitia SSRF e a leitura de caminhos locais não tinha limite de tamanho nem confinamento ao projeto.
+- **Mudança:** aceitar apenas data URIs base64 JPEG/PNG/WebP ou arquivos locais dentro da raiz real do projeto; limitar cada imagem a 20 MiB e a composição a 180 MiB; remover o fetch HTTP.
+- **Estado:** implementado. Chamadores atuais usam data URIs ou imagens do projeto.
+
+### BUG-02 · Exclusão através de symlink · [P1]
+
+- **Arquivos:** `utils/disk-cleanup.js`, `scripts/channel-scheduler.js`
+- **Risco:** limites lexicais não impediam que uma raiz de mídia redirecionada por symlink levasse a exclusão para fora da pasta gerenciada.
+- **Mudança:** confirmar caminhos reais e arquivos regulares antes de apagar ou reenviar; aceitar somente MP4s e imagens suportadas nas rotinas correspondentes.
+- **Estado:** implementado.
+
+### BUG-03 · Preservação do ledger · [P1]
+
+- **Arquivo:** `utils/topic-ledger.js`
+- **Risco:** qualquer erro de leitura ou JSON inválido era tratado como ledger vazio, permitindo sobrescrever o histórico.
+- **Mudança:** iniciar um ledger somente quando o arquivo não existe; leitores de pauta e scheduler também falham de forma explícita diante de JSON inválido; fila inválida impede a retomada. Atualizações inválidas não escrevem e o temporário usa modo privado e criação exclusiva.
+- **Estado:** implementado.
+
+### BUG-04 · Retry de Shorts após cota · [P1]
+
+- **Arquivos:** `scripts/channel-scheduler.js`, `scripts/upload-to-socials.js`
+- **Risco:** o retry publicava somente o vídeo longo; Shorts pulados ou com erro ficavam pendentes sem novo envio.
+- **Mudança:** o worker agora encontra pendências de vídeo longo ou Shorts e reenvia somente os Shorts ainda não confirmados, um vídeo por ciclo.
+- **Estado:** implementado; execução real depende de credenciais e cota do canal.
+
+### BUG-05 · Limpeza por artefato publicado · [P1]
+
+- **Arquivos:** `utils/publication-status.js`, `utils/disk-cleanup.js`, `scripts/channel-scheduler.js`
+- **Risco:** uma falha em um corte bloqueava a limpeza do master e de todos os outros cortes publicados.
+- **Mudança:** apagar o master após confirmação do YouTube e dos destinos de vídeo longo ativos; apagar cada corte somente após seus próprios destinos exigidos; preservar arquivos com estado falho ou desconhecido. Limpeza periódica mantém o período de carência configurado.
+- **Estado:** implementado.
+
+### BUG-06 · Dependências reproduzíveis do renderer · [P1]
+
+- **Arquivos:** `package.json`, `README.md`, `experiments/hyperframes-pulso-pilot/package-lock.json`
+- **Risco:** um clone limpo instalava as dependências principais, mas não o runtime isolado usado pelo renderer HyperFrames.
+- **Mudança:** adicionar `npm run setup:hyperframes` e documentar o passo no Quick start e no troubleshooting.
+- **Estado:** implementado.
+
+### BUG-07 · Contagem de fontes independentes · [P2]
+
+- **Arquivo:** `utils/news-hunter.js`
+- **Risco:** ao acrescentar feeds brasileiros como confirmação, a quantidade original de veículos do Google News era extraída do rótulo de exibição e contada como uma única fonte.
+- **Mudança:** manter os nomes dos veículos em uma lista de origem e calcular a quantidade distinta sem interpretar texto de apresentação.
+- **Estado:** implementado.
+
 ## SEC-01 · TLS & Transport Security
 - Enforce HTTPS for all YouTube API calls
 - Disable insecure transport layers

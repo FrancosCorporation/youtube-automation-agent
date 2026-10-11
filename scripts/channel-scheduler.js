@@ -16,6 +16,9 @@ const path = require('path');
 const { spawn, execFileSync } = require('child_process');
 const { notifyFailure } = require('../utils/alerts');
 const { probeVideoHealth } = require('../utils/ffmpeg');
+const { updateTopicLedger } = require('../utils/topic-ledger');
+const { cleanupDisk } = require('../utils/disk-cleanup');
+const { clipUploadsSucceeded, longUploadsSucceeded, normalizedClips, publicationSucceeded } = require('../utils/publication-status');
 
 const ROOT = path.join(__dirname, '..');
 const VIDEOS_PER_DAY = Math.max(1, Number(process.env.VIDEOS_PER_DAY || 5));
@@ -24,11 +27,16 @@ const RECAP_EVERY_DAYS = Math.max(1, Number(process.env.RECAP_EVERY_DAYS || 7));
 process.env.IMAGES_PER_GROUP = process.env.IMAGES_PER_GROUP || '4';
 const INTERVAL_MS = Math.round((24 * 60 * 60 * 1000) / VIDEOS_PER_DAY);
 const RETRY_MS = 30 * 60 * 1000;
+const configuredDiskCleanupHours = Number(process.env.DISK_CLEANUP_INTERVAL_HOURS || 12);
+const DISK_CLEANUP_INTERVAL_MS = Math.max(1, Math.min(168, Number.isFinite(configuredDiskCleanupHours) ? configuredDiskCleanupHours : 12)) * 60 * 60 * 1000;
+const configuredYouTubeRetryMinutes = Number(process.env.YOUTUBE_RETRY_INTERVAL_MINUTES || 30);
+const YOUTUBE_RETRY_INTERVAL_MS = Math.max(15, Math.min(360, Number.isFinite(configuredYouTubeRetryMinutes) ? configuredYouTubeRetryMinutes : 30)) * 60 * 1000;
 // RÉPLICA POR TEMA: cada instância tem estado próprio (STATE_DIR). O default
 // mantém a instância original (ia) inalterada.
 const STATE_DIR = path.join(ROOT, process.env.STATE_DIR || 'data/state');
 const STATE_PATH = path.join(STATE_DIR, 'scheduler.json');
 const LEDGER_PATH = path.join(STATE_DIR, 'topics.json');
+const QUEUE_PATH = path.join(STATE_DIR, 'publish-queue.json');
 
 const log = msg => console.log(`[${new Date().toISOString()}] ${msg}`);
 
@@ -38,13 +46,31 @@ const THEME = process.env.THEME || 'ia';
 // no dia quando várias réplicas coexistem (conta: total = vídeos/dia × temas;
 // intervalo = 24h / total; cada réplica entra defasada pra preencher os slots).
 const PHASE_MIN = Number(process.env.SCHEDULER_PHASE_MIN || 0);
+let atomicWriteSequence = 0;
 
 async function readState() {
-  try { return JSON.parse(await fsp.readFile(STATE_PATH, 'utf8')); } catch (_e) { return {}; }
+  try {
+    const state = JSON.parse(await fsp.readFile(STATE_PATH, 'utf8'));
+    if (!state || typeof state !== 'object' || Array.isArray(state)) throw new Error('estrutura inválida');
+    return state;
+  } catch (error) {
+    if (error.code === 'ENOENT') return {};
+    throw new Error(`estado do scheduler ilegível; execução cancelada para preservar o calendário: ${error.message}`);
+  }
+}
+async function writeJsonAtomic(filePath, value) {
+  await fsp.mkdir(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.${++atomicWriteSequence}.tmp`;
+  try {
+    await fsp.writeFile(tempPath, JSON.stringify(value, null, 2));
+    await fsp.rename(tempPath, filePath);
+  } catch (error) {
+    await fsp.unlink(tempPath).catch(() => {});
+    throw error;
+  }
 }
 async function writeState(state) {
-  await fsp.mkdir(path.dirname(STATE_PATH), { recursive: true });
-  await fsp.writeFile(STATE_PATH, JSON.stringify(state, null, 2));
+  await writeJsonAtomic(STATE_PATH, state);
 }
 
 function runGenerator(args, logFile) {
@@ -95,17 +121,21 @@ async function ensureInvisibleBrowserDisplay() {
   log(`display virtual ${display} ativo — browsers de upload ficam invisíveis`);
 }
 
-async function readLastLedgerEntry() {
+async function readLedgerEntry(videoPath) {
   try {
     const raw = JSON.parse(await fsp.readFile(LEDGER_PATH, 'utf8'));
-    const entries = raw.entries || [];
-    return entries[entries.length - 1] || null;
-  } catch (_e) { return null; }
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) throw new Error('estrutura de entries inválida');
+    const entries = raw.entries;
+    return [...entries].reverse().find(entry => sameVideoPath(entry.videoPath, videoPath)) || null;
+  } catch (error) {
+    if (error.code !== 'ENOENT') log(`⚠️ ledger de pautas ilegível; upload não iniciado: ${error.message}`);
+    return null;
+  }
 }
 
 async function uploadToYouTube(videoPath, overrides = {}) {
   try {
-    const entry = await readLastLedgerEntry();
+    const entry = await readLedgerEntry(videoPath);
     if (!entry || !entry.title) return null;
     const { uploadVideo } = require('./upload-to-youtube');
     const seo = entry.seo || {};
@@ -123,12 +153,18 @@ async function uploadToYouTube(videoPath, overrides = {}) {
       description,
       tags: ['inteligência artificial', 'notícias', 'IA', 'tecnologia'],
       privacyStatus: process.env.YT_PRIVACY || 'public',
-      ...(entry.thumbnailPath ? { thumbnailPath: path.join(ROOT, entry.thumbnailPath) } : {})
+      ...(typeof entry.thumbnailPath === 'string' && entry.thumbnailPath
+        ? { thumbnailPath: path.isAbsolute(entry.thumbnailPath) ? entry.thumbnailPath : path.resolve(ROOT, entry.thumbnailPath) }
+        : {})
     });
     log(`⬆️ publicado no YouTube: ${result.url}`);
     return result.url;
   } catch (error) {
     log(`⚠️ upload YouTube falhou: ${error.message}`);
+    if (/exceeded the number of videos/i.test(String(error.message))) {
+      await flagYtQuota().catch(() => {});
+      log('⏸️ cota do YouTube atingida durante retry — nova tentativa em ~20h');
+    }
     await notifyFailure('Upload YouTube falhou', error.message);
     return null;
   }
@@ -144,8 +180,7 @@ async function ytQuotaBlocked() {
   } catch (_e) { return false; }
 }
 async function flagYtQuota() {
-  await fsp.mkdir(path.dirname(YT_QUOTA_PATH), { recursive: true });
-  await fsp.writeFile(YT_QUOTA_PATH, JSON.stringify({ at: new Date().toISOString() }));
+  await writeJsonAtomic(YT_QUOTA_PATH, { at: new Date().toISOString() });
 }
 
 // Marca no ledger que o vídeo já subiu no YouTube (evita re-upload).
@@ -153,28 +188,84 @@ function sameVideoPath(a, b) {
   return Boolean(a && b) && path.resolve(ROOT, a) === path.resolve(ROOT, b);
 }
 
+function managedMediaPath(candidate) {
+  if (!candidate || typeof candidate !== 'string') return null;
+  const absolute = path.isAbsolute(candidate) ? path.resolve(candidate) : path.resolve(ROOT, candidate);
+  const mediaRoot = path.resolve(ROOT, 'data', 'videos');
+  return absolute.startsWith(`${mediaRoot}${path.sep}`) ? absolute : null;
+}
+
+async function safeManagedMediaPath(candidate, extensions = ['.mp4']) {
+  const target = managedMediaPath(candidate);
+  if (!target) {
+    if (candidate) log(`⚠️ limpeza ignorou caminho fora de data/videos: ${candidate}`);
+    return null;
+  }
+  if (!extensions.includes(path.extname(target).toLowerCase())) return null;
+  try {
+    const projectRoot = await fsp.realpath(ROOT);
+    const mediaRoot = path.resolve(ROOT, 'data', 'videos');
+    const realMediaRoot = await fsp.realpath(mediaRoot);
+    const expectedMediaRoot = path.resolve(projectRoot, path.relative(path.resolve(ROOT), mediaRoot));
+    if (realMediaRoot !== expectedMediaRoot) return null;
+    const expectedTarget = path.resolve(realMediaRoot, path.relative(mediaRoot, target));
+    if (await fsp.realpath(target) !== expectedTarget) return null;
+    if (!(await fsp.lstat(target)).isFile()) return null;
+    return target;
+  } catch (_error) { return null; }
+}
+
+async function unlinkManagedMedia(candidate, extensions = ['.mp4']) {
+  const target = await safeManagedMediaPath(candidate, extensions);
+  if (!target) return false;
+  try {
+    await fsp.unlink(target);
+    return true;
+  } catch (_error) { return false; }
+}
+
+async function cleanupPublishedMedia(videoPath, entry, results, options = {}) {
+  const summary = { master: false, thumbnail: entry.thumbnailPath ? false : null, clipsRemoved: 0, clipsRetained: 0 };
+  const ytConfirmed = publicationSucceeded(results?.long?.youtube || entry.ytUrl);
+  if (longUploadsSucceeded(entry, results, { root: ROOT })) {
+    summary.master = await unlinkManagedMedia(videoPath, ['.mp4']);
+    if (ytConfirmed && entry.thumbnailPath) {
+      summary.thumbnail = await unlinkManagedMedia(entry.thumbnailPath, ['.jpg', '.jpeg', '.png', '.webp']);
+    }
+  }
+
+  for (const [index, clip] of normalizedClips(entry).entries()) {
+    if (clipUploadsSucceeded(entry, results, index, { root: ROOT, maxShorts: options.maxShorts })) {
+      if (await unlinkManagedMedia(clip.path, ['.mp4'])) summary.clipsRemoved++;
+      else summary.clipsRetained++;
+    }
+    else summary.clipsRetained++;
+  }
+  return summary;
+}
+
 async function markYouTubeDone(videoPath, url) {
   try {
-    const ledgerPath = LEDGER_PATH;
-    const raw = JSON.parse(await fsp.readFile(ledgerPath, 'utf8'));
-    for (const e of (raw.entries || []).reverse()) {
-      if (sameVideoPath(e.videoPath, videoPath)) { e.ytUrl = url; break; }
-    }
-    await fsp.writeFile(ledgerPath, JSON.stringify(raw, null, 2));
-  } catch (_e) { /* ledger ilegível — segue */ }
+    await updateTopicLedger(LEDGER_PATH, raw => {
+      for (const e of (raw.entries || []).reverse()) {
+        if (sameVideoPath(e.videoPath, videoPath)) { e.ytUrl = url; break; }
+      }
+      return raw;
+    });
+  } catch (error) { log(`⚠️ não foi possível registrar sucesso do YouTube no ledger: ${error.message}`); }
 }
 
 // Guarda os resultados da publicação no ledger (pra saber depois se algum
 // corte deu ERRO, sem re-analisar — decide a limpeza do pendente).
 async function markResults(videoPath, results) {
   try {
-    const ledgerPath = LEDGER_PATH;
-    const raw = JSON.parse(await fsp.readFile(ledgerPath, 'utf8'));
-    for (const e of (raw.entries || []).reverse()) {
-      if (sameVideoPath(e.videoPath, videoPath)) { e.results = results; break; }
-    }
-    await fsp.writeFile(ledgerPath, JSON.stringify(raw, null, 2));
-  } catch (_e) { /* ledger ilegível — segue */ }
+    await updateTopicLedger(LEDGER_PATH, raw => {
+      for (const e of (raw.entries || []).reverse()) {
+        if (sameVideoPath(e.videoPath, videoPath)) { e.results = results; break; }
+      }
+      return raw;
+    });
+  } catch (error) { log(`⚠️ não foi possível salvar resultados de publicação no ledger: ${error.message}`); }
 }
 
 // Fila de pendências: vídeo que não subiu por cota (publish rodou "sem YT")
@@ -186,40 +277,73 @@ async function retryPendingYouTube() {
     const raw = JSON.parse(await fsp.readFile(LEDGER_PATH, 'utf8'));
     // Escaneia TODAS as entradas (o ledger não é estritamente cronológico) e
     // pega a pendência mais recente cujo arquivo ainda existe no disco.
-    const pendentes = (raw.entries || [])
-      .filter(e => !e.ytUrl && e.videoPath && fs.existsSync(e.videoPath))
+    const protectedPaths = new Set([
+      ...queue.map(item => item && item.outPath).filter(Boolean),
+      ...(inFlight && inFlight.outPath ? [inFlight.outPath] : [])
+    ].map(item => path.resolve(ROOT, item)));
+    const maxShorts = Number(process.env.MAX_SHORTS || 1);
+    const pendingYoutubeWork = entry => {
+      const results = entry.results || {};
+      const longDone = publicationSucceeded(entry.ytUrl || results.long?.youtube);
+      const clips = normalizedClips(entry);
+      const parsedMaxShorts = Number(maxShorts);
+      const shortsCount = Math.min(clips.length, Math.max(0, Number.isFinite(parsedMaxShorts) ? Math.floor(parsedMaxShorts) : 1));
+      const pendingShort = clips.slice(0, shortsCount).some(clip => {
+        const result = Object.entries(results.clips || {})
+          .find(([resultPath]) => sameVideoPath(resultPath, clip.path))?.[1];
+        return !publicationSucceeded(result?.shorts) && !/^desativado$/i.test(String(result?.shorts || '').trim());
+      });
+      return !longDone || pendingShort;
+    };
+    const candidatos = (raw.entries || [])
+      .filter(e => e && e.publicationEligible !== false && typeof e.videoPath === 'string' && e.videoPath
+        && pendingYoutubeWork(e) && !protectedPaths.has(path.resolve(ROOT, e.videoPath)))
       .sort((a, b) => new Date(b.generatedAt || 0) - new Date(a.generatedAt || 0));
-    for (const e of pendentes) {
-      log(`🔁 vídeo pendente de YouTube (cota anterior): ${path.basename(e.videoPath)}`);
-      const url = await uploadToYouTube(e.videoPath);
-      if (url) {
-        await markYouTubeDone(e.videoPath, url);
-        // Agora TUDO desse vídeo publicou (cortes já tinham saído nas redes).
-        // Limpeza: longo + capa sempre (master seguro no YouTube); cortes só
-        // se nenhum deu ERRO na publicação original (regra all_ok do dono).
-        const clipErro = Object.values((e.results || {}).clips || {})
-          .some(r => Object.values(r).some(v => /^ERRO:/i.test(String(v))));
-        await fsp.unlink(e.videoPath).catch(() => {});
-        if (e.thumbnailPath) await fsp.unlink(path.join(ROOT, e.thumbnailPath)).catch(() => {});
-        if (!clipErro) {
-          for (const c of (e.clips || [])) await fsp.unlink(c.path || c).catch(() => {});
-          log('🧹 pendência no YouTube + arquivos locais apagados (tudo sem erro)');
-        } else {
-          log('🧹 pendência no YouTube — longo/capa apagados; cortes com ERRO ficam no disco');
-        }
-        break; // 1 por ciclo: poupa cota
-      }
+    const pendentes = [];
+    for (const entry of candidatos) {
+      if (await safeManagedMediaPath(entry.videoPath, ['.mp4'])) pendentes.push(entry);
     }
-  } catch (_e) { /* ledger ilegível — segue */ }
+    for (const e of pendentes) {
+      const videoPath = path.isAbsolute(e.videoPath) ? path.resolve(e.videoPath) : path.resolve(ROOT, e.videoPath);
+      let updatedResults = { ...(e.results || {}), long: { ...(e.results?.long || {}) }, clips: { ...(e.results?.clips || {}) } };
+      if (!publicationSucceeded(e.ytUrl || updatedResults.long.youtube)) {
+        log(`🔁 vídeo longo pendente de YouTube: ${path.basename(e.videoPath)}`);
+        const url = await uploadToYouTube(videoPath);
+        if (!url) break;
+        updatedResults.long.youtube = url;
+        await markYouTubeDone(e.videoPath, url);
+      }
+      const { retryPendingYouTubeShorts } = require('./upload-to-socials');
+      updatedResults = await retryPendingYouTubeShorts({ entry: e, results: updatedResults, maxShorts });
+      for (const clipResults of Object.values(updatedResults.clips || {})) {
+        if (/exceeded the number of videos/i.test(String(clipResults?.shorts || ''))) {
+          await flagYtQuota();
+          log('⏸️ cota do YouTube atingida durante retry dos Shorts — nova tentativa em ~20h');
+          break;
+        }
+      }
+      if (publicationSucceeded(e.ytUrl || updatedResults.long.youtube)) {
+        await markYouTubeDone(e.videoPath, e.ytUrl || updatedResults.long.youtube);
+      }
+      await markResults(e.videoPath, updatedResults);
+      if (process.env.DELETE_AFTER_UPLOAD === '1') {
+        const summary = await cleanupPublishedMedia(e.videoPath, e, updatedResults, { maxShorts });
+        const thumbnailState = summary.thumbnail == null ? 'ausente' : summary.thumbnail ? 'removida' : 'preservada';
+        log(`🧹 retry concluído: master ${summary.master ? 'removido' : 'preservado'}, thumbnail ${thumbnailState}, ${summary.clipsRemoved} corte(s) removido(s), ${summary.clipsRetained} preservado(s)`);
+      }
+      break; // um vídeo por ciclo para controlar a cota
+    }
+  } catch (error) { log(`⚠️ retry do YouTube não conseguiu ler o ledger: ${error.message}`); }
 }
 
 async function publishEverywhere(outPath) {
   try {
-    const entry = await readLastLedgerEntry();
+    const entry = await readLedgerEntry(outPath);
     if (!entry || !entry.title) { log('⚠️ upload: ledger sem entrada'); return; }
+    const absoluteOutPath = path.isAbsolute(outPath) ? path.resolve(outPath) : path.resolve(ROOT, outPath);
 
     // QA de sanidade: nunca publicar um mp4 corrompido/sem áudio/duração absurda.
-    const health = await probeVideoHealth(path.join(ROOT, outPath));
+    const health = await probeVideoHealth(absoluteOutPath);
     if (!health.ok) {
       log(`🚫 vídeo falhou no QA pré-publicação (${health.issues.join('; ')}) — publicação ABORTADA`);
       await notifyFailure('Vídeo reprovado no QA pré-publicação', `${outPath}\n${health.issues.join('\n')}`);
@@ -228,13 +352,17 @@ async function publishEverywhere(outPath) {
     log(`✅ QA ok (${health.duration ? health.duration.toFixed(1) + 's' : '?'}, ${(health.sizeBytes / 1e6).toFixed(1)}MB)`);
 
     const { uploadToAll } = require('./upload-to-socials');
-    const clips = (entry.clips || []).map(c => (typeof c === 'string' ? { path: c, title: entry.title } : c));
+    const clips = normalizedClips(entry).map(item => {
+      const clip = { ...item, title: item.title || entry.title };
+      if (clip.path) clip.path = path.isAbsolute(clip.path) ? path.resolve(clip.path) : path.resolve(ROOT, clip.path);
+      return clip;
+    });
     const quotaBlocked = await ytQuotaBlocked();
     if (quotaBlocked) log('⏸️ YouTube pausado (cota diária) — segue só com TikTok/Kwai/IG/X');
     const maxShorts = Number(process.env.MAX_SHORTS || 1); // 1 Short por vídeo: poupa cota
     log(`⬆️ publicando: ${quotaBlocked ? '(sem YT) ' : 'YouTube longo + Shorts, '}${clips.length} cortes (TikTok/Kwai/IG/X)`);
     const results = await uploadToAll({
-      videoPath: outPath,
+      videoPath: absoluteOutPath,
       clips,
       title: entry.seo?.youtubeTitle || entry.title,
       hashtags: entry.seo?.hashtags || '#ia #inteligenciaartificial #tecnologia',
@@ -242,9 +370,11 @@ async function publishEverywhere(outPath) {
       skipYouTube: quotaBlocked,
       maxShorts,
       ...(entry.seo ? { seo: entry.seo } : {}),
-      ...(entry.thumbnailPath ? { thumbnailPath: path.join(ROOT, entry.thumbnailPath) } : {})
+      ...(typeof entry.thumbnailPath === 'string' && entry.thumbnailPath
+        ? { thumbnailPath: path.isAbsolute(entry.thumbnailPath) ? entry.thumbnailPath : path.resolve(ROOT, entry.thumbnailPath) }
+        : {})
     });
-    const longOk = /^https/.test(String(results.long.youtube));
+    const longOk = publicationSucceeded(results.long.youtube);
     if (longOk) await markYouTubeDone(outPath, results.long.youtube);
     if (/exceeded the number of videos/i.test(String(results.long.youtube))) {
       await flagYtQuota();
@@ -254,20 +384,13 @@ async function publishEverywhere(outPath) {
       log(`   corte ${path.basename(clip)}: ${JSON.stringify(r)}`);
     }
 
-    // Limpeza do disco: SÓ apaga quando TUDO publicou sem erro (longo no
-    // YouTube + nenhum ERRO em nenhuma plataforma dos cortes). Desativado/
-    // pulado/não-logado não bloqueia. CLEANUP_POLICY=long_ok relaxa (apaga
-    // quando o longo está no YouTube, mesmo com falhas nas redes).
-    const clipErro = Object.values(results.clips || {}).some(r => Object.values(r).some(v => /^ERRO:/i.test(String(v))));
-    const cleanup = process.env.CLEANUP_POLICY === 'long_ok' ? longOk : (longOk && !clipErro);
-    // Persiste o retorno por plataforma antes da limpeza, inclusive quando
-    // tudo deu certo e os arquivos de mídia serão apagados.
+    // Persiste o retorno por plataforma antes de decidir quais cópias locais
+    // ainda são necessárias para recuperação.
     await markResults(outPath, results).catch(() => {});
-    if (process.env.DELETE_AFTER_UPLOAD === '1' && cleanup) {
-      await fsp.unlink(path.join(ROOT, outPath)).catch(() => {});
-      for (const c of clips) await fsp.unlink(c.path).catch(() => {});
-      if (entry.thumbnailPath) await fsp.unlink(path.join(ROOT, entry.thumbnailPath)).catch(() => {});
-      log('🧹 arquivos locais apagados (tudo publicado sem erro)');
+    if (process.env.DELETE_AFTER_UPLOAD === '1') {
+      const summary = await cleanupPublishedMedia(outPath, entry, results, { maxShorts });
+      const thumbnailState = summary.thumbnail == null ? 'ausente' : summary.thumbnail ? 'removida' : 'preservada';
+      log(`🧹 limpeza pós-publicação: master ${summary.master ? 'removido' : 'preservado'}, thumbnail ${thumbnailState}, ${summary.clipsRemoved} corte(s) removido(s), ${summary.clipsRetained} preservado(s)`);
     }
   } catch (error) {
     log(`⚠️ publicação falhou: ${error.message}`);
@@ -303,6 +426,80 @@ async function generate({ recap, outPath, theme }) {
 // 1 vídeo por vez e depois para — 6min de máquina ociosa (o máximo possível).
 const MAX_QUEUE = Number(process.env.MAX_QUEUE || 1);
 let queue = [];
+let inFlight = null;
+let queueWritePromise = Promise.resolve();
+let diskCleanupPromise = null;
+let generationInProgress = false;
+let youtubeRetryInProgress = false;
+
+async function runScheduledDiskCleanup(reason) {
+  if (youtubeRetryInProgress) {
+    log(`[disco/${reason}] limpeza adiada enquanto o retry do YouTube está ativo`);
+    return null;
+  }
+  if (diskCleanupPromise) return diskCleanupPromise;
+  const protectedVideoPaths = [
+    ...queue.map(item => item && item.outPath).filter(Boolean),
+    ...(inFlight && inFlight.outPath ? [inFlight.outPath] : [])
+  ];
+  diskCleanupPromise = cleanupDisk({
+    root: ROOT,
+    stateDir: STATE_DIR,
+    protectedVideoPaths,
+    deleteUploadedMedia: process.env.DELETE_AFTER_UPLOAD === '1',
+    apply: true,
+    log: message => log(`[disco/${reason}] ${message}`)
+  });
+  try {
+    return await diskCleanupPromise;
+  } finally {
+    diskCleanupPromise = null;
+  }
+}
+
+function persistQueue() {
+  // Serializa snapshots para que producer e consumer não sobrescrevam a fila
+  // com estados fora de ordem quando os dois acordam quase ao mesmo tempo.
+  const snapshot = {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    pending: queue.map(item => ({ ...item })),
+    inFlight: inFlight ? { ...inFlight } : null
+  };
+  queueWritePromise = queueWritePromise.catch(() => {}).then(() => writeJsonAtomic(QUEUE_PATH, snapshot));
+  return queueWritePromise;
+}
+
+async function restoreQueue() {
+  let saved;
+  try { saved = JSON.parse(await fsp.readFile(QUEUE_PATH, 'utf8')); }
+  catch (error) {
+    if (error.code === 'ENOENT') return true;
+    log(`⚠️ fila persistida ilegível; execução cancelada para preservar os caminhos pendentes: ${error.message}`);
+    return false;
+  }
+  if (!saved || typeof saved !== 'object' || !Array.isArray(saved.pending)) {
+    log('⚠️ fila persistida tem formato inválido; execução cancelada para preservar os dados');
+    return false;
+  }
+  const exists = async item => Boolean(item && typeof item.outPath === 'string'
+    && await safeManagedMediaPath(item.outPath, ['.mp4']));
+  const pending = [];
+  for (const item of Array.isArray(saved.pending) ? saved.pending : []) {
+    if (await exists(item)) pending.push(item);
+    else if (item?.outPath) log(`⚠️ fila persistida ignorada: arquivo ausente (${item.outPath})`);
+  }
+  if (await exists(saved.inFlight)) {
+    // Publicação interrompida pode ser repetida. Mantemos o vídeo para não
+    // perdê-lo; upload por plataforma ainda não tem idempotência distribuída.
+    pending.unshift({ ...saved.inFlight, recoveredAfterInterruptedPublish: true });
+    log(`⚠️ retomando vídeo cuja publicação foi interrompida: ${path.basename(saved.inFlight.outPath)}; confira possíveis duplicatas nas redes`);
+  }
+  queue = pending;
+  await persistQueue();
+  if (queue.length) log(`📦 ${queue.length} vídeo(s) recuperado(s) da fila persistida`);
+  return true;
+}
 
 /**
  * JUST-IN-TIME: calcula quando começar a geração para o vídeo ficar
@@ -327,8 +524,7 @@ async function readGenHistory() {
 }
 
 async function writeGenHistory(history) {
-  await fsp.mkdir(path.dirname(GEN_HISTORY_FILE), { recursive: true });
-  await fsp.writeFile(GEN_HISTORY_FILE, JSON.stringify(history, null, 2));
+  await writeJsonAtomic(GEN_HISTORY_FILE, history);
 }
 
 // Estimativa: média das últimas gerações (mín. 5min, máx. 60min)
@@ -365,6 +561,10 @@ async function producer() {
       await sleep(30000);
       continue;
     }
+    if (youtubeRetryInProgress) {
+      await sleep(30000);
+      continue;
+    }
 
     // Calcula quanto tempo falta pro próximo slot de postagem
     const now = Date.now();
@@ -388,6 +588,11 @@ async function producer() {
       continue;
     }
 
+    if (youtubeRetryInProgress) {
+      await sleep(30000);
+      continue;
+    }
+
     // Pega o próximo tema no rodízio (round-robin entre os ativos)
     const currentTheme = THEMES[themeCursor % THEMES.length];
     themeCursor++;
@@ -395,13 +600,22 @@ async function producer() {
     // Chegou na hora: gera
     log(`▶ [just-in-time] gerando vídeo do tema: ${currentTheme.name} (${(genMs / 60000).toFixed(1)}min estimados)`);
     const t0 = Date.now();
-    const video = await generate({ recap: false, theme: currentTheme.id });
+    generationInProgress = true;
+    let video;
+    try { video = await generate({ recap: false, theme: currentTheme.id }); }
+    finally { generationInProgress = false; }
     const durationMs = Date.now() - t0;
 
     if (video.ok) {
       // Registra o tempo real pra calibrar as próximas estimativas
       await recordGenerationDuration(durationMs);
-      queue.push(video);
+      queue.push({
+        ...video,
+        theme: currentTheme.id,
+        generatedAt: new Date().toISOString(),
+        slotAt: new Date(nextSlot).toISOString()
+      });
+      await persistQueue();
       log(`📦 pronto em ${(durationMs / 60000).toFixed(1)}min — fila: ${queue.length}/${MAX_QUEUE} vídeo(s) [tema: ${currentTheme.id}]`);
     } else {
       log('⚠️ producer: geração falhou, tentando de novo em 5 min');
@@ -411,35 +625,59 @@ async function producer() {
 }
 
 /**
- * CONSUMER: postar no slot exato da cadência. O vídeo já vem pronto
- * do producer (zero atraso) — a única coisa que faz é postar e deletar.
+ * CONSUMER: posta no slot; se a geração passar do horário, publica assim que
+ * ficar pronta em vez de perder mais uma janela inteira da cadência.
  */
 async function consumer() {
+  const queuedSlot = () => {
+    const timestamp = queue[0]?.slotAt ? new Date(queue[0].slotAt).getTime() : NaN;
+    return Number.isFinite(timestamp) ? timestamp : null;
+  };
+  let dueSlot = queue.length ? (queuedSlot() ?? Date.now()) : null;
+  let reportedEmptySlot = false;
   for (;;) {
-    // Espera até o próximo slot de postagem
-    const state = await readState();
-    const startedAt = state.startedAt ? new Date(state.startedAt).getTime() : Date.now();
-    const now = Date.now();
-    const elapsed = now - startedAt;
-    const intervalsPassed = Math.floor(elapsed / INTERVAL_MS);
-    const nextSlot = startedAt + (intervalsPassed + 1) * INTERVAL_MS;
-    const timeToSlot = nextSlot - now;
-
-    if (timeToSlot > 0) {
-      log(`⏰ consumer: aguardando ${(timeToSlot / 60000).toFixed(1)}min até o próximo slot`);
-      await sleep(timeToSlot);
+    // Mantém o slot devido enquanto espera a geração atrasada. Sem isso, uma
+    // fila vazia fazia o consumer avançar para a próxima janela de 24 min.
+    if (dueSlot == null) {
+      dueSlot = queuedSlot();
+      if (dueSlot == null) {
+        const state = await readState();
+        const startedAt = state.startedAt ? new Date(state.startedAt).getTime() : Date.now();
+        const intervalsPassed = Math.floor((Date.now() - startedAt) / INTERVAL_MS);
+        dueSlot = startedAt + (intervalsPassed + 1) * INTERVAL_MS;
+      }
+      const timeToSlot = dueSlot - Date.now();
+      if (timeToSlot > 0) log(`⏰ consumer: aguardando ${(timeToSlot / 60000).toFixed(1)}min até o próximo slot`);
     }
 
-    // Posta o vídeo da fila (pronto)
-    const video = queue.shift();
-    if (!video) {
-      log('⚠️ consumer: fila vazia no slot! (producer atrasado)');
+    const timeToSlot = dueSlot - Date.now();
+    if (timeToSlot > 0) {
+      await sleep(Math.min(timeToSlot, 30000));
       continue;
     }
 
-    log(`🎬 [slot] postando: ${path.basename(video.outPath)}`);
-    if (process.env.DISABLE_YOUTUBE_UPLOAD !== '1') {
-      await publishEverywhere(video.outPath);
+    if (!queue.length) {
+      if (!reportedEmptySlot) log('⚠️ consumer: slot vencido sem vídeo; vai publicar assim que a geração terminar');
+      reportedEmptySlot = true;
+      await sleep(5000);
+      continue;
+    }
+
+    if (youtubeRetryInProgress) {
+      await sleep(5000);
+      continue;
+    }
+
+    const video = queue.shift();
+    inFlight = video;
+    await persistQueue();
+
+    log(`${reportedEmptySlot ? '🎬 [atrasado, publicando assim que ficou pronto]' : '🎬 [slot] postando'}: ${path.basename(video.outPath)}`);
+    try {
+      if (process.env.DISABLE_YOUTUBE_UPLOAD !== '1') await publishEverywhere(video.outPath);
+    } finally {
+      inFlight = null;
+      await persistQueue();
     }
 
     // Atualiza o estado (runs + lastRunAt)
@@ -447,6 +685,23 @@ async function consumer() {
     st.runs = (st.runs || 0) + 1;
     st.lastRunAt = new Date().toISOString();
     await writeState(st);
+    dueSlot = null;
+    reportedEmptySlot = false;
+  }
+}
+
+async function youtubeRetryWorker() {
+  for (;;) {
+    await sleep(YOUTUBE_RETRY_INTERVAL_MS);
+    if (process.env.DISABLE_YOUTUBE_UPLOAD === '1') continue;
+    if (generationInProgress || queue.length || inFlight || youtubeRetryInProgress) continue;
+    if (await ytQuotaBlocked()) continue;
+    if (generationInProgress || queue.length || inFlight || youtubeRetryInProgress) continue;
+
+    youtubeRetryInProgress = true;
+    try { await retryPendingYouTube(); }
+    catch (error) { log(`⚠️ retry do YouTube ignorado: ${error.message}`); }
+    finally { youtubeRetryInProgress = false; }
   }
 }
 
@@ -454,15 +709,26 @@ async function main() {
   log(`Channel Scheduler iniciado — tema: ${THEME} · ${VIDEOS_PER_DAY} vídeos/dia · resumo a cada ${RECAP_EVERY_DAYS} dias`);
   log(`intervalo entre vídeos: ${(INTERVAL_MS / 3600000).toFixed(2)}h${PHASE_MIN ? ` · fase +${PHASE_MIN}min (espalhamento uniforme entre réplicas)` : ''}`);
 
-  // Nunca herda o display gráfico do usuário. TikTok/X mantêm o modo headed
-  // que já funciona, isolados no Xvfb; as demais automações seguem headless.
-  await ensureInvisibleBrowserDisplay();
-
   let state = await readState();
   if (!state.startedAt) {
     state = { startedAt: new Date().toISOString(), lastRecapAt: null, runs: 0, recaps: 0, lastRunAt: null };
     await writeState(state);
   }
+
+  if (!await restoreQueue()) throw new Error('revise o arquivo data/state/publish-queue.json antes de retomar');
+
+  // Nunca herda o display gráfico do usuário. TikTok/X mantêm o modo headed
+  // que já funciona, isolados no Xvfb; as demais automações seguem headless.
+  await ensureInvisibleBrowserDisplay();
+
+  // Retenção conservadora em background: preserva o queue e ignora caches
+  // de navegador/gerador que estejam em uso. A CLI correspondente é dry-run.
+  try { await runScheduledDiskCleanup('startup'); }
+  catch (error) { log(`⚠️ limpeza do disco ignorada: ${error.message}`); }
+  const diskCleanupTimer = setInterval(() => {
+    runScheduledDiskCleanup('periódica').catch(error => log(`⚠️ limpeza do disco ignorada: ${error.message}`));
+  }, DISK_CLEANUP_INTERVAL_MS);
+  diskCleanupTimer.unref();
 
   // Fase da réplica: deslocamento fixo no slot (espalha N réplicas no dia).
   if (PHASE_MIN > 0 && !state.phaseApplied) {
@@ -477,7 +743,8 @@ async function main() {
   log('🚀 Modo fábrica just-in-time: producer (gera só no tempo exato) + consumer (posta no slot)');
   await Promise.all([
     producer(),
-    consumer()
+    consumer(),
+    youtubeRetryWorker()
   ]);
 }
 

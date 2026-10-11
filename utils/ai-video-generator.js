@@ -599,13 +599,9 @@ class AIVideoGenerator {
 
     const settings = await this.resolveSlideshowSettings();
     if (settings.style === 'animated') {
-      try {
-        const { AnimatedSceneRenderer } = require('./animated-scene-renderer');
-        const renderer = new AnimatedSceneRenderer({ logger: this.logger });
-        return await renderer.render({ script, audioPath, outputPath });
-      } catch (error) {
-        this.logger.error(`Animated scene render failed; falling back to dynamic: ${error.message}`);
-      }
+      const { HyperFramesVideoRenderer } = require('./hyperframes-video-renderer');
+      const renderer = new HyperFramesVideoRenderer({ logger: this.logger });
+      return await renderer.render({ script, audioPath, outputPath });
     }
     if (settings.style === 'dynamic') {
       try {

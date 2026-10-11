@@ -12,7 +12,7 @@ Migração para o estilo **UI/Product Motion Graphics** (Linear/Vercel dark prem
 
 - Referências analisadas: ViktorKav (`F-8KHgCK6dc`, `mYGCDyuulMM`), Gustavo Honorato (`AATRjnEM-1Q`).
 - Especificação consolidada em `docs/especificacao-estilo-animado.md` (445 linhas) e `docs/padroes-visuais-referencias.md`.
-- Engine funcionando: `utils/animated-scene-renderer.js` (HTML/CSS/JS + Playwright, captura determinística via `window.renderAt(ms)`) + `utils/clip-maker.js` (cortes 9:16) + FFmpeg para montagem.
+- Engine de produção: HyperFrames em `utils/hyperframes-video-renderer.js`, com timeline determinística, kit de cenas, áudio mixado e robô Three.js aprovado em `experiments/hyperframes-pulso-pilot/`.
 - Componentes no catálogo: bento-card, demo-header, progress-bar, caption animada, highlight sweep, kinetic-number, step-chart, node-graph, segmented-control, waveform, PiP, glitch transition, lower-third.
 - Pendente de polimento (backlog antigo, mantido): `compare-table`, `checklist` animado, cards com rotação 3D leve, HUD de timestamp.
 
@@ -25,8 +25,8 @@ Esta base é sólida — o foco agora é tudo que falta **em volta** dela para p
 Hoje o áudio é só **narração (edge-tts) + legenda**. Confirmado em código: `utils/ffmpeg.js` é só wrapper fino (resolver binário, rodar comando, ler duração via ffprobe) — zero filtro de áudio, zero `loudnorm`/`amix`/`dynaudnorm` em qualquer lugar do repo. Zero música de fundo, zero efeitos sonoros, zero mixagem, zero normalização. Isso é a diferença mais perceptível entre "vídeo de IA" e "produção profissional" — o ouvido nota antes do olho.
 
 - [x] **Trilha de fundo**: ✅ implementado — `utils/audio-mix.js` com banco de trilhas por mood em `data/assets/music/{epic,curious,tense,light}/` (README lá explica onde baixar), seleção determinística por seed, mood derivado do texto. **Falta só: baixar trilhas livres e jogar nas pastas** (o vídeo sai só com narração masterizada até lá — não quebra nada).
-- [x] **Mixagem automática**: ✅ implementado — ducking real via `sidechaincompress` (trilha abaixa quando a narração fala) + loop da trilha, integrado ao mux final do `animated-scene-renderer.js` (vale para longo E cortes verticais).
-- [ ] **SFX pontuais**: whoosh em transições de cena, "tick" em contadores/progress-bar, "pop" em cards que entram — biblioteca pequena de 10-15 sons livres, acionados pelos mesmos triggers visuais que já existem no `animated-scene-renderer.js`.
+- [x] **Mixagem automática**: ✅ implementado — ducking real via `sidechaincompress` (trilha abaixa quando a narração fala) + loop da trilha, integrado ao áudio usado pelo renderer HyperFrames (vídeo longo e cortes verticais).
+- [ ] **SFX pontuais**: whoosh em transições de cena, "tick" em contadores/progress-bar, "pop" em cards que entram — biblioteca pequena de 10-15 sons livres, acionados pelos mesmos tempos da timeline HyperFrames e dos componentes em `assets/scenes/kit.js`.
 - [x] **Masterização final**: ✅ implementado — `loudnorm` (-14 LUFS, YouTube) aplicado a todo áudio final, consistência de volume entre todos os vídeos.
 - [ ] **Abertura/encerramento de marca** (bumper): 2-3s de vinheta com logo "Pulso IA" animado + stinger sonoro, igual toda produtora/canal profissional tem.
 
@@ -35,7 +35,7 @@ Hoje o áudio é só **narração (edge-tts) + legenda**. Confirmado em código:
 - [ ] **Guia de marca único**: hoje a paleta/tipografia está só no doc de especificação; formalizar como tokens de design (`assets/scenes/tokens.css` ou JSON) para garantir que todo canal/tema futuro herde a mesma "linguagem de estúdio", com variação controlada de accent color por tema.
 - [x] **Conectar thumbnail ao sistema visual real** — ✅ implementado: `renderThumbnail()` em `generate-animated-video.js` gera a capa 1280x720 com o MESMO kit visual (bento + watermark, paleta dark premium, título grande centralizado), e `upload-to-youtube.js` aplica via `thumbnails.set` (falha de thumbnail não perde o upload). Thumbnail vai no ledger (`entry.thumbnailPath`) e é apagada na limpeza pós-upload.
 - [ ] **Fechar os componentes pendentes do backlog visual**: `compare-table`, `checklist` animado, cards com leve rotação 3D, HUD de timestamp — hoje listados como "evolução futura" em `docs/padroes-visuais-referencias.md`.
-- [ ] **Correção de ritmo de corte**: validar que a regra "nunca 2 cenas seguidas com mesmo layout" (já especificada) está realmente sendo aplicada no renderer, não só documentada.
+- [x] **Correção de ritmo de corte**: cenas consecutivas alternam entre `hero` e `split` quando há imagem; layouts fixos de cortes verticais continuam respeitando `forceLayout`.
 - [ ] **Grading de cor consistente** (LUT ou filtro ffmpeg) aplicado a todas as imagens/renders para unificar temperatura de cor entre fontes diferentes (Gemini web, prints reais, gráficos gerados) — hoje a consistência depende só do *prompt* de geração de imagem (`"dark premium tech aesthetic..."`), não de pós-processamento; o único filtro de cor no repo é um `eq=brightness=-0.12` aplicado só ao fundo blurado dos Shorts (`utils/clip-maker.js`), nada no vídeo longo.
 
 ## 3. Roteiro e narrativa — virar "roteirista", não só "resumidor"
@@ -53,7 +53,7 @@ Pontos já identificados em exploração anterior do projeto:
 - [ ] Resolver login/branding **TikTok** (captcha bloqueando a conta reaproveitada) e **Kwai** (login manual pendente no emulador Android).
 - [ ] Confirmar/estabilizar fluxo de upload **Instagram** (mapeado mas não confirmado 100% estável).
 - [ ] Ativar **Telegram** (login pendente).
-- [ ] Rever a lógica de limpeza automática (`DELETE_AFTER_UPLOAD`) para não depender de 100% das plataformas publicarem sem erro — hoje trava em cascata por causa do Kwai/TikTok.
+- [x] Rever a lógica de limpeza automática (`DELETE_AFTER_UPLOAD`): master e thumbnail dependem da confirmação do YouTube e dos destinos longos ativos; cada corte é limpo segundo seus próprios resultados. Falhas preservam apenas os artefatos necessários, sem bloquear o master e os outros cortes aprovados. Shorts pulados pela cota entram no retry do YouTube.
 
 ## 5. Dados e inteligência — virar "estúdio com departamento de análise"
 
@@ -66,7 +66,7 @@ Pontos já identificados em exploração anterior do projeto:
 
 - [x] **Controle de qualidade automatizado pré-publicação**: ✅ implementado — `probeVideoHealth()` em `utils/ffmpeg.js`: valida duração (min 15s / max 30min), presença de trilha de áudio e integridade do arquivo antes de QUALQUER upload; o scheduler aborta a publicação e alerta se reprovar.
 - [ ] **Versionamento/arquivo de masters**: manter o vídeo final + fontes por período antes de limpar (parcial: caches de roteiro/prints já persistem em `data/scripts/` e `data/images/`).
-- [ ] **Revisar `remotion-pilot/`**: decidir entre arquivar (está desconectado do pipeline real) ou extrair alguma ideia de composição que valha a pena portar para o motion-renderer atual.
+- [x] **Consolidar o renderer em HyperFrames**: vídeos longos, cortes verticais e modo animado usam o robô 3D aprovado e a composição HyperFrames validada.
 - [ ] **Decidir o destino do pipeline legado em `agents/`**: há bastante funcionalidade boa e órfã lá (SEO completo, thumbnail A/B, templates de hook) construída para um pipeline (`index.js`) que não é o que roda em produção. Ou se investe em plugar essas peças no pipeline real (`generate-animated-video.js`/`channel-scheduler.js`), ou se arquiva/remove para não confundir manutenção futura — hoje existem dois "roteiristas" e dois "designers de thumbnail" no mesmo repo, só um conjunto rodando de fato.
 
 ## 7. Operação e confiabilidade — virar "estúdio que não depende de alguém olhando o terminal"
@@ -79,8 +79,8 @@ Pontos já identificados em exploração anterior do projeto:
 
 ## 8. Identidade de marca em vídeo — virar "canal com cara própria", não só paleta de cor
 
-- [x] **Elemento de marca recorrente na tela**: ✅ implementado — componente `watermark` (que já existia morto no kit) agora é ativado em TODA cena pelo `animated-scene-renderer.js` ("Pulso IA" discreto no canto inferior direito, do início ao fim do vídeo, longo e cortes). Desligável por vídeo via `script.watermark: false`.
-- [ ] **Avaliar um "apresentador" virtual leve** (não necessariamente um avatar falante completo — pode ser um ícone/silhueta consistente nos cards de transição) como evolução futura, mais cara e opcional, se o canal crescer e quiser diferenciação forte de concorrentes que também usam motion graphics genérico.
+- [x] **Identidade visual do apresentador**: robô 3D alto e em pé aprovado; aparece na composição HyperFrames com movimentos determinísticos e boca guiada pela fala.
+- [x] **Elemento de marca recorrente na tela**: watermark "Pulso IA" mantida no kit de cenas e posicionada para não ficar encoberta pelo canvas do robô.
 
 ## 9. Risco legal/copyright — mitigar, não ignorar
 

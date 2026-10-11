@@ -16,10 +16,14 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawnSync, spawn } = require('child_process');
 const sharp = require('sharp');
-const { AnimatedSceneRenderer } = require('../utils/animated-scene-renderer');
+const { HyperFramesVideoRenderer } = require('../utils/hyperframes-video-renderer');
 const { GeminiWebImageGenerator } = require('../utils/gemini-web-image');
 const { getMediaDuration, checkFFmpeg, runFFmpeg } = require('../utils/ffmpeg');
+const { updateTopicLedger } = require('../utils/topic-ledger');
 const SCRIPT_REVISION = 'retention-emotions-v4-robot3d';
+const RENDERER_ID = 'hyperframes-0.8.149-pulso-robot-v1';
+const configuredCacheTtl = Number(process.env.SCRIPT_CACHE_TTL_HOURS || 24);
+const SCRIPT_CACHE_TTL_HOURS = Number.isFinite(configuredCacheTtl) && configuredCacheTtl >= 1 ? configuredCacheTtl : 24;
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(`--${name}`);
@@ -28,6 +32,18 @@ function arg(name, fallback) {
 
 const stripTags = html => String(html || '')
   .replace(/<[^>]+>/g, ' ').replace(/&\w+;/g, ' ').replace(/\s+/g, ' ').trim();
+
+async function writeFileAtomic(filePath, content) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+  try {
+    await fs.writeFile(tempPath, content);
+    await fs.rename(tempPath, filePath);
+  } catch (error) {
+    await fs.unlink(tempPath).catch(() => {});
+    throw error;
+  }
+}
 
 // Limpa o texto ANTES de narrar e exibir: remove markdown (asteriscos viravam
 // "asterisco" na voz), links, bullets e ampersands. Usado no texto falado E nas
@@ -263,35 +279,38 @@ async function loadUsedTopics() {
   const ledgerPath = path.join(__dirname, '..', process.env.STATE_DIR || 'data/state', 'topics.json');
   try {
     const raw = JSON.parse(await fs.readFile(ledgerPath, 'utf8'));
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) throw new Error('estrutura de entries inválida');
     const entries = (raw.entries || []).slice(-80);
     return {
       titles: entries.map(e => e.title).filter(Boolean),
       urls: entries.map(e => e.origUrl || e.url).filter(Boolean)
     };
-  } catch (_e) {
-    return { titles: [], urls: [] };
+  } catch (error) {
+    if (error.code === 'ENOENT') return { titles: [], urls: [] };
+    throw new Error(`ledger de pautas ilegível; geração cancelada para evitar repetição: ${error.message}`);
   }
 }
 
 async function recordTopic(entry) {
   const ledgerPath = path.join(__dirname, '..', process.env.STATE_DIR || 'data/state', 'topics.json');
-  let raw = { entries: [] };
-  try { raw = JSON.parse(await fs.readFile(ledgerPath, 'utf8')); } catch (_e) { /* new ledger */ }
-  raw.entries = raw.entries || [];
-  raw.entries.push({ ...entry, generatedAt: new Date().toISOString() });
-  raw.entries = raw.entries.slice(-400);
-  await fs.mkdir(path.dirname(ledgerPath), { recursive: true });
-  await fs.writeFile(ledgerPath, JSON.stringify(raw, null, 2));
+  await updateTopicLedger(ledgerPath, raw => {
+    raw.entries = raw.entries || [];
+    raw.entries.push({ ...entry, generatedAt: new Date().toISOString() });
+    raw.entries = raw.entries.slice(-400);
+    return raw;
+  });
 }
 
 async function loadRecentTopics(days = 7) {
   const ledgerPath = path.join(__dirname, '..', process.env.STATE_DIR || 'data/state', 'topics.json');
   try {
     const raw = JSON.parse(await fs.readFile(ledgerPath, 'utf8'));
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) throw new Error('estrutura de entries inválida');
     const cutoff = Date.now() - days * 86400000;
     return (raw.entries || []).filter(e => new Date(e.generatedAt).getTime() >= cutoff);
-  } catch (_e) {
-    return [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw new Error(`ledger de pautas ilegível; contexto recente indisponível: ${error.message}`);
   }
 }
 
@@ -383,11 +402,35 @@ PRIMEIRA SEÇÃO: ${String(script.mainContent?.sections?.[0]?.content || '').sli
   }
 }
 
-async function loadOrWriteScript({ topic, targetWords, slug, context, theme }) {
+async function loadOrWriteScript({ topic, targetWords, slug, context, theme, allowCache = true }) {
   const cachePath = path.join(__dirname, '..', 'data', 'scripts', `${slug}-${SCRIPT_REVISION}.json`);
-  if (await fs.stat(cachePath).then(() => true).catch(() => false)) {
-    console.log('      roteiro em cache — reutilizando');
-    return JSON.parse(await fs.readFile(cachePath, 'utf8'));
+  const cacheMetaPath = `${cachePath}.meta.json`;
+  const contextHash = crypto.createHash('sha256').update(String(context || '').trim()).digest('hex');
+  const cacheStat = await fs.stat(cachePath).catch(() => null);
+  if (cacheStat && allowCache) {
+    try {
+      const cached = JSON.parse(await fs.readFile(cachePath, 'utf8'));
+      let meta = null;
+      try { meta = JSON.parse(await fs.readFile(cacheMetaPath, 'utf8')); } catch (_e) { /* cache anterior à metadata */ }
+      const cachedAt = meta?.createdAt ? new Date(meta.createdAt).getTime() : cacheStat.mtimeMs;
+      const ageHours = (Date.now() - cachedAt) / 3600000;
+      const contextMatches = meta?.contextHash ? meta.contextHash === contextHash : !context;
+      const requestMatches = !meta || (meta.topic === topic && meta.targetWords === targetWords);
+      const validShape = cached && typeof cached.title === 'string' && typeof cached.hook === 'string'
+        && Array.isArray(cached.sections) && cached.sections.length > 0;
+      if (ageHours >= 0 && ageHours <= SCRIPT_CACHE_TTL_HOURS && contextMatches && requestMatches && validShape) {
+        console.log(`      roteiro em cache — reutilizando (${ageHours.toFixed(1)}h)`);
+        return cached;
+      }
+      const reason = ageHours > SCRIPT_CACHE_TTL_HOURS ? `expirado (${ageHours.toFixed(1)}h)`
+        : !contextMatches ? 'contexto da fonte mudou' : !requestMatches ? 'pauta ou tamanho mudou'
+          : !validShape ? 'formato inválido' : 'data inválida';
+      console.log(`      roteiro em cache descartado: ${reason}; gerando novamente`);
+    } catch (error) {
+      console.warn(`      cache de roteiro inválido (${error.message}); gerando novamente`);
+    }
+  } else if (cacheStat && !allowCache) {
+    console.log('      roteiro em cache ignorado: pauta automática sem contexto verificável');
   }
   let script = await writeScriptWithNvidia({ topic, targetWords, context, theme });
   // Passada de editor: se o crítico reprovar, regenera UMA vez com o feedback.
@@ -401,8 +444,14 @@ async function loadOrWriteScript({ topic, targetWords, slug, context, theme }) {
       console.warn('      regeneração falhou — seguindo com o rascunho original');
     }
   }
-  await fs.mkdir(path.dirname(cachePath), { recursive: true });
-  await fs.writeFile(cachePath, JSON.stringify(script, null, 2));
+  await writeFileAtomic(cachePath, JSON.stringify(script, null, 2));
+  await writeFileAtomic(cacheMetaPath, JSON.stringify({
+    createdAt: new Date().toISOString(),
+    topic,
+    targetWords,
+    contextHash,
+    revision: SCRIPT_REVISION
+  }, null, 2));
   return script;
 }
 
@@ -539,7 +588,12 @@ async function synthesizeNarration(script, slug, outDir) {
   });
   await Promise.all(pool);
 
-  const timings = results.map(r => r.timings);
+  let audioOffsetMs = 0;
+  const timings = results.map(r => {
+    const timing = { ...r.timings, audioOffsetMs };
+    audioOffsetMs += Number(r.timings.durationMs) || 0;
+    return timing;
+  });
   const listLines = results.map(r => `file '${r.mp3.replace(/'/g, "'\\''")}'`);
 
   const listPath = path.join(ttsDir, 'list.txt');
@@ -569,7 +623,7 @@ async function generateSceneImages(script, slug) {
     return {};
   }
 
-  const imageStyleId = crypto.createHash('sha1').update(`${SCRIPT_REVISION}:blender-presenter-v1:3d-editorial-backgrounds`).digest('hex').slice(0, 8);
+  const imageStyleId = crypto.createHash('sha1').update(`${SCRIPT_REVISION}:${RENDERER_ID}:3d-editorial-backgrounds`).digest('hex').slice(0, 8);
   const shots = {
     a: 'wide 3D editorial establishing shot with one clear focal object and layered depth',
     b: 'cinematic close-up of the most important real object or environment detail from the story',
@@ -762,7 +816,6 @@ function splitTitleTwoLines(title, maxLine = 26) {
  */
 async function renderThumbnail({ title, accent, outPath }) {
   const { chromium } = require('playwright');
-  const renderer = new AnimatedSceneRenderer({ width: 1280, height: 720, fps: 24 });
   const [l1, l2] = splitTitleTwoLines(title);
   const scene = {
     id: 'thumb',
@@ -777,13 +830,20 @@ async function renderThumbnail({ title, accent, outPath }) {
   try {
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 720 });
-    // Zoom tipográfico de capa: título maior que o padrão de cena (72px @720p)
-    // e card centralizado verticalmente (capa equilibra, não "pendura" no topo).
-    const html = await renderer._pageHtml(scene);
-    const boosted = html.replace('</head>', '<style>.scene{justify-content:center} .bento .b-title{font-size:calc(var(--h) * 0.1)} .bento .b-sub{font-size:calc(var(--h) * 0.05)} .bento{max-width:92%;padding:calc(var(--h) * 0.07) calc(var(--w) * 0.05)} .watermark{font-size:calc(var(--h) * 0.03)}</style></head>');
-    await page.setContent(boosted, { waitUntil: 'domcontentloaded' });
+    const [css, js] = await Promise.all([
+      fs.readFile(path.join(__dirname, '..', 'assets', 'scenes', 'kit.css'), 'utf8'),
+      fs.readFile(path.join(__dirname, '..', 'assets', 'scenes', 'kit.js'), 'utf8')
+    ]);
+    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>${css}
+      :root{--w:1280px;--h:720px} html,body{margin:0;width:1280px;height:720px;overflow:hidden}
+      #scene-root{width:1280px;height:720px}.scene{justify-content:center}
+      .bento .b-title{font-size:calc(var(--h) * .1)} .bento .b-sub{font-size:calc(var(--h) * .05)}
+      .bento{max-width:92%;padding:calc(var(--h) * .07) calc(var(--w) * .05)}
+      .watermark{font-size:calc(var(--h) * .03)}
+    </style></head><body><div id="scene-root"></div><script>${js}</script></body></html>`;
+    await page.setContent(html, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(() => window.buildScene(window.SCENE));
+    await page.evaluate(sceneData => window.buildScene(sceneData), scene);
     await page.evaluate(() => window.renderAt(700)); // tweens assentadas
     await page.screenshot({ path: outPath, type: 'png' });
     console.log(`      thumbnail gerada: ${path.basename(outPath)}`);
@@ -826,8 +886,17 @@ async function main() {
     const used = await loadUsedTopics();
     console.log(`[0/5] Caçando a pauta MAIS QUENTE do tema "${theme.name}" entre várias fontes...`);
     const candidates = await huntHotTopics(used, theme.id);
-    if (!candidates.length) throw new Error('nenhuma notícia quente inédita encontrada');
-    const top = candidates[0];
+    const configuredMaxTopicAge = Number(process.env.MAX_TOPIC_AGE_HOURS || 36);
+    const maxTopicAgeHours = Number.isFinite(configuredMaxTopicAge) && configuredMaxTopicAge >= 1 ? configuredMaxTopicAge : 36;
+    const freshCandidates = candidates.filter(candidate => Number.isFinite(Number(candidate.ageHours))
+      && Number(candidate.ageHours) >= -1 && Number(candidate.ageHours) <= maxTopicAgeHours);
+    if (!freshCandidates.length) {
+      throw new Error(`nenhuma pauta inédita com até ${maxTopicAgeHours}h encontrada (candidatas: ${candidates.length})`);
+    }
+    const corroboratedCandidates = freshCandidates.filter(candidate => Number(candidate.independentSources) >= 2);
+    const rankedCandidates = corroboratedCandidates.length ? corroboratedCandidates : freshCandidates;
+    const top = rankedCandidates[0];
+    if (!corroboratedCandidates.length) console.warn('      pauta sem segunda fonte independente disponível; seguindo com a melhor fonte recente');
     originTitle = top.title;
     originUrl = top.url || top.link || '';
     console.log(`      🔥 [${top.source}] score ${top.score.toFixed(2)} · ${top.ageHours.toFixed(0)}h · ${top.comments} comentários`);
@@ -889,7 +958,16 @@ async function main() {
     console.log('[resume] vídeo já renderizado nesta execução — pulando geração');
     return;
   }
-  const script = normalizeScript(await loadOrWriteScript({ topic, targetWords, slug, context, theme }));
+  const script = normalizeScript(await loadOrWriteScript({
+    topic,
+    targetWords,
+    slug,
+    context,
+    theme,
+    // Pautas automáticas sem contexto extraído não podem reutilizar um roteiro
+    // anterior como se ele ainda estivesse ancorado na notícia atual.
+    allowCache: !auto || context.trim().length >= 300
+  }));
   // Título canônico em PT-BR: o roteirista gera o título em português —
   // quando a pauta é de fonte gringa sem cobertura BR, é ele que aparece
   // no YouTube/TikTok/X (tudo voltado pro público do Brasil).
@@ -898,7 +976,14 @@ async function main() {
   // Seed por vídeo: garante que layouts, gráficos, cores e ordem de imagens
   // sejam diferentes em cada execução (vídeos únicos).
   script.channel = theme.brand || 'Pulso IA'; // marca do tema → watermark das cenas
-  script.seed = Number(arg('seed', 0)) || Math.floor(Math.random() * 1e9);
+  script.themeId = theme.id;
+  script.visualPalettes = theme.visualPalettes || null;
+  const requestedSeed = arg('seed', null);
+  const parsedSeed = requestedSeed == null ? null : Number(requestedSeed);
+  if (parsedSeed != null && (!Number.isSafeInteger(parsedSeed) || parsedSeed < 0)) {
+    throw new Error(`--seed precisa ser um inteiro não negativo; recebido: ${requestedSeed}`);
+  }
+  script.seed = parsedSeed ?? Math.floor(Math.random() * 1e9);
   console.log(`      seed: ${script.seed}`);
   const words = [script.hook, ...script.mainContent.sections.map(s => s.content), script.conclusion.finalThought].join(' ').split(/\s+/).filter(Boolean).length;
   console.log(`      ${script.mainContent.sections.length} seções | ~${words} palavras | ${script.mainContent.sections.filter(s => s.visual).length} gráficos`);
@@ -952,8 +1037,12 @@ async function main() {
     s.print = script.prints[k + 1] || null;
   });
 
-  console.log('[4/5] Render das cenas (imagens rotativas + gráficos + prints + legendas)');
-  const renderer = new AnimatedSceneRenderer({ fps: Number(process.env.ANIMATED_FPS || 24) });
+  console.log('[4/5] Render HyperFrames (mascote 3D aprovado + imagens + gráficos + legendas)');
+  const renderer = new HyperFramesVideoRenderer({
+    fps: Number(process.env.ANIMATED_FPS || 24),
+    width: Number(process.env.ANIMATED_WIDTH || 1920),
+    height: Number(process.env.ANIMATED_HEIGHT || 1080)
+  });
   await renderer.render({ script, audioPath, outputPath: out, images });
   const st = await fs.stat(out);
 
@@ -962,7 +1051,9 @@ async function main() {
   if (!process.argv.includes('--no-thumb')) {
     try {
       const thumbOut = path.join(path.dirname(out), `thumb_${path.basename(out, '.mp4')}.png`);
-      await renderThumbnail({ title: displayTitle, accent: script.background?.accent, outPath: thumbOut });
+      const variants = script.visualPalettes?.variants || [];
+      const palette = variants.length ? variants[script.seed % variants.length] : null;
+      await renderThumbnail({ title: displayTitle, accent: palette?.accents?.[0] || script.background?.accent, outPath: thumbOut });
       thumbPath = path.relative(path.join(__dirname, '..'), thumbOut);
     } catch (error) {
       console.warn(`      thumbnail falhou (vídeo mantido): ${error.message}`);
@@ -986,6 +1077,7 @@ async function main() {
   }
 
   await recordTopic({
+    renderer: RENDERER_ID,
     theme: theme.id, // réplica: rastreio de qual canal gerou
     title: displayTitle,
     url: article ? article.link : '',

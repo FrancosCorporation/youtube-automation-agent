@@ -70,11 +70,16 @@ async function up() {
   if (!containerRunning()) {
     run(`docker compose -f ${COMPOSE} up -d`);
   }
+  // Conecta antes de consultar sys.boot_completed. Sem isso, o polling tenta
+  // executar `adb shell` num device ainda não conectado e sempre espera os
+  // 4 minutos máximos, mesmo quando o Android já terminou de iniciar.
+  adb('connect ' + DEVICE, { timeout: 10000, allowFail: true });
   // espera o Android terminar de bootar
   const t0 = Date.now();
   while (Date.now() - t0 < 240000) {
     const booted = shell('getprop sys.boot_completed', { allowFail: true }).trim() === '1';
     if (booted) break;
+    adb('connect ' + DEVICE, { timeout: 10000, allowFail: true });
     await sleep(5000);
   }
   adb('connect ' + DEVICE, { allowFail: true });

@@ -71,7 +71,6 @@ build/
 !examples/*.png
 !examples/*.jpg
 !assets/youtube-automation-agent.jpg
-!assets/scenes/presenter-atlas.png
 
 # Backup files
 *.backup

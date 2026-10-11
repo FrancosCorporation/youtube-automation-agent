@@ -149,12 +149,17 @@ function googleNewsClusters(gnItems) {
     if (hit) { hit.outlets.push(it.source); hit.best = hit.best || it; }
     else clusters.push({ title: it.title, outlets: [it.source], best: it, ageHours: it.ageHours });
   }
-  return clusters.map(c => ({
-    source: `Google News (${c.outlets.length} veículos)`, title: c.title,
-    url: c.best.link, link: c.best.link, articleTitle: c.best.title,
-    ageHours: c.ageHours, points: 0, comments: c.outlets.length,
-    score: lscore(c.outlets.length * 25) + freshness(c.ageHours)
-  }));
+  return clusters.map(c => {
+    const outlets = [...new Set(c.outlets.map(source => String(source || '').trim()).filter(Boolean))];
+    return {
+      source: `Google News (${outlets.length} veículos)`, title: c.title,
+      url: c.best.link, link: c.best.link, articleTitle: c.best.title,
+      ageHours: c.ageHours, points: 0, comments: outlets.length,
+      outlets,
+      independentSources: outlets.length,
+      score: lscore(outlets.length * 25) + freshness(c.ageHours)
+    };
+  });
 }
 
 function getTheme(id) {
@@ -183,7 +188,14 @@ async function huntHotTopics(used = {}, themeId = process.env.THEME || 'ia') {
 function googleNewsClustersWithBoost(gn, br) {
   const clusters = googleNewsClusters(gn);
   for (const c of clusters) {
-    if (br.some(b => overlap(b.title, c.title) > 0.5)) c.score += 0.8;
+    const corroboratingFeeds = br.filter(b => overlap(b.title, c.title) > 0.5);
+    if (corroboratingFeeds.length) {
+      c.score += 0.8;
+      c.independentSources = new Set([
+        ...(c.outlets || []),
+        ...corroboratingFeeds.map(feed => feed.source)
+      ]).size;
+    }
   }
   return clusters;
 }

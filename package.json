@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "setup": "node setup.js",
+    "setup:hyperframes": "npm --prefix experiments/hyperframes-pulso-pilot ci",
     "walkthrough": "node walkthrough.js",
     "gemini-login": "node scripts/gemini-login.js",
     "growth:snapshot": "node scripts/growth/snapshot-github.js",

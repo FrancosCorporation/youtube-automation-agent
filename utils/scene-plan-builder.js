@@ -1,10 +1,21 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { Logger } = require('./logger');
-const { runFFmpeg, checkFFmpeg, ffmpegInstallHint, getMediaDuration } = require('./ffmpeg');
-const { ensurePresenterAtlas, ATLAS_URL } = require('./presenter-avatar');
+/** Build deterministic timed scene data for the HyperFrames composition. */
+const THEME_CONFIG = require('../config/themes.json');
+const THEMES = Array.isArray(THEME_CONFIG.themes) ? THEME_CONFIG.themes : [];
 
-const KIT_DIR = path.join(__dirname, '..', 'assets', 'scenes');
+function resolveVisualTheme(script = {}) {
+  const scriptTheme = typeof script.theme === 'string'
+    ? script.theme
+    : script.theme && typeof script.theme === 'object' ? script.theme.id : null;
+  const candidates = [script.themeId, scriptTheme, process.env.THEME, script.channel]
+    .map(value => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
+  for (const candidate of candidates) {
+    const match = THEMES.find(theme => [theme.id, theme.name, theme.brand]
+      .some(value => String(value || '').trim().toLowerCase() === candidate));
+    if (match) return match;
+  }
+  return THEMES.find(theme => theme.id === 'ia') || THEMES[0] || null;
+}
 
 // PRNG semeado (mulberry32) — cada vídeo recebe um seed e sai diferente:
 // layouts, gráficos, orientação, cores, ordem de imagens e componentes variam.
@@ -18,19 +29,9 @@ function mulberry32(seed) {
   };
 }
 
-/**
- * Renders script-driven "Linear/Vercel" style animated scenes:
- *   scene JSON -> deterministic HTML frames (Playwright) -> scene mp4 -> concat -> +audio
- * Every shot of every scene is a coded animation (cards, kinetic numbers,
- * highlights, node graphs, captions), not a static screenshot.
- */
-class AnimatedSceneRenderer {
-  constructor(options = {}) {
-    this.logger = options.logger || new Logger('AnimatedScenes');
-    this.fps = Math.max(12, Number(options.fps || process.env.ANIMATED_FPS || 24));
-    this.width = Number(options.width || process.env.ANIMATED_WIDTH || 1920);
-    this.height = Number(options.height || process.env.ANIMATED_HEIGHT || 1080);
-    this.presenterAtlasPath = options.presenterAtlasPath ? path.resolve(options.presenterAtlasPath) : null;
+/** Builds timed editorial scenes used by the deterministic HyperFrames timeline. */
+class ScenePlanBuilder {
+  constructor() {
     this.shortLeadMs = 120;
   }
 
@@ -107,18 +108,38 @@ class AnimatedSceneRenderer {
     return chips;
   }
 
-  buildScenes(script, totalDurationMs, images = {}) {
+  buildScenes(script, totalDurationMs, images = {}, speechEnvelope = null) {
     // Cada vídeo é único: tudo abaixo vem de um pool embaralhado por seed.
-    const rng = mulberry32((Number(script.seed) || Math.floor(Math.random() * 1e9)) >>> 0);
+    const parsedSeed = Number(script.seed);
+    const seedText = String(script.seed ?? script.title ?? script.hook?.text ?? script.hook ?? 'pulso');
+    let stableSeed = 2166136261;
+    for (let i = 0; i < seedText.length; i += 1) {
+      stableSeed ^= seedText.charCodeAt(i);
+      stableSeed = Math.imul(stableSeed, 16777619);
+    }
+    const seed = (Number.isFinite(parsedSeed) ? parsedSeed : stableSeed) >>> 0;
+    const rng = mulberry32(seed);
+    const resolvedTheme = resolveVisualTheme(script);
+    const paletteConfig = script.visualPalettes?.variants?.length
+      ? script.visualPalettes
+      : resolvedTheme?.visualPalettes;
+    const paletteVariants = paletteConfig?.variants;
+    const themePalette = Array.isArray(paletteVariants) && paletteVariants.length
+      ? paletteVariants[seed % paletteVariants.length]
+      : null;
     const shuffle = arr => {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
       return a;
     };
     const pick = arr => arr[Math.floor(rng() * arr.length)];
-    const layoutPool = shuffle(['hero', 'hero', 'split', 'split', 'splitL', 'splitL', 'split', 'hero']);
+    // The presenter occupies the right side of the frame; reverse split layouts
+    // put text behind the robot layer and fail the full-composition layout check.
+    const layoutPool = shuffle(['hero', 'hero', 'split', 'split', 'split', 'hero', 'hero']);
     const chartPool = shuffle(['score-chart', 'score-chart', 'line-chart', 'line-chart', 'donut-chart', 'rank-list']);
-    const accentPool = shuffle(['#60A5FA', '#7DD3FC', '#4ADE80', '#F472B6', '#A78BFA', '#FBBF24']);
+    const accentPool = shuffle(themePalette?.accents?.length
+      ? [...themePalette.accents]
+      : ['#60A5FA', '#7DD3FC', '#4ADE80', '#F472B6', '#A78BFA', '#FBBF24']);
 
     const sectionText = s => (typeof s.content === 'string' ? s.content : (s.items || s.steps || []).map(i => `${i.title || ''} ${i.description || ''}`).join(' '));
     // Nem todo campo vem como string (hook/conclusão podem ser objetos) —
@@ -133,9 +154,14 @@ class AnimatedSceneRenderer {
 
     const scenes = [];
     let index = 0;
+    let fallbackGroupAudioOffsetMs = 0;
+    let previousLayout = null;
     for (const group of groups) {
       const words = group.text.split(/\s+/).filter(Boolean).length;
       const timing = (script.timings || [])[index];
+      const groupAudioOffsetMs = Number.isFinite(Number(timing?.audioOffsetMs))
+        ? Number(timing.audioOffsetMs)
+        : fallbackGroupAudioOffsetMs;
       let bs;
       if (timing && timing.sentences && timing.sentences.length) {
         // Real speech timings: each sentence becomes a scene spanning exactly
@@ -184,7 +210,23 @@ class AnimatedSceneRenderer {
       }
 
       bs.forEach((beat, i) => {
-        const layout = script.forceLayout || (!hasImage ? 'text' : isLast ? 'hero' : layoutPool[(index + i) % layoutPool.length]);
+        const resetBeatOffsets = bs.length > 1 && bs.every(item => Number(item.startMs) === 0);
+        const audioStartInGroupMs = resetBeatOffsets
+          ? bs.slice(0, i).reduce((sum, item) => sum + (Number(item.durationMs) || 0), 0)
+          : (Number(beat.startMs) || 0);
+        const audioStartMs = Math.max(0, groupAudioOffsetMs + audioStartInGroupMs);
+        const envelopeStepMs = Number(speechEnvelope?.stepMs) || 10;
+        const envelopeStartIndex = Math.floor(audioStartMs / envelopeStepMs);
+        const envelopeOffsetMs = audioStartMs - envelopeStartIndex * envelopeStepMs;
+        const envelopeCount = Math.ceil((Number(beat.durationMs) + envelopeOffsetMs) / envelopeStepMs) + 1;
+        const localSpeechEnvelope = speechEnvelope?.levels
+          ? speechEnvelope.levels.slice(envelopeStartIndex, envelopeStartIndex + envelopeCount)
+          : [];
+        let layout = script.forceLayout || (!hasImage ? 'text' : isLast ? 'hero' : layoutPool[(index + i) % layoutPool.length]);
+        if (!script.forceLayout && hasImage && layout === previousLayout) {
+          layout = layout === 'hero' ? 'split' : 'hero';
+        }
+        previousLayout = layout;
         const components = [
           { type: 'demo-header', category: script.minimal ? (script.channel || 'Pulso IA') : group.title, revealAtMs: 0 }
         ];
@@ -248,18 +290,20 @@ class AnimatedSceneRenderer {
         if (pctMatch && !(cmp && layout !== 'hero')) {
           components.push({ type: 'progress-bar', value: Math.min(100, parseFloat((pctMatch[1] || '0').replace(',', '.'))), label: group.title.slice(0, 30), revealAtMs: 600 });
         }
-        const showPresenter = Boolean(this.presenterAtlasBuffer) && !script.minimal && (i === 0 || i % 2 === 1);
-        if (showPresenter) {
-          components.push({
-            type: 'presenter-avatar',
-            emotion: group.emotion,
-            phase: ((Number(script.seed) || 0) + index * 37 + i * 19) % 240,
-            revealAtMs: 120
-          });
-        }
         components.push({ type: 'caption', words: this.captionWords(beat.words, beat.startMs, beat.durationMs, beat.wordTimes) });
         if (script.minimal) components.push({ type: 'clip-progress', durMs: Math.round(beat.durationMs), revealAtMs: 0 });
-        const scene = { id: `s${index}_${i}`, durationMs: Math.round(beat.durationMs), presenter: showPresenter, background: { type: 'grid', accent: accentPool[index % accentPool.length] }, components };
+        const scene = {
+          id: `s${index}_${i}`,
+          durationMs: Math.round(beat.durationMs),
+          presenter: true,
+          speechEnvelope: {
+            stepMs: envelopeStepMs,
+            offsetMs: envelopeOffsetMs,
+            levels: localSpeechEnvelope
+          },
+          background: { type: 'grid', accent: accentPool[(index + i) % accentPool.length] },
+          components
+        };
         if (layout === 'hero') scene.hero = true;
         if (layout === 'split' || layout === 'splitL') {
           scene.split = true;
@@ -267,156 +311,13 @@ class AnimatedSceneRenderer {
         }
         scenes.push(scene);
       });
+      fallbackGroupAudioOffsetMs = groupAudioOffsetMs + (Number(timing?.durationMs)
+        || bs.reduce((sum, item) => sum + (Number(item.durationMs) || 0), 0));
       index += 1;
     }
     return scenes;
   }
 
-  async _pageHtml(scene) {
-    const [css, js] = await Promise.all([
-      fs.readFile(path.join(KIT_DIR, 'kit.css'), 'utf8'),
-      fs.readFile(path.join(KIT_DIR, 'kit.js'), 'utf8')
-    ]);
-    return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><style>${css}</style><style>:root{--w:${this.width}px;--h:${this.height}px}</style></head><body><script>window.PRESENTER_ATLAS_URL=${JSON.stringify(ATLAS_URL)};</script><script>${js}</script><script>window.SCENE=${JSON.stringify(scene)};</script></body></html>`;
-  }
-
-  async render({ script, audioPath, outputPath, images = {} }) {
-    if (!(await checkFFmpeg())) throw new Error(ffmpegInstallHint());
-    outputPath = path.resolve(outputPath);
-    audioPath = path.resolve(audioPath);
-    let totalMs = this.estimateDuration(script) * 1000;
-    try {
-      const measured = await getMediaDuration(audioPath);
-      if (Number.isFinite(measured) && measured > 0) totalMs = Math.round(measured * 1000);
-    } catch (_e) { /* keep estimate */ }
-
-    this.presenterAtlasBuffer = null;
-    const presenterAtlasPath = this.presenterAtlasPath || await ensurePresenterAtlas(this.logger);
-    if (presenterAtlasPath) this.presenterAtlasBuffer = await fs.readFile(presenterAtlasPath);
-    const scenes = this.buildScenes(script, totalMs, images);
-    const workDir = await fs.mkdtemp(path.join(path.dirname(outputPath), 'anim_'));
-    const { chromium } = require('playwright');
-    let browser = await chromium.launch({ args: ['--disable-dev-shm-usage', '--disable-gpu-sandbox'] });
-
-    const registerPresenterAtlas = async page => {
-      if (!this.presenterAtlasBuffer) return;
-      await page.route(ATLAS_URL, route => route.fulfill({
-        status: 200,
-        contentType: 'image/png',
-        body: this.presenterAtlasBuffer
-      }));
-    };
-
-    const captureScene = async (page, scene, sceneDir) => {
-      await page.setContent(await this._pageHtml(scene), { waitUntil: 'domcontentloaded' });
-      await page.evaluate(() => document.fonts.ready);
-      await page.evaluate(() => window.buildScene(window.SCENE));
-      await page.evaluate(() => (window.waitForImages ? window.waitForImages() : 1));
-      const frames = Math.max(1, Math.round(scene.durationMs / 1000 * this.fps));
-      for (let i = 0; i < frames; i++) {
-        await page.evaluate(ms => window.renderAt(ms), Math.round(i * 1000 / this.fps));
-        await page.screenshot({ path: path.join(sceneDir, `f_${String(i).padStart(5, '0')}.jpg`), type: 'jpeg', quality: 88 });
-      }
-    };
-
-    // GPU (AMD VCN via VAAPI) assume o H.264 — ~8x menos CPU que libx264.
-    // Probe único por processo; falha volta pro libx264 (graceful).
-    if (this._vaapiOk === undefined) {
-      this._vaapiOk = false;
-      try {
-        const fsSync = require('fs');
-        if (fsSync.existsSync('/dev/dri/renderD128')) {
-          await runFFmpeg(['-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
-            '-i', 'testsrc2=size=320x240:duration=0.2:rate=24',
-            '-vaapi_device', '/dev/dri/renderD128', '-vf', 'format=nv12,hwupload',
-            '-c:v', 'h264_vaapi', '-f', 'null', '-']);
-          this._vaapiOk = true;
-          this.logger.info('GPU encode ativo (VAAPI/h264 — AMD VCN)');
-        }
-      } catch (_e) { this.logger.info('VAAPI indisponível — encode por CPU (libx264)'); }
-    }
-    const encodeScene = async (scene, sceneDir, sceneMp4, isFirst, isLast) => {
-      const fadeOut = Math.max(0.1, scene.durationMs / 1000 - 0.25);
-      const fades = [];
-      if (isFirst) fades.push('fade=t=in:st=0:d=0.25');
-      if (isLast) fades.push(`fade=t=out:st=${fadeOut.toFixed(2)}:d=0.25`);
-      if (this._vaapiOk) {
-        try {
-          const filters = [...fades, 'format=nv12', 'hwupload'].join(',');
-          await runFFmpeg(['-y', '-framerate', String(this.fps), '-i', path.join(sceneDir, 'f_%05d.jpg'),
-            '-vaapi_device', '/dev/dri/renderD128',
-            '-vf', filters,
-            '-c:v', 'h264_vaapi', '-qp', '22', '-r', String(this.fps), sceneMp4]);
-          return;
-        } catch (_e) { this.logger.warn('VAAPI falhou na cena — fallback libx264'); }
-      }
-      const filters = [...fades, 'format=yuv420p'].join(',');
-      await runFFmpeg(['-y', '-framerate', String(this.fps), '-i', path.join(sceneDir, 'f_%05d.jpg'),
-        '-vf', filters,
-        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-r', String(this.fps), sceneMp4]);
-    };
-
-    try {
-      // WORKER POOL: cenas renderizadas em PARALELO (28 núcleos + GPU encode).
-      // Cada worker tem sua página do Chromium — capturas independentes.
-      const WORKERS = Math.max(1, Math.min(6, Number(process.env.RENDER_WORKERS || 4)));
-      let done = 0;
-      const worker = async (workerIdx) => {
-        let page = await browser.newPage();
-        await registerPresenterAtlas(page);
-        await page.setViewportSize({ width: this.width, height: this.height });
-        for (let s = workerIdx; s < scenes.length; s += WORKERS) {
-          const scene = scenes[s];
-          const sceneDir = path.join(workDir, `scene_${String(s).padStart(3, '0')}`);
-          await fs.mkdir(sceneDir, { recursive: true });
-          // Chromium pode morrer sob pressão de memória — página nova e retry 1x.
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              if (attempt > 0 || (page.isClosed && page.isClosed())) {
-                if (!(browser.isConnected && browser.isConnected())) {
-                  throw new Error('browser morreu — abortando worker pool');
-                }
-                page = await browser.newPage();
-                await registerPresenterAtlas(page);
-                await page.setViewportSize({ width: this.width, height: this.height });
-                this.logger.warn(`Scene ${s + 1}: página nova (attempt ${attempt + 1})`);
-              }
-              await captureScene(page, scene, sceneDir);
-              break;
-            } catch (error) {
-              if (attempt === 1) throw error;
-              this.logger.warn(`Scene ${s + 1} failed: ${error.message} — retrying`);
-            }
-          }
-          const sceneMp4 = path.join(workDir, `scene_${String(s).padStart(3, '0')}.mp4`);
-          await encodeScene(scene, sceneDir, sceneMp4, s === 0, s === scenes.length - 1);
-          done++;
-          this.logger.info(`Scene ${s + 1}/${scenes.length} ok (${(scene.durationMs / 1000).toFixed(1)}s) [${done}/${scenes.length}]`);
-        }
-        await page.close().catch(() => {});
-      };
-      await Promise.all(Array.from({ length: WORKERS }, (_, i) => worker(i)));
-
-      const sceneFiles = scenes.map((_, s) => path.join(workDir, `scene_${String(s).padStart(3, '0')}.mp4`));
-
-      const listPath = path.join(workDir, 'scenes.txt');
-      await fs.writeFile(listPath, sceneFiles.map(f => `file '${f}'`).join('\n'));
-      const visualPath = path.join(workDir, 'visual.mp4');
-      await runFFmpeg(['-y', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', visualPath]);
-      // Mixdown profissional: trilha com ducking (se houver) + masterização
-      // loudnorm -14 LUFS — mesma pipeline para longo e cortes verticais.
-      const { mixdownAudio, deriveMood } = require('./audio-mix');
-      const mood = script.mood || deriveMood(script.title || script.hook?.text || '');
-      const { path: mixedAudio } = await mixdownAudio({ narrationPath: audioPath, mood, seed: script.seed, workDir });
-      await runFFmpeg(['-y', '-i', visualPath, '-i', mixedAudio, '-map', '0:v:0', '-map', '1:a:0',
-        '-c:v', 'copy', '-c:a', 'copy', '-shortest', outputPath]);
-      this.logger.info(`Animated video assembled: ${outputPath} (${scenes.length} scenes)`);
-      return outputPath;
-    } finally {
-      await browser.close().catch(() => {});
-      await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
-    }
-  }
 }
 
-module.exports = { AnimatedSceneRenderer };
+module.exports = { ScenePlanBuilder, resolveVisualTheme };

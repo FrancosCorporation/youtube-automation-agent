@@ -1,0 +1,18 @@
+{
+  "name": "hyperframes-pulso-pilot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-pilot.js",
+    "make-video": "node scripts/make-video.js",
+    "dev": "npx --yes hyperframes@0.8.149 preview",
+    "check": "npx --yes hyperframes@0.8.149 check",
+    "render": "npx --yes hyperframes@0.8.149 render",
+    "publish": "npx --yes hyperframes@0.8.149 publish"
+  },
+  "dependencies": {
+    "esbuild": "0.28.2",
+    "gsap": "3.14.2",
+    "three": "0.186.1"
+  }
+}
