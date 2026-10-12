@@ -76,6 +76,18 @@
 - **Mudança:** manter os nomes dos veículos em uma lista de origem e calcular a quantidade distinta sem interpretar texto de apresentação.
 - **Estado:** implementado.
 
+## Reauditoria de dependências e qualidade — 2026-10-11
+
+### DEVOPS-01 · Dependências vulneráveis e lint sem execução confiável · [P1]
+
+- **Arquivos:** `package.json`, `package-lock.json`, `README.md`, `.github/workflows/ci.yml`, `eslint.config.js`
+- **Evidência:** a auditoria inicial encontrou 29 avisos na árvore de produção (2 críticos, 16 altos, 9 moderados e 2 baixos). O lint falhava em módulos ESM, APIs globais do Node e dois blocos vazios; também percorria skills vendorizadas e bundle local do piloto.
+- **Mudança:** atualizei patches compatíveis no lock, subi `sqlite3` para 6.0.1 e `sharp` para 0.35.5, removi `nodemon` sem uso, declarei Node 22+ e matriz CI Node 22/24 em Ubuntu 24.04. A CI agora exige leitura mínima e bloqueia advisories altos/críticos. Corrigi os erros de lint e as regras de escopo ESM.
+- **Resultado:** `npm audit --omit=dev --audit-level=high` passou; auditoria total tem zero altos/críticos e três moderados por UUID transitivo. A inspeção estática dos consumidores mostra uso de `uuid.v4()` sem buffer em `node-cron`; `gaxios` não chama UUID no código instalado. O advisory cobre `v3/v5/v6` ao escrever em buffers externos ([GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq)). Não forcei override fora da faixa nem atualização major do `node-cron` sem validação. `sharp` e `tar` foram elevados além das versões afetadas ([sharp](https://github.com/advisories/GHSA-wq5f-xc86-pv6w), [tar](https://github.com/advisories/GHSA-r292-9mhp-454m)). `sqlite3` 6.0.1 é a última versão publicada, mas o repositório foi arquivado; planejar migração futura para um driver mantido.
+- **Validação local:** `npm run lint` passou com zero erros e quatro avisos de variáveis sem uso; `node --check` nos módulos alterados e `git diff --check` passaram.
+- **Limite operacional:** o `node_modules` atual ainda contém `sqlite3` 5.1.7 e `sharp` 0.33.5; não reinstalei dependências nem reiniciei o scheduler ativo. Aplicar o novo lock requer implantação controlada em Node 22+.
+- **Testes/CI:** não executei testes. A CI remota não foi acionada porque seu workflow executa a suíte; a mudança foi preparada para publicar com `[skip ci]`.
+
 ## SEC-01 · TLS & Transport Security
 - Enforce HTTPS for all YouTube API calls
 - Disable insecure transport layers

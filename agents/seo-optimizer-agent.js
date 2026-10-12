@@ -461,17 +461,6 @@ Keep tags under YouTube's 500 character total guidance. Avoid fabricated statist
     // Content type hashtag
     hashtags.push(`#${strategy.contentType.toLowerCase()}`);
     
-    // Trending hashtags
-    const trendingHashtags = [
-      '#youtube',
-      '#youtuber',
-      '#subscribe',
-      '#video',
-      '#viral',
-      '#trending',
-      '#new'
-    ];
-    
     // Niche hashtags
     const niche = this.identifyNiche(strategy);
     const nicheHashtags = {

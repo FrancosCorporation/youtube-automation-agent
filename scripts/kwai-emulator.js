@@ -211,7 +211,13 @@ async function pushVideo(videoPath) {
 
 function isLoggedApp() { return fs.existsSync(FLAG_LOGIN); }
 function confirmLogin() { fs.mkdirSync(path.dirname(FLAG_LOGIN), { recursive: true }); fs.writeFileSync(FLAG_LOGIN, new Date().toISOString()); }
-function revokeLogin() { try { fs.unlinkSync(FLAG_LOGIN); } catch (_e) {} }
+function revokeLogin() {
+  try {
+    fs.unlinkSync(FLAG_LOGIN);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+}
 
 async function status() {
   const running = containerRunning();

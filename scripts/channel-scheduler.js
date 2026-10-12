@@ -26,7 +26,6 @@ const RECAP_EVERY_DAYS = Math.max(1, Number(process.env.RECAP_EVERY_DAYS || 7));
 // Imagens por seção: limita a cota diária do Gemini (5 vídeos × 9 seções × N).
 process.env.IMAGES_PER_GROUP = process.env.IMAGES_PER_GROUP || '4';
 const INTERVAL_MS = Math.round((24 * 60 * 60 * 1000) / VIDEOS_PER_DAY);
-const RETRY_MS = 30 * 60 * 1000;
 const configuredDiskCleanupHours = Number(process.env.DISK_CLEANUP_INTERVAL_HOURS || 12);
 const DISK_CLEANUP_INTERVAL_MS = Math.max(1, Math.min(168, Number.isFinite(configuredDiskCleanupHours) ? configuredDiskCleanupHours : 12)) * 60 * 60 * 1000;
 const configuredYouTubeRetryMinutes = Number(process.env.YOUTUBE_RETRY_INTERVAL_MINUTES || 30);

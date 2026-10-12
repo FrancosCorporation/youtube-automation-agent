@@ -14,7 +14,10 @@ module.exports = [
       'data/captions/**',
       'data/scripts/**',
       'data/videos/**',
-      'data/thumbnails/**'
+      'data/thumbnails/**',
+      'experiments/hyperframes-pulso-pilot/.agents/**',
+      'experiments/hyperframes-pulso-pilot/.hyperframes/**',
+      'experiments/hyperframes-pulso-pilot/assets/pilot.bundle.js'
     ]
   },
   js.configs.recommended,
@@ -24,6 +27,7 @@ module.exports = [
       sourceType: 'commonjs',
       globals: {
         AbortController: 'readonly',
+        AbortSignal: 'readonly',
         __dirname: 'readonly',
         Buffer: 'readonly',
         clearTimeout: 'readonly',
@@ -57,6 +61,28 @@ module.exports = [
         varsIgnorePattern: '^_',
         caughtErrors: 'none'
       }]
+    }
+  },
+  {
+    files: [
+      '**/*.mjs',
+      'scripts/verify-publications.js',
+      'experiments/hyperframes-pulso-pilot/scripts/**/*.js',
+      'experiments/hyperframes-pulso-pilot/src/**/*.js'
+    ],
+    languageOptions: {
+      sourceType: 'module'
+    }
+  },
+  {
+    files: ['experiments/hyperframes-pulso-pilot/src/pilot.js'],
+    languageOptions: {
+      globals: {
+        __VIDEO_SEED__: 'readonly',
+        __VIDEO_THEME__: 'readonly',
+        __THEME_PALETTE__: 'readonly',
+        __AUDIO_ENVELOPE__: 'readonly'
+      }
     }
   }
 ];

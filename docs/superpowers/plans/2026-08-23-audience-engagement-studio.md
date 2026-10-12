@@ -6,13 +6,13 @@
 
 **Architecture:** One new service (`utils/audience-engagement-service.js`) + three new SQLite tables, wired into the existing Express monolith (`index.js`), the cron scheduler (`schedules/daily-automation.js`), and the vanilla-JS dashboard. Mined ideas reuse the existing `learning_recommendations` table (category `audience_demand`) so approved ones flow into autonomous planning through the pipeline that already exists.
 
-**Tech Stack:** Node.js 18+ CommonJS, sqlite3 (raw driver wrappers in `database/db.js`), googleapis (YouTube Data API v3), `utils/ai-text-service.js` for AI calls, Express routes in `index.js`, node-cron, no-framework dashboard (`dashboard/app.js` innerHTML renderers).
+**Tech Stack:** Node.js 22+ CommonJS, sqlite3 (raw driver wrappers in `database/db.js`), googleapis (YouTube Data API v3), `utils/ai-text-service.js` for AI calls, Express routes in `index.js`, node-cron, no-framework dashboard (`dashboard/app.js` innerHTML renderers).
 
 **Spec:** `docs/superpowers/specs/2026-08-23-audience-engagement-studio-design.md`
 
 ## Global Constraints
 
-- Node.js 18+, CommonJS (`require`/`module.exports`), **no new npm dependencies**.
+- Node.js 22+, CommonJS (`require`/`module.exports`), **no new npm dependencies**.
 - `npm run lint` must pass warning-free after every task.
 - `npm test` must pass fully after every task (all pre-existing tests plus the new ones).
 - **No simulated comments, ever.** On a YouTube API failure, store nothing (the strict refusal variant of the simulated-data policy).

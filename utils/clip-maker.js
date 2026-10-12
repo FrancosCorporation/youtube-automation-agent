@@ -141,7 +141,6 @@ async function makeClips({ videoPath, script, outDir, maxClips = 3 }) {
  *
  * makeVerticalClips({ script, slug, imagesDir, ttsDir, outDir, maxClips })
  */
-const { getMediaDuration } = require('./ffmpeg');
 const { HyperFramesVideoRenderer } = require('./hyperframes-video-renderer');
 
 /**
@@ -238,7 +237,7 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       const titleWords = String(pick.text)
         .replace(/[""'']/g, '')
         .split(/\s+/).filter(Boolean).slice(0, 5)
-        .map(w => w.replace(/[^\wÀ-ú\-]/g, '').toUpperCase()).filter(Boolean).slice(0, 5);
+        .map(w => w.replace(/[^\wÀ-ú-]/g, '').toUpperCase()).filter(Boolean).slice(0, 5);
 
       // 3) Mini-roteiro vertical: a frase vira VÁRIOS slides curtos
       //    (≈7 palavras por tela) — cada slide com sua imagem e o karaokê

@@ -186,7 +186,15 @@ async function cleanupDisk(options = {}) {
     report.skipped.push('cache de imagens: há uma geração ativa');
   } else {
     let imageDirs = [];
-    try { imageDirs = (await fs.readdir(imageRoot, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => path.join(imageRoot, e.name)); } catch (_error) {}
+    try {
+      imageDirs = (await fs.readdir(imageRoot, { withFileTypes: true }))
+        .filter(entry => entry.isDirectory())
+        .map(entry => path.join(imageRoot, entry.name));
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        report.skipped.push(`cache de imagens: falha ao listar (${error.message})`);
+      }
+    }
     const imageCutoff = now - imageDays * DAY_MS;
     for (const dir of imageDirs) {
       const stats = await directoryStats(dir);
