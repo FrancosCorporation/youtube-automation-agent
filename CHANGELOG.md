@@ -7,6 +7,10 @@
 - Added explicit reschedule, publish-now, and delete-schedule controls while keeping generated content when a schedule is removed
 - Fixed YouTube OAuth to use the configured loopback redirect URI instead of generating a mismatched callback
 
+## v2.11.0 — 2026-10-12
+
+- Fixed animated karaoke captions so the complete sentence stays visible while the current spoken word is highlighted.
+
 ## v2.10.0 — 2026-08-24
 
 - Added a versioned DarkzSEO discoverability preflight over a shell-free Python stdin/stdout adapter, with explicit unavailable and schema-mismatch states

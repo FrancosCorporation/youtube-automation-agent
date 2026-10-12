@@ -10,7 +10,11 @@ Research topics → write scripts → generate narration and visuals → assembl
 
 ## What's new on master
 
-- **v2.10.0 is now on master:** DarkzSEO discoverability audits, controlled growth experiments, and outcome-aware channel operation are available together in the approval-first workflow.
+- **v2.11.0 is now on master:** karaoke captions show the complete spoken sentence while highlighting the current word.
+
+## What's new in v2.11.0
+
+- Fixed animated captions that revealed only one word at a time; each full sentence remains visible while the spoken word stays highlighted.
 
 ### September 21, 2026 reliability hotfixes
 

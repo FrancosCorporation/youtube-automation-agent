@@ -78,9 +78,11 @@
         const span = el('span', 'word' + (word.kw ? ' kw' : ''), word.w);
         span.dataset.start = String(word.t || 0);
         span.dataset.end = String(word.e != null ? word.e : (word.t || 0) + 300);
+        // Keep the complete sentence readable from the start of its scene;
+        // the karaoke state below highlights the spoken word without hiding
+        // the rest of the caption during rendered seeks.
+        span.style.opacity = '1';
         wrap.appendChild(span);
-        tween(span, 'opacity', 0, 1, word.t, 160);
-        tween(span, 'translateY', 10, 0, word.t, 220, 'easeOut');
       });
       return wrap;
     },
