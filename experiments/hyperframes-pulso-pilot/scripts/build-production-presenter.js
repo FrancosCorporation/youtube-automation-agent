@@ -15,4 +15,4 @@ await build({
   outfile: outputPath
 });
 
-process.stdout.write(`Runtime 3D de produção preparado: ${outputPath}\n`);
+process.stdout.write(`Runtime 3D com o mascote aprovado preparado: ${outputPath}\n`);

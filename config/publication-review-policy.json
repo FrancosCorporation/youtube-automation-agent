@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "owner-delegated-2026-10-18",
+  "enabled": true,
+  "mode": "owner-delegated-automatic",
+  "authorizedAt": "2026-10-18T14:00:00.000Z",
+  "instruction": "As capas já estão autorizadas em todos os nichos. Produzir composições próprias 16:9 para o master horizontal e 9:16 para conteúdo vertical, sem apenas cortar a arte horizontal. O agente ou QA automático revisa e corrige cada formato exigido sem pedir minha permissão; acompanho conforme os vídeos são publicados. Capa condizente com o vídeo, nome do modelo e assunto quando aplicável, imagem que desperte curiosidade sem promessa falsa.",
+  "scope": "Todos os nichos, novos vídeos e pacotes pendentes explicitamente selecionados: criação/correção de capas e liberação automática após fonte/revisão factual, checks técnicos e hashes. Publicar pelos destinos e fluxo existentes sem confirmação humana por capa/vídeo. Não altera contas, cadência, quotas, privacidade nem permite repetir resultados remotos incertos.",
+  "thumbnailReview": {
+    "ownerApprovalRequired": false,
+    "reviewer": "agent-or-automatic-qa",
+    "niches": "all",
+    "criteria": [
+      "Imagem e chamada fiéis à fonte e ao conteúdo do vídeo, adaptadas ao nicho e à pauta específica.",
+      "Chamada legível em PT-BR, com nome exato do modelo/produto e assunto quando centrais à pauta.",
+      "Curiosidade e apelo visual sem inventar afirmações, números, resultados ou promessas.",
+      "Gerar arte específica para 16:9 e 9:16, com enquadramento e área segura próprios; não converter uma proporção na outra por simples corte.",
+      "Escolher o provider pela fidelidade visual; GPT ImageGen do Codex pode ser usado quando superar Gemini. Compor o texto separadamente e revisar/corrigir cada capa antes da liberação por hash."
+    ]
+  }
+}

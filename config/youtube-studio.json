@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "expectedChannelId": "UCT_Scob-q-jUJgfDUaMvejA",
+  "androidDevice": "emulator-5560",
+  "cdpUrl": "http://127.0.0.1:9223",
+  "uploadDirectory": "/sdcard/Movies/PulsoStudio",
+  "defaultMadeForKids": false
+}

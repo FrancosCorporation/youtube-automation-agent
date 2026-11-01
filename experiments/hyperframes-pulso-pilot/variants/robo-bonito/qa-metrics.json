@@ -1,0 +1,79 @@
+{
+  "metrics": {
+    "sourceSize": [
+      0.8809399902820587,
+      1.0751312544537945,
+      0.38186919893755134
+    ],
+    "normalizedHeight": 3.85,
+    "meshes": 1,
+    "vertices": 315191,
+    "triangles": 500036,
+    "skinnedMeshes": 0,
+    "animations": []
+  },
+  "errors": [],
+  "frames": [
+    {
+      "name": "frente",
+      "time": 0.5,
+      "file": "renders/pulso-robo-bonito-frente.png"
+    },
+    {
+      "name": "perfil",
+      "time": 2.5,
+      "file": "renders/pulso-robo-bonito-perfil.png"
+    },
+    {
+      "name": "costas",
+      "time": 4.5,
+      "file": "renders/pulso-robo-bonito-costas.png"
+    },
+    {
+      "name": "close",
+      "time": 6.5,
+      "file": "renders/pulso-robo-bonito-close.png"
+    },
+    {
+      "name": "antes-2",
+      "time": 1.9583333333333333,
+      "file": "renders/pulso-robo-bonito-antes-2.png"
+    },
+    {
+      "name": "depois-2",
+      "time": 2,
+      "file": "renders/pulso-robo-bonito-depois-2.png"
+    },
+    {
+      "name": "antes-4",
+      "time": 3.9583333333333335,
+      "file": "renders/pulso-robo-bonito-antes-4.png"
+    },
+    {
+      "name": "depois-4",
+      "time": 4,
+      "file": "renders/pulso-robo-bonito-depois-4.png"
+    },
+    {
+      "name": "antes-6",
+      "time": 5.958333333333333,
+      "file": "renders/pulso-robo-bonito-antes-6.png"
+    },
+    {
+      "name": "depois-6",
+      "time": 6,
+      "file": "renders/pulso-robo-bonito-depois-6.png"
+    }
+  ],
+  "capture": "1040x1040 WebGL canvas, immediate read after rendering",
+  "deterministicSeek": {
+    "times": [
+      6.5,
+      0.5,
+      6.5
+    ],
+    "before": "0b28383fc43c2e6e29e4284a180d1e9da623efc55965606d0c9449664d9155be",
+    "after": "0b28383fc43c2e6e29e4284a180d1e9da623efc55965606d0c9449664d9155be",
+    "identical": true
+  }
+}

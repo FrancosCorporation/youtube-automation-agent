@@ -1,0 +1,16 @@
+{
+  "speaking_times": [
+    0.92,
+    4.11,
+    10.07,
+    15.16
+  ],
+  "silent_times": [
+    0.3,
+    3.544,
+    9.704,
+    27.116
+  ],
+  "total_duration": 27.616,
+  "method": "Orchestrator calculation: actual envelope peak sample index per phrase and verified zeros in explicit pauses."
+}

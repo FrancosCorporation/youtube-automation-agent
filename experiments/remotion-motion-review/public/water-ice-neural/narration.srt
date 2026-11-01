@@ -1,0 +1,27 @@
+1
+00:00:00,050 --> 00:00:01,533
+Por que o gelo flutua?
+
+2
+00:00:01,533 --> 00:00:06,108
+Na água líquida, as moléculas se movem e conseguem ficar mais próximas.
+
+3
+00:00:06,108 --> 00:00:10,193
+Ao congelar, elas formam uma estrutura cristalina mais aberta.
+
+4
+00:00:10,193 --> 00:00:13,788
+A mesma quantidade de água passa a ocupar mais espaço.
+
+5
+00:00:13,788 --> 00:00:17,615
+Por isso, o gelo fica cerca de nove por cento menos denso.
+
+6
+00:00:17,615 --> 00:00:18,969
+Então ele flutua.
+
+7
+00:00:18,969 --> 00:00:25,115
+Num iceberg, aproximadamente noventa por cento do volume fica abaixo da superfície.

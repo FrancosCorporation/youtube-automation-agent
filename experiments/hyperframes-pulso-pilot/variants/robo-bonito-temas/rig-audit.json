@@ -1,0 +1,133 @@
+{
+  "source": "variants/robo-bonito/assets/robo-bonito-hunyuan.glb",
+  "sourceHash": "f588d0449e71fb60cc649c400ff04b47c964248cadf9e015e74a36653c5554ff",
+  "output": "variants/robo-bonito-temas/assets/robo-bonito-rigged.glb",
+  "bytes": 90188772,
+  "bodyVertices": 320435,
+  "bodyTriangles": 500036,
+  "sourceBodyVertices": 315191,
+  "sourceBodyTriangles": 500036,
+  "sourceVertexAccessor": 14,
+  "visorTriangles": 8362,
+  "bones": 17,
+  "rigHeight": 1.0751310586929321,
+  "pivots": {
+    "Root": [
+      0,
+      0,
+      0
+    ],
+    "Hips": [
+      0,
+      0.32,
+      0
+    ],
+    "Chest": [
+      0,
+      0.57,
+      0
+    ],
+    "Neck": [
+      0,
+      0.663,
+      -0.01
+    ],
+    "Head": [
+      0,
+      0.69,
+      -0.01
+    ],
+    "UpperArm_L": [
+      0.184,
+      0.605,
+      -0.012
+    ],
+    "Forearm_L": [
+      0.242,
+      0.493,
+      -0.015
+    ],
+    "Hand_L": [
+      0.308,
+      0.361,
+      0.035
+    ],
+    "UpperArm_R": [
+      -0.184,
+      0.605,
+      -0.012
+    ],
+    "Forearm_R": [
+      -0.242,
+      0.493,
+      -0.015
+    ],
+    "Hand_R": [
+      -0.308,
+      0.361,
+      0.035
+    ],
+    "Thigh_L": [
+      0.112,
+      0.31,
+      -0.01
+    ],
+    "Shin_L": [
+      0.127,
+      0.215,
+      -0.005
+    ],
+    "Foot_L": [
+      0.131,
+      0.067,
+      0.028
+    ],
+    "Thigh_R": [
+      -0.112,
+      0.31,
+      -0.01
+    ],
+    "Shin_R": [
+      -0.127,
+      0.215,
+      -0.005
+    ],
+    "Foot_R": [
+      -0.131,
+      0.067,
+      0.028
+    ]
+  },
+  "weightCoverage": {
+    "Root": 0,
+    "Hips": 0,
+    "Chest": 62592,
+    "Neck": 12692,
+    "Head": 62961,
+    "UpperArm_L": 14007,
+    "Forearm_L": 13071,
+    "Hand_L": 17687,
+    "UpperArm_R": 15149,
+    "Forearm_R": 13085,
+    "Hand_R": 16968,
+    "Thigh_L": 13557,
+    "Shin_L": 16594,
+    "Foot_L": 16017,
+    "Thigh_R": 13781,
+    "Shin_R": 16863,
+    "Foot_R": 15411
+  },
+  "weightsNormalized": true,
+  "maxInfluences": 1,
+  "armLegBridgeTriangles": 0,
+  "faceControls": [
+    "FaceEye_L",
+    "FaceEye_R",
+    "FaceSmile",
+    "FaceMouth"
+  ],
+  "limitations": [
+    "Finger joints not separately articulated.",
+    "Articulation requires visual amplitude QA."
+  ]
+}

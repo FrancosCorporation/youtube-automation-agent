@@ -136,7 +136,8 @@ Preferred call to action: ${strategy.callToAction || 'invite the viewer to subsc
 Keywords: ${(strategy.keywords || []).join(', ')}
 Research sources: ${JSON.stringify(strategy.researchSources || [])}
 Content language: ${process.env.CONTENT_LANGUAGE || 'en'} — write title, hook, sections, and CTA in this language.
-Avoid fabricated statistics, unsupported claims, and fake urgency. List every externally verifiable factual claim in claims. Use only exact URLs from Research sources; use an empty sourceUrls array when the supplied sources do not support a claim.`;
+Avoid fabricated statistics, unsupported claims, and fake urgency. List every externally verifiable factual claim in claims. Use only exact URLs from Research sources; use an empty sourceUrls array when the supplied sources do not support a claim.
+${strategy.knowledgeBaseContext || ''}`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {

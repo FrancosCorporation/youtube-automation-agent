@@ -33,8 +33,8 @@ const PROVIDERS = {
   mimo: {
     name: 'MiMo (Xiaomi)',
     baseURL: 'https://api.xiaomimimo.com/v1',
-    defaultModel: 'mimo-v2.5-pro',
-    models: ['mimo-v2.5-pro', 'mimo-v2.5'],
+    defaultModel: 'mimo-v2.6-flash',
+    models: ['mimo-v2.6-flash', 'mimo-v2.6-pro'],
     envKey: 'MIMO_API_KEY',
   },
   glm: {
@@ -72,9 +72,24 @@ class AITextService {
     const provider = credentials.aiProvider?.provider;
     const apiKey = credentials.aiProvider?.apiKey;
     const model = credentials.aiProvider?.model;
+    const timeoutMs = credentials.aiProvider?.timeoutMs;
+
+    if (provider === 'openai-compatible' && apiKey && credentials.aiProvider?.baseURL) {
+      return this._initOpenAICompatible({
+        name: String(credentials.aiProvider.name || 'OpenAI-compatible provider').slice(0, 80),
+        baseURL: credentials.aiProvider.baseURL,
+        defaultModel: model || 'default'
+      }, apiKey, model, timeoutMs);
+    }
 
     if (provider && PROVIDERS[provider] && apiKey) {
-      return this._initOpenAICompatible(PROVIDERS[provider], apiKey, model);
+      return this._initOpenAICompatible(PROVIDERS[provider], apiKey, model, timeoutMs);
+    }
+
+    // An explicit Gemini credential must not be shadowed by another provider
+    // inherited from the process environment. This is used for provider fallback.
+    if (credentials.gemini?.apiKey) {
+      return this._initGemini(credentials.gemini.apiKey, credentials.gemini.model, credentials.gemini.timeoutMs);
     }
 
     for (const [, preset] of Object.entries(PROVIDERS)) {
@@ -92,17 +107,26 @@ class AITextService {
     this.logger.warn('No AI text provider configured — text generation unavailable');
   }
 
-  _initOpenAICompatible(preset, apiKey, model) {
-    this.client = new OpenAI({ apiKey, baseURL: preset.baseURL });
+  _initOpenAICompatible(preset, apiKey, model, timeoutMs) {
+    const timeout = Number.isSafeInteger(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined;
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: preset.baseURL,
+      ...(timeout ? { timeout, maxRetries: 0 } : {})
+    });
     this.model = model || preset.defaultModel;
     this.providerName = preset.name;
     this.logger.info(`${preset.name} initialized (model: ${this.model})`);
   }
 
-  _initGemini(apiKey, model) {
+  _initGemini(apiKey, model, timeoutMs) {
     try {
       const { GoogleGenAI } = require('@google/genai');
-      this.gemini = new GoogleGenAI({ apiKey });
+      const timeout = Number.isSafeInteger(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined;
+      this.gemini = new GoogleGenAI({
+        apiKey,
+        ...(timeout ? { httpOptions: { timeout, retryOptions: { attempts: 1 } } } : {})
+      });
       this.model = model || GEMINI_DEFAULT_MODEL;
       this.providerName = 'Google Gemini';
       this.logger.info(`Gemini initialized (model: ${this.model})`);
@@ -120,6 +144,7 @@ class AITextService {
 
     if (this.gemini) {
       const config = { maxOutputTokens: maxTokens };
+      if (options.signal) config.abortSignal = options.signal;
       if (!/^gemini-3\.(?:[5-9]|\d{2,})-/.test(model)) config.temperature = temperature;
       const response = await this.gemini.models.generateContent({
         model,
@@ -139,6 +164,10 @@ class AITextService {
       throw new Error('No AI text provider configured');
     }
 
+    const client = Number.isSafeInteger(options.timeoutMs) && options.timeoutMs > 0
+      ? this.client.withOptions({ timeout: options.timeoutMs, maxRetries: 0 })
+      : this.client;
+    const requestOptions = options.signal ? { signal: options.signal } : undefined;
     const params = {
       model,
       messages: [{ role: 'user', content: prompt }],
@@ -154,7 +183,7 @@ class AITextService {
     for (let index = 0; index < tokenParams.length; index++) {
       const request = { ...params, ...tokenParams[index] };
       try {
-        const response = await this.client.chat.completions.create(request);
+        const response = await client.chat.completions.create(request, requestOptions);
         return this._extractContent(response);
       } catch (error) {
         lastError = error;
@@ -167,7 +196,7 @@ class AITextService {
         if (unsupportedTemperature) {
           const { temperature: _temperature, ...withoutTemperature } = request;
           try {
-            const response = await this.client.chat.completions.create(withoutTemperature);
+            const response = await client.chat.completions.create(withoutTemperature, requestOptions);
             return this._extractContent(response);
           } catch (retryError) {
             lastError = retryError;

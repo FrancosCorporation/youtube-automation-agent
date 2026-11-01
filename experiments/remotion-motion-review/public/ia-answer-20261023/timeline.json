@@ -1,0 +1,502 @@
+{
+  "title": "Como uma IA monta uma resposta — e por que às vezes inventa",
+  "fps": 24,
+  "durationFrames": 9634,
+  "durationSeconds": 401.4166666666667,
+  "chapters": [
+    {
+      "id": "answer",
+      "title": "Resposta não é busca",
+      "headline": [
+        "A resposta é montada.",
+        "Não vem de uma gaveta."
+      ],
+      "sourceIds": [
+        "google-llm",
+        "microsoft-llm"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "A inteligência artificial pode escrever bonito e ainda errar.",
+          "startSeconds": 0.051165999999999996,
+          "endSeconds": 3.556333
+        },
+        {
+          "index": 1,
+          "text": "Para entender por quê, acompanhe a viagem de uma pergunta até a resposta que aparece na tela.",
+          "startSeconds": 3.827333,
+          "endSeconds": 8.943333
+        },
+        {
+          "index": 2,
+          "text": "Quando um modelo de linguagem gera texto, ele estima quais pedaços podem continuar a sequência que recebeu.",
+          "startSeconds": 9.213916,
+          "endSeconds": 15.25775
+        },
+        {
+          "index": 3,
+          "text": "O novo pedaço entra no texto, vira parte do contexto e ajuda a orientar o próximo passo.",
+          "startSeconds": 15.528333,
+          "endSeconds": 21.056708
+        },
+        {
+          "index": 4,
+          "text": "Esse processo se repete até a resposta terminar, respeitando também as instruções e os limites do sistema.",
+          "startSeconds": 21.327333,
+          "endSeconds": 27.912374
+        },
+        {
+          "index": 5,
+          "text": "Pense na frase: o gato dorme no sofá. Ela aparece aqui apenas como um exemplo simplificado.",
+          "startSeconds": 28.183,
+          "endSeconds": 34.072165999999996
+        },
+        {
+          "index": 6,
+          "text": "Na geração, existem diferentes continuações possíveis; a escolha depende do modelo, do contexto e das configurações.",
+          "startSeconds": 34.342791,
+          "endSeconds": 41.855666
+        },
+        {
+          "index": 7,
+          "text": "Isso é diferente de abrir uma gaveta e retirar uma resposta pronta para aquela pergunta.",
+          "startSeconds": 42.126290999999995,
+          "endSeconds": 47.126290999999995
+        },
+        {
+          "index": 8,
+          "text": "Um aplicativo pode conectar o modelo à busca, a documentos ou a outras ferramentas, mas isso é uma etapa adicional.",
+          "startSeconds": 47.396916,
+          "endSeconds": 54.252582000000004
+        },
+        {
+          "index": 9,
+          "text": "Por isso, uma resposta fluente não prova que houve pesquisa na internet, nem que cada afirmação foi conferida.",
+          "startSeconds": 54.523208,
+          "endSeconds": 60.786083
+        }
+      ],
+      "wordCount": 162,
+      "index": 0,
+      "startFrame": 0,
+      "durationFrames": 1495,
+      "startSeconds": 0.0,
+      "durationSeconds": 62.291666666666664,
+      "speechDurationSeconds": 61.728,
+      "audio": "ia-answer-20261023/chapter-01.mp3"
+    },
+    {
+      "id": "tokens",
+      "title": "O texto vira tokens",
+      "headline": [
+        "Para o modelo,",
+        "texto vira números."
+      ],
+      "sourceIds": [
+        "hf-tokenizers"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "Uma palavra pode virar vários pedaços dentro de uma inteligência artificial.",
+          "startSeconds": 0.051541,
+          "endSeconds": 4.471666
+        },
+        {
+          "index": 1,
+          "text": "Antes de chegar ao modelo, a pergunta passa por um tokenizador: o componente que transforma o texto em uma sequência de unidades chamadas tokens.",
+          "startSeconds": 4.74225,
+          "endSeconds": 13.182999
+        },
+        {
+          "index": 2,
+          "text": "Um token pode corresponder a uma palavra inteira, a parte dela ou a um sinal de pontuação.",
+          "startSeconds": 13.453625,
+          "endSeconds": 18.724249
+        },
+        {
+          "index": 3,
+          "text": "Os espaços também podem participar dessa representação, dependendo do tokenizador usado.",
+          "startSeconds": 18.994833,
+          "endSeconds": 24.587623999999998
+        },
+        {
+          "index": 4,
+          "text": "Na tela, separamos uma frase em peças para visualizar a ideia; a divisão é ilustrativa e varia entre modelos.",
+          "startSeconds": 24.85825,
+          "endSeconds": 31.675249
+        },
+        {
+          "index": 5,
+          "text": "Cada peça é associada a uma identificação numérica, porque a rede trabalha com números.",
+          "startSeconds": 31.945875,
+          "endSeconds": 36.868541
+        },
+        {
+          "index": 6,
+          "text": "A tokenização procura uma representação adequada para aquele modelo, combinando unidades de seu vocabulário.",
+          "startSeconds": 37.139165999999996,
+          "endSeconds": 43.453624000000005
+        },
+        {
+          "index": 7,
+          "text": "Por isso, contar palavras não é a mesma coisa que contar tokens.",
+          "startSeconds": 43.724208,
+          "endSeconds": 47.551541
+        },
+        {
+          "index": 8,
+          "text": "A escolha do tokenizador também importa: ele precisa ser compatível com o modelo que receberá a sequência.",
+          "startSeconds": 47.822165999999996,
+          "endSeconds": 54.033499000000006
+        },
+        {
+          "index": 9,
+          "text": "Na saída, as unidades geradas voltam a ser texto legível. A frase que você lê passou por essa transformação nos dois sentidos.",
+          "startSeconds": 54.304125,
+          "endSeconds": 62.164916
+        }
+      ],
+      "wordCount": 161,
+      "index": 1,
+      "startFrame": 1495,
+      "durationFrames": 1529,
+      "startSeconds": 62.291666666666664,
+      "durationSeconds": 63.708333333333336,
+      "speechDurationSeconds": 63.12,
+      "audio": "ia-answer-20261023/chapter-02.mp3"
+    },
+    {
+      "id": "context",
+      "title": "O contexto muda o sentido",
+      "headline": [
+        "A mesma palavra.",
+        "Outro contexto."
+      ],
+      "sourceIds": [
+        "google-transformer",
+        "google-llm"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "A mesma palavra pode levar uma inteligência artificial a caminhos diferentes.",
+          "startSeconds": 0.051541,
+          "endSeconds": 4.5232079999999995
+        },
+        {
+          "index": 1,
+          "text": "Imagine duas frases: sentei no banco da praça; depositei dinheiro no banco.",
+          "startSeconds": 4.793832999999999,
+          "endSeconds": 9.587624
+        },
+        {
+          "index": 2,
+          "text": "A palavra banco é igual, mas as palavras ao redor ajudam a distinguir os sentidos.",
+          "startSeconds": 9.857875,
+          "endSeconds": 14.819207
+        },
+        {
+          "index": 3,
+          "text": "Nos modelos baseados em Transformer, mecanismos de atenção relacionam partes da sequência para construir representações dependentes do contexto.",
+          "startSeconds": 15.090208,
+          "endSeconds": 23.672708
+        },
+        {
+          "index": 4,
+          "text": "Em nossa animação, as conexões destacadas mostram essa relação de forma esquemática, sem representar pesos reais de um modelo.",
+          "startSeconds": 23.943291000000002,
+          "endSeconds": 31.726791000000002
+        },
+        {
+          "index": 5,
+          "text": "Não existe aqui um olhar humano lendo a frase; existem operações matemáticas sobre representações numéricas.",
+          "startSeconds": 31.997416,
+          "endSeconds": 38.621124
+        },
+        {
+          "index": 6,
+          "text": "O contexto disponível pode incluir a pergunta, instruções e trechos anteriores que o aplicativo envia ao modelo.",
+          "startSeconds": 38.89175,
+          "endSeconds": 45.528375
+        },
+        {
+          "index": 7,
+          "text": "Essa informação ajuda a orientar a continuação, mas a quantidade de texto que cabe em uma entrada tem limite.",
+          "startSeconds": 45.798958,
+          "endSeconds": 52.139165999999996
+        },
+        {
+          "index": 8,
+          "text": "Por isso, uma conversa mostrada na tela não deve ser confundida automaticamente com todo o material recebido naquela chamada.",
+          "startSeconds": 52.409791,
+          "endSeconds": 59.574749000000004
+        },
+        {
+          "index": 9,
+          "text": "O ponto central é este: o modelo gera a partir do contexto disponível, e mudar esse contexto pode mudar a resposta.",
+          "startSeconds": 59.845375,
+          "endSeconds": 66.97162399999999
+        }
+      ],
+      "wordCount": 166,
+      "index": 2,
+      "startFrame": 3024,
+      "durationFrames": 1643,
+      "startSeconds": 126.0,
+      "durationSeconds": 68.45833333333333,
+      "speechDurationSeconds": 67.896,
+      "audio": "ia-answer-20261023/chapter-03.mp3"
+    },
+    {
+      "id": "training",
+      "title": "Treinar não é conversar",
+      "headline": [
+        "Treino muda parâmetros.",
+        "Conversa traz contexto."
+      ],
+      "sourceIds": [
+        "microsoft-llm",
+        "google-transformer"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "Treinar uma inteligência artificial e conversar com ela são etapas diferentes.",
+          "startSeconds": 0.051541,
+          "endSeconds": 4.536082
+        },
+        {
+          "index": 1,
+          "text": "Durante o treinamento, a rede ajusta parâmetros numéricos a partir dos exemplos e do objetivo de aprendizado.",
+          "startSeconds": 4.8067079999999995,
+          "endSeconds": 11.211333
+        },
+        {
+          "index": 2,
+          "text": "No caso de modelos que geram texto prevendo a próxima unidade, aprender padrões de sequência é uma parte central desse processo.",
+          "startSeconds": 11.481958,
+          "endSeconds": 19.020624
+        },
+        {
+          "index": 3,
+          "text": "Esses parâmetros aprendidos participam dos cálculos usados depois para produzir respostas.",
+          "startSeconds": 19.29125,
+          "endSeconds": 24.703625
+        },
+        {
+          "index": 4,
+          "text": "Na conversa comum, enviar uma nova mensagem fornece contexto para a execução do modelo; isso não equivale a refazer seu treinamento a cada pergunta.",
+          "startSeconds": 24.974207999999997,
+          "endSeconds": 33.853124
+        },
+        {
+          "index": 5,
+          "text": "Um aplicativo pode guardar histórico, recuperar documentos ou manter informações entre sessões, conforme sua implementação.",
+          "startSeconds": 34.123708,
+          "endSeconds": 41.585041
+        },
+        {
+          "index": 6,
+          "text": "Essas funções precisam ser distinguidas da atualização dos parâmetros da rede.",
+          "startSeconds": 41.855666,
+          "endSeconds": 46.456165999999996
+        },
+        {
+          "index": 7,
+          "text": "Na animação, mostramos primeiro o ajuste durante o treino e depois a passagem de uma pergunta pelo modelo já preparado.",
+          "startSeconds": 46.726791,
+          "endSeconds": 53.621125
+        },
+        {
+          "index": 8,
+          "text": "O desenho é uma simplificação: os blocos não representam a quantidade real de camadas ou parâmetros de um produto.",
+          "startSeconds": 53.89175,
+          "endSeconds": 60.502583
+        },
+        {
+          "index": 9,
+          "text": "Assim, lembrar algo na conversa, consultar um arquivo e treinar um modelo são mecanismos diferentes, mesmo quando parecem iguais para quem está usando.",
+          "startSeconds": 60.773208,
+          "endSeconds": 69.458749
+        }
+      ],
+      "wordCount": 172,
+      "index": 3,
+      "startFrame": 4667,
+      "durationFrames": 1703,
+      "startSeconds": 194.45833333333334,
+      "durationSeconds": 70.95833333333333,
+      "speechDurationSeconds": 70.392,
+      "audio": "ia-answer-20261023/chapter-04.mp3"
+    },
+    {
+      "id": "grounding",
+      "title": "Onde nascem os erros",
+      "headline": [
+        "Soar convincente",
+        "não garante um fato."
+      ],
+      "sourceIds": [
+        "anthropic-hallucinations",
+        "anthropic-rag",
+        "google-transformer"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "Uma resposta pode parecer segura e trazer uma informação sem apoio.",
+          "startSeconds": 0.051541,
+          "endSeconds": 4.201041
+        },
+        {
+          "index": 1,
+          "text": "Modelos de linguagem podem gerar conteúdo incorreto ou incompatível com o contexto recebido; esse tipo de falha costuma ser chamado de alucinação.",
+          "startSeconds": 4.471666,
+          "endSeconds": 13.518040999999998
+        },
+        {
+          "index": 2,
+          "text": "Não é necessário imaginar uma intenção de enganar: estamos falando de um problema na confiabilidade do texto produzido.",
+          "startSeconds": 13.788666,
+          "endSeconds": 20.657207999999997
+        },
+        {
+          "index": 3,
+          "text": "Uma forma de dar mais apoio à resposta é recuperar informação de documentos e acrescentar os trechos relevantes à entrada do modelo.",
+          "startSeconds": 20.927833,
+          "endSeconds": 28.350541
+        },
+        {
+          "index": 4,
+          "text": "Esse processo é conhecido como geração aumentada por recuperação, ou RAG.",
+          "startSeconds": 28.621125,
+          "endSeconds": 33.131457000000005
+        },
+        {
+          "index": 5,
+          "text": "A pergunta orienta uma busca, a busca seleciona trechos e esses trechos acompanham a solicitação enviada ao modelo.",
+          "startSeconds": 33.414958,
+          "endSeconds": 40.360833
+        },
+        {
+          "index": 6,
+          "text": "Aqui mostramos uma biblioteca de documentos ilustrativa, e não resultados de uma pesquisa real.",
+          "startSeconds": 40.631458,
+          "endSeconds": 46.249999
+        },
+        {
+          "index": 7,
+          "text": "A recuperação pode falhar: o trecho necessário pode não aparecer ou perder contexto quando o documento é dividido.",
+          "startSeconds": 46.520625,
+          "endSeconds": 53.247415999999994
+        },
+        {
+          "index": 8,
+          "text": "Por isso, encontrar algum texto parecido não basta para garantir que ele sustenta a conclusão.",
+          "startSeconds": 53.518041,
+          "endSeconds": 58.530916
+        },
+        {
+          "index": 9,
+          "text": "A fonte precisa ser pertinente, e a resposta ainda precisa respeitar o que ela realmente diz, incluindo limites e incertezas.",
+          "startSeconds": 58.801541,
+          "endSeconds": 66.40466599999999
+        }
+      ],
+      "wordCount": 169,
+      "index": 4,
+      "startFrame": 6370,
+      "durationFrames": 1629,
+      "startSeconds": 265.4166666666667,
+      "durationSeconds": 67.875,
+      "speechDurationSeconds": 67.32,
+      "audio": "ia-answer-20261023/chapter-05.mp3"
+    },
+    {
+      "id": "verify",
+      "title": "Como conferir a resposta",
+      "headline": [
+        "Pergunte. Confira.",
+        "Use com critério."
+      ],
+      "sourceIds": [
+        "anthropic-hallucinations",
+        "anthropic-rag",
+        "microsoft-llm"
+      ],
+      "sentences": [
+        {
+          "index": 0,
+          "text": "Antes de confiar numa resposta de inteligência artificial, siga o caminho da evidência.",
+          "startSeconds": 0.051541,
+          "endSeconds": 5.167541
+        },
+        {
+          "index": 1,
+          "text": "Comece deixando claro o que você quer saber e oferecendo o material necessário para aquela tarefa.",
+          "startSeconds": 5.438125,
+          "endSeconds": 10.953583
+        },
+        {
+          "index": 2,
+          "text": "Se a informação não estiver disponível, peça ao sistema para reconhecer a incerteza em vez de preencher a lacuna.",
+          "startSeconds": 11.224208,
+          "endSeconds": 17.873749
+        },
+        {
+          "index": 3,
+          "text": "Quando a resposta citar uma fonte, abra o documento e confira o trecho que sustentaria a afirmação.",
+          "startSeconds": 18.144333,
+          "endSeconds": 23.801541
+        },
+        {
+          "index": 4,
+          "text": "Veja se ele fala do mesmo assunto, se mantém as ressalvas e se a conclusão não foi além do que está escrito.",
+          "startSeconds": 24.072166000000003,
+          "endSeconds": 30.090207
+        },
+        {
+          "index": 5,
+          "text": "Uma referência exibida na tela é um ponto de partida para essa checagem, não uma garantia automática.",
+          "startSeconds": 30.360833,
+          "endSeconds": 36.249999
+        },
+        {
+          "index": 6,
+          "text": "Na animação, a afirmação só se conecta ao documento depois que encontramos apoio no trecho mostrado.",
+          "startSeconds": 36.520625,
+          "endSeconds": 42.461332999999996
+        },
+        {
+          "index": 7,
+          "text": "Se esse apoio faltar, a saída adequada pode ser corrigir o texto, buscar outra fonte ou admitir que a resposta permanece incerta.",
+          "startSeconds": 42.731958,
+          "endSeconds": 50.902082
+        },
+        {
+          "index": 8,
+          "text": "Esses cuidados ajudam a reduzir erros, mas não transformam o modelo em uma fonte infalível.",
+          "startSeconds": 51.172666,
+          "endSeconds": 56.713916
+        },
+        {
+          "index": 9,
+          "text": "A ideia final é simples: a inteligência artificial monta uma resposta; a confiabilidade depende também do contexto, das fontes e da verificação.",
+          "startSeconds": 56.984541,
+          "endSeconds": 65.91491599999999
+        }
+      ],
+      "wordCount": 179,
+      "index": 5,
+      "startFrame": 7999,
+      "durationFrames": 1635,
+      "startSeconds": 333.2916666666667,
+      "durationSeconds": 68.125,
+      "speechDurationSeconds": 66.84,
+      "audio": "ia-answer-20261023/chapter-06.mp3"
+    }
+  ],
+  "preparedAt": "2026-10-24T00:21:32.911079+00:00"
+}

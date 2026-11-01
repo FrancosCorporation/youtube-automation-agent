@@ -1,0 +1,38 @@
+{
+  "shell": {
+    "color": "#f2f6fa",
+    "metalness": 0.08,
+    "roughness": 0.24,
+    "clearcoat": 0.85
+  },
+  "metal": {
+    "color": "#788694",
+    "metalness": 0.85,
+    "roughness": 0.25
+  },
+  "visor": {
+    "color": "#07121d",
+    "metalness": 0.32,
+    "roughness": 0.15,
+    "clearcoat": 1
+  },
+  "led": {
+    "color": "#6ee8ff",
+    "emissive": "#30bddd",
+    "emissiveIntensity": 0.9
+  },
+  "lights": [
+    {
+      "color": "#f1f5ff",
+      "intensity": 3.2
+    },
+    {
+      "color": "#9dcaff",
+      "intensity": 1.6
+    },
+    {
+      "color": "#84ddff",
+      "intensity": 3.0
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "tasks": [{
+    "id": "theme-colors",
+    "inputs": ["config/themes.json", "utils/hyperframes-video-renderer.js"],
+    "objective": "Execute ferramentas para ler os arquivos e grave theme-colors.json: themes (array com id, brand, primary e secondary exatamente iguais aos accents[0] e [1] da PRIMEIRA variante de cada tema), renderer_selection (explicacao literal da precedencia de visualPalettes e selecao por seed), recommended_neutral_shell (uma cor clara), notes. Nao invente cores por nome. Nao edite arquivos de entrada. Nao pesquise web nem chame outros providers. Relatorio mecanico, sem aprovacao visual.",
+    "outputs": [{"path": "theme-colors.json", "kind": "json", "required_keys": ["themes", "renderer_selection", "recommended_neutral_shell", "notes"]}],
+    "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+    "timeout_seconds": 180,
+    "corrections": 1,
+    "context": "Usuario autorizou workers NVIDIA gratuitos. Quer robot 3D com identidade clara e detalhes seguindo cores do tema do video. Orquestrador implementa, diagnostica os bracos e verifica frames. Saida nao sera automaticamente integrada."
+  }]
+}

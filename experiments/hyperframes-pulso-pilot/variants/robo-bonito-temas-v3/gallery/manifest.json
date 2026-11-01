@@ -1,0 +1,152 @@
+[
+  {
+    "id": "ia",
+    "brand": "Pulso IA",
+    "colorName": "Ciano",
+    "paletteIndex": 1,
+    "accents": [
+      "#22D3EE",
+      "#38BDF8",
+      "#E0F2FE",
+      "#67E8F9"
+    ],
+    "image": "ia.png",
+    "robotImage": "ia-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "curiosidades",
+    "brand": "Pulso Curiosidades",
+    "colorName": "Amarelo",
+    "paletteIndex": 0,
+    "accents": [
+      "#FDE047",
+      "#FBBF24",
+      "#FEF08A",
+      "#FFF7CC"
+    ],
+    "image": "curiosidades.png",
+    "robotImage": "curiosidades-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "dinheiro",
+    "brand": "Pulso Dinheiro",
+    "colorName": "Verde-esmeralda",
+    "paletteIndex": 0,
+    "accents": [
+      "#22C55E",
+      "#4ADE80",
+      "#86EFAC",
+      "#DCFCE7"
+    ],
+    "image": "dinheiro.png",
+    "robotImage": "dinheiro-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "saude",
+    "brand": "Pulso Saúde",
+    "colorName": "Branco-gelo",
+    "paletteIndex": 0,
+    "accents": [
+      "#F1F5F9",
+      "#CBD5E1",
+      "#E2E8F0",
+      "#FFFFFF"
+    ],
+    "image": "saude.png",
+    "robotImage": "saude-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "economize",
+    "brand": "Pulso Economia",
+    "colorName": "Laranja",
+    "paletteIndex": 0,
+    "accents": [
+      "#FB923C",
+      "#FDBA74",
+      "#FED7AA",
+      "#FFF7ED"
+    ],
+    "image": "economize.png",
+    "robotImage": "economize-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "psicologia",
+    "brand": "Pulso Mente",
+    "colorName": "Violeta",
+    "paletteIndex": 0,
+    "accents": [
+      "#C084FC",
+      "#A78BFA",
+      "#D8B4FE",
+      "#F3E8FF"
+    ],
+    "image": "psicologia.png",
+    "robotImage": "psicologia-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "relacionamentos",
+    "brand": "Pulso Relações",
+    "colorName": "Rosa",
+    "paletteIndex": 0,
+    "accents": [
+      "#F472B6",
+      "#F9A8D4",
+      "#FBCFE8",
+      "#FDF2F8"
+    ],
+    "image": "relacionamentos.png",
+    "robotImage": "relacionamentos-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "fitness",
+    "brand": "Pulso Fitness",
+    "colorName": "Vermelho",
+    "paletteIndex": 0,
+    "accents": [
+      "#F87171",
+      "#EF4444",
+      "#FCA5A5",
+      "#FEE2E2"
+    ],
+    "image": "fitness.png",
+    "robotImage": "fitness-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "misterios",
+    "brand": "Pulso Mistérios",
+    "colorName": "Azul-royal",
+    "paletteIndex": 0,
+    "accents": [
+      "#60A5FA",
+      "#3B82F6",
+      "#93C5FD",
+      "#DBEAFE"
+    ],
+    "image": "misterios.png",
+    "robotImage": "misterios-robot.png",
+    "visibleFraction": 0.22479752218934912
+  },
+  {
+    "id": "carreira",
+    "brand": "Pulso Carreira",
+    "colorName": "Cobre",
+    "paletteIndex": 0,
+    "accents": [
+      "#BFA07A",
+      "#D6BB97",
+      "#E8D8BF",
+      "#F5EEE4"
+    ],
+    "image": "carreira.png",
+    "robotImage": "carreira-robot.png",
+    "visibleFraction": 0.22479752218934912
+  }
+]

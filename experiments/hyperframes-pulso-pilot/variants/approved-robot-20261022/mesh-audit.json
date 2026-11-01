@@ -1,0 +1,43 @@
+{
+  "valid_glb_header": true,
+  "bytes": 58249288,
+  "sha256": "8800e546ff499da30b66f76ce66882e41420a56c1b23583d544167b3e0ad9d70",
+  "meshes": 1,
+  "skins": 0,
+  "animations": 0,
+  "materials": 1,
+  "images": 3,
+  "external_uris": [],
+  "primitives": [
+    {
+      "positions": 314922,
+      "triangles": 499984,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TEXCOORD_0"
+      ],
+      "nonfinite_positions": 0,
+      "invalid_indices": 0,
+      "bounds_min": [
+        -0.3114199936389923,
+        -0.23631800711154938,
+        -1.1146039962768555
+      ],
+      "bounds_max": [
+        0.31085601449012756,
+        0.15264199674129486,
+        0.0
+      ],
+      "repeated_index_triangles": 0,
+      "zero_area_triangles": 0,
+      "duplicate_index_triangles": 0,
+      "nonfinite_normal": 0,
+      "nonfinite_texcoord_0": 0
+    }
+  ],
+  "limitations": [
+    "No self-intersection or deformation certification; no rig animation performed."
+  ],
+  "embedded_assets": true
+}

@@ -1,0 +1,23 @@
+[Unit]
+Description=AI Video Scheduler — produtor contínuo de vídeos
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Git/youtube_ai/youtube-automation-agent
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=FFMPEG_PATH=/usr/bin/ffmpeg
+Environment=RENDER_WORKERS=4
+Environment=VIDEOS_PER_DAY=60
+Environment=IMAGES_PER_GROUP=4
+Environment=RECAP_EVERY_DAYS=7
+Environment=DELETE_AFTER_UPLOAD=1
+ExecStart=/usr/bin/node scripts/channel-scheduler.js
+Restart=always
+RestartSec=30
+StandardOutput=append:%h/Git/youtube_ai/youtube-automation-agent/logs/scheduler.log
+StandardError=append:%h/Git/youtube_ai/youtube-automation-agent/logs/scheduler.log
+
+[Install]
+WantedBy=default.target

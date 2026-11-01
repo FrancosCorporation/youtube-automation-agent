@@ -48,9 +48,9 @@ class ChannelLearningEngine {
     const watchTime = analytics.watchTime || {};
     const engagement = analytics.engagement || {};
     const outcomes = analytics.outcomes || {};
-    const impressions = this.number(views.totalImpressions || report.thumbnailMetrics?.impressions);
-    const totalViews = this.number(views.totalViews);
-    const watchMinutes = this.number(watchTime.totalWatchTime);
+    const impressions = this.optionalNumber(views.totalImpressions) ?? this.optionalNumber(report.thumbnailMetrics?.impressions);
+    const totalViews = this.optionalNumber(views.totalViews);
+    const watchMinutes = this.optionalNumber(watchTime.totalWatchTime);
     const netSubscribers = outcomes.subscribersAvailable ? this.optionalNumber(outcomes.netSubscribers) : null;
     const estimatedRevenue = outcomes.revenueAvailable ? this.optionalNumber(outcomes.estimatedRevenue) : null;
     const cost = context.productionCost || {};
@@ -63,13 +63,13 @@ class ChannelLearningEngine {
     return {
       views: totalViews,
       impressions,
-      ctr: this.number(report.thumbnailMetrics?.clickThroughRate ?? views.averageCTR),
-      retention: this.number(watchTime.averageViewPercentage),
-      averageViewDuration: this.number(watchTime.averageViewDuration),
+      ctr: this.optionalNumber(report.thumbnailMetrics?.clickThroughRate ?? views.averageCTR),
+      retention: this.optionalNumber(watchTime.averageViewPercentage),
+      averageViewDuration: this.optionalNumber(watchTime.averageViewDuration),
       watchMinutes,
-      watchHours: Number((watchMinutes / 60).toFixed(3)),
-      engagementRate: this.number(engagement.engagementRate),
-      performanceScore: this.number(report.performance?.score),
+      watchHours: watchMinutes === null ? null : Number((watchMinutes / 60).toFixed(3)),
+      engagementRate: this.optionalNumber(engagement.engagementRate),
+      performanceScore: this.optionalNumber(report.performance?.score),
       subscribersGained: outcomes.subscribersAvailable ? this.optionalNumber(outcomes.subscribersGained) : null,
       subscribersLost: outcomes.subscribersAvailable ? this.optionalNumber(outcomes.subscribersLost) : null,
       netSubscribers,
@@ -152,7 +152,7 @@ class ChannelLearningEngine {
       this.db.listPerformanceSnapshots({ reliableOnly: true }),
       this.db.getChannelStrategy ? this.db.getChannelStrategy() : Promise.resolve(null)
     ]);
-    const snapshots = this.preferredSnapshotPerVideo(all);
+    const snapshots = this.preferredSnapshotPerVideo(all.filter(snapshot => this.isActionableSnapshot(snapshot)));
     if (snapshots.length < 2) return [];
 
     const candidates = [
@@ -168,6 +168,12 @@ class ChannelLearningEngine {
       }));
     }
     return saved;
+  }
+
+  isActionableSnapshot(snapshot) {
+    if (!snapshot || snapshot.simulated === true || !['medium', 'high'].includes(snapshot.confidence)) return false;
+    return this.number(snapshot.metrics?.impressions) >= 100
+      && this.number(snapshot.metrics?.views) >= 20;
   }
 
   preferredSnapshotPerVideo(snapshots) {

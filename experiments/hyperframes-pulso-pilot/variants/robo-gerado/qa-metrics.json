@@ -1,0 +1,17 @@
+{
+  "metrics": {
+    "sourceSize": [
+      0.7621580064296722,
+      1.1554182259706807,
+      0.24086119368356002
+    ],
+    "normalizedHeight": 3.85,
+    "meshes": 1,
+    "vertices": 294213,
+    "triangles": 500000,
+    "skinnedMeshes": 0,
+    "animations": []
+  },
+  "errors": [],
+  "deterministicSeek": "6.5/0.5/6.5: identical PNGs"
+}

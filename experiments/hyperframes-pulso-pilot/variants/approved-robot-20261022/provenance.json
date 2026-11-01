@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "id": "approved-robot-20261022",
+  "status": "rigged_runtime_rest_validated_acting_integration_pending",
+  "checkedAt": "2026-10-22T15:44:31.210819+00:00",
+  "reference": {
+    "path": "assets/brand/pulso-robot-approved-reference-2026-10-21.png",
+    "sha256": "dfe15946cb4d907f80bc67d779ce8981ffec40d2ea2344ae970019af24a02ccf",
+    "bytes": 1493859,
+    "visualApproval": "assets/brand/pulso-robot-approved-reference-2026-10-21.json"
+  },
+  "provider": {
+    "name": "Tencent Hunyuan 3D",
+    "page": "https://3d.hunyuan.tencent.com/creation",
+    "session": "dedicated_profile_visible_browser",
+    "uiEvidence": [
+      "3D生成 - V3.1",
+      "今日剩余生成次数：19",
+      "模型面数 499,984",
+      "顶点数 314,922"
+    ],
+    "quota": 19,
+    "cost": "One included daily generation consumed, 20→19; no purchase",
+    "quotaBefore": 20,
+    "model": "3D生成 - V3.1",
+    "requestedFaces": 500000,
+    "quotaAfter": 19
+  },
+  "uploadStarted": true,
+  "generationSubmitted": true,
+  "generationJobId": null,
+  "model": {
+    "path": "experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-hunyuan.glb",
+    "bytes": 58249288,
+    "sha256": "8800e546ff499da30b66f76ce66882e41420a56c1b23583d544167b3e0ad9d70",
+    "downloadedAt": "2026-10-22T15:52:19.981Z",
+    "uiTriangles": 499984,
+    "uiVertices": 314922
+  },
+  "rig": {
+    "provider": "Mixamo",
+    "jobId": "b49cce22-884e-4107-be06-91ce2a096c2e",
+    "status": "own_skin_exported_and_runtime_optimized",
+    "path": "experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-mixamo-rigged.fbx",
+    "bytes": 49703056,
+    "sha256": "f2ea4d251bcb6774adb40cdec2b7b9bb271c58977b3ebc83685fde1803ac6c7f",
+    "format": "FBX Binary, Original Pose",
+    "jobEvidence": "mixamo/rig-result.json",
+    "markersReviewed": "mixamo/markers/visual-review.json",
+    "previewSamples": [
+      "qa/mixamo-review-0.png",
+      "qa/mixamo-review-1.png",
+      "qa/mixamo-review-2.png"
+    ],
+    "completeMotionQA": false
+  },
+  "requiredNextAction": "Validate live Remotion arm/facial acting and deformation before treating presenter as complete.",
+  "assetAcceptance": [
+    "Preserve approved robot identity, proportions, teal joints, cyan face/chest lights and pink antenna.",
+    "Inspect generated mesh in front/side/back views; static GLB is provisional.",
+    "Verify arm/hand separation, topology and useful shoulder/elbow/wrist movement before integrating.",
+    "Validate rig weights and deformation independently from generation; preserve blink and speech controls."
+  ],
+  "reuseExistingInspector": "python3 experiments/hyperframes-pulso-pilot/scripts/audit-generated-glb.py experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-hunyuan.glb --output experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mesh-audit.json",
+  "submittedAt": "2026-10-22T15:48:10.695Z",
+  "generatedAt": "2026-10-22T15:51:36.528Z",
+  "browserSession": {
+    "profile": "/media/servidor/nvme_data/ana_meshy_profile",
+    "endpoint": "http://127.0.0.1:9222",
+    "persistent": true,
+    "tencentAuthenticated": true,
+    "mixamoAuthenticated": true,
+    "credentialsRecorded": false
+  },
+  "rigInput": {
+    "path": "experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-mixamo-input.fbx",
+    "bytes": 45635484,
+    "sha256": "aeb016c33f868d493e5abe4ae8b8b6bfd35584df4a16466dfa370857272299d0",
+    "method": "Blender CPU existing export_character_mixamo_fbx.py; world transforms applied; centered XY, grounded Z; original mesh unchanged",
+    "rigged": false
+  },
+  "sourceVisualReview": {
+    "reviewer": "agent",
+    "views": [
+      "qa/source-front.png",
+      "qa/source-side.png",
+      "qa/source-back.png"
+    ],
+    "identity": "matches approved reference: pink antenna, cyan circular eyes/chest, pearl armor, dark teal joints",
+    "observations": [
+      "Both arms and hands visible and separated from torso",
+      "Front/side/back complete and unclipped",
+      "Shoulder/elbow/wrist mechanical regions visible; actual deformation remains untested"
+    ],
+    "modelOwnerApproved3D": false
+  },
+  "history": [
+    {
+      "status": "login_required_before_generation",
+      "resolved": true,
+      "resolution": "Owner authenticated in existing dedicated browser; 20 included generations displayed."
+    },
+    {
+      "status": "mixamo_upload_client_timeout",
+      "resolved": true,
+      "resolution": "Browser recovered without restart; original upload processed and accepted. No duplicate upload."
+    }
+  ],
+  "runtime": {
+    "path": "experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-rigged-runtime.glb",
+    "bytes": 9810184,
+    "sha256": "6a9eb38d99229ac5519bb2900bda50df462b6d4eed411daa2a872e41fbc48df5",
+    "triangles": 122912,
+    "skins": 1,
+    "joints": 65,
+    "animations": 0,
+    "texturesMaxSize": 2048,
+    "staticSourcePreserved": true,
+    "bodyRigConfirmed": true,
+    "facialControlsIncluded": false,
+    "validation": {
+      "restGeometry": "rest-geometry-audit.json",
+      "skinWeights": "qa/runtime/model-info.json",
+      "uvMapping": "source-rig-uv-compatibility.json",
+      "runtimeMaterialAndSilhouetteReviewed": [
+        "qa/runtime/positive-z.png",
+        "qa/runtime/side.png",
+        "qa/runtime/negative-z.png"
+      ],
+      "visualReview": "agent comparison against source-local: face, white/teal plates, pink antenna, hands and silhouette retained",
+      "maxRestDistanceMeters": 1.5382966408174212e-05,
+      "normalizedWeightMaxError": 2.220446049250313e-16,
+      "invalidJoints": 0,
+      "nonfinitePositions": 0,
+      "fullAnimatedDeformationQA": false
+    },
+    "orientation": {
+      "up": "+Y",
+      "forward": "+Z",
+      "heightMeters": 1.114296227485452,
+      "runtimeBoneNames": "GLTFLoader removes colon: mixamorigLeftArm etc.; JSON retains mixamorig:LeftArm",
+      "geometryCoordinates": "meshopt quantized; use skin deformation and transforms for model-space surface coordinates"
+    }
+  }
+}

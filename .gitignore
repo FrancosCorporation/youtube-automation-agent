@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+/.venv-neural/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -8,10 +9,14 @@ yarn-error.log*
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
 config/credentials.json
 config/tokens.json
 config/*.key
 config/*.pem
+# Temporary desktop OAuth handoff files may survive an interrupted login.
+**/.youtube-oauth-*.json
 
 # API Keys and Secrets
 *.key
@@ -80,13 +85,21 @@ backup/
 # Cache
 .cache/
 *.cache
+__pycache__/
+*.py[cod]
 # Generated content outputs
-data/assets/
+data/assets/*
+!data/assets/sfx/
+data/assets/sfx/*
+!data/assets/sfx/*.wav
+!data/assets/sfx/manifest.json
+!data/assets/sfx/ATTRIBUTION.md
 data/audio/
 data/captions/
 data/scripts/
 data/videos/
 data/thumbnails/
+data/knowledge-base/
 
 # Local authenticated browser profiles and runtime publishing state
 data/browser-profiles/
@@ -95,3 +108,27 @@ data/kwai-app.flag
 
 # Claude worktrees
 .claude/worktrees/
+
+# Operational data, authenticated snapshots and generated media stay local.
+/data/
+/docs/evidencias/
+**/public/_runtime/
+**/renders/
+**/.hyperframes/
+*.m4a
+*.glb
+*.fbx
+*.blend
+*.blend1
+*.apk
+*.aab
+*.zip
+*.tar.gz
+**/*.bundle.js
+**/variants/**/assets/*.js
+# Installed third-party skills are reproducible; keep our project direction.
+**/.agents/skills/
+!/.agents/
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/pulso-motion-design/

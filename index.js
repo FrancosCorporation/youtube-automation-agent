@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
+const net = require('node:net');
+const crypto = require('node:crypto');
 const fs = require('fs').promises;
 const { Logger } = require('./utils/logger');
 const { Database } = require('./database/db');
@@ -13,6 +15,8 @@ const { SEOOptimizerAgent } = require('./agents/seo-optimizer-agent');
 const { ProductionManagementAgent } = require('./agents/production-management-agent');
 const { PublishingSchedulingAgent } = require('./agents/publishing-scheduling-agent');
 const { AnalyticsOptimizationAgent } = require('./agents/analytics-optimization-agent');
+const { readDailyPerformanceReports } = require('./utils/daily-performance-view');
+const { readSchedulerRuntimeHealth } = require('./utils/scheduler-runtime-health');
 const { DailyAutomation } = require('./schedules/daily-automation');
 const { OperatorService } = require('./utils/operator-service');
 const { AutonomousChannelOperator } = require('./utils/autonomous-channel-operator');
@@ -27,8 +31,28 @@ const { AudienceEngagementService } = require('./utils/audience-engagement-servi
 const { GrowthExperimentService } = require('./utils/growth-experiment-service');
 const { AITextService } = require('./utils/ai-text-service');
 const { DiscoverabilityService } = require('./utils/discoverability-service');
+const { KnowledgeBaseService, buildKnowledgeBaseContext, MAX_UPLOAD_BYTES } = require('./utils/knowledge-base');
 const { version } = require('./package.json');
 const chalk = require('chalk');
+
+function configuredBindHost() {
+  const host = String(process.env.API_BIND_HOST || '127.0.0.1').trim();
+  return host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
+}
+
+function isLoopbackHost(host) {
+  const normalized = String(host || '').toLowerCase();
+  if (normalized === 'localhost' || normalized === '::1') return true;
+  if (net.isIP(normalized) === 4) return normalized.split('.')[0] === '127';
+  return false;
+}
+
+function shouldParseJsonRequest(req) {
+  // The knowledge-base upload route accepts raw files, including application/json
+  // documents. Leave those bytes untouched for its express.raw() parser.
+  return !(req.method === 'POST' && req.path === '/api/knowledge-base/documents')
+    && Boolean(req.is('application/json'));
+}
 
 class YouTubeAutomationAgent {
   constructor() {
@@ -51,6 +75,7 @@ class YouTubeAutomationAgent {
     this.engagement = null;
     this.experiments = null;
     this.discoverability = null;
+    this.knowledgeBase = null;
     this.setupRequired = false;
   }
 
@@ -63,6 +88,7 @@ class YouTubeAutomationAgent {
       this.logger.info('Initializing database...');
       this.db = new Database();
       await this.db.initialize();
+      this.knowledgeBase = new KnowledgeBaseService(this.db);
       await this.db.markInterruptedJobs();
       this.recovery = new GenerationRecoveryService(this.db, {
         logger: this.logger,
@@ -214,11 +240,17 @@ class YouTubeAutomationAgent {
 
   requireAPIKey() {
     return (req, res, next) => {
-      if (!process.env.API_KEY) {
+      const expected = String(process.env.API_KEY || '');
+      if (!expected.trim()) {
+        if (!isLoopbackHost(configuredBindHost())) {
+          return res.status(503).json({ success: false, error: 'API_KEY is required when API_BIND_HOST is not loopback' });
+        }
         return next();
       }
 
-      if (req.get('x-api-key') !== process.env.API_KEY) {
+      const supplied = Buffer.from(String(req.get('x-api-key') || ''));
+      const expectedBytes = Buffer.from(expected);
+      if (supplied.length !== expectedBytes.length || !crypto.timingSafeEqual(supplied, expectedBytes)) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
       }
 
@@ -301,6 +333,71 @@ class YouTubeAutomationAgent {
     return { valid: true, value };
   }
 
+  validateServerConfig() {
+    const host = configuredBindHost();
+    if (host !== 'localhost' && net.isIP(host) === 0) {
+      throw new Error('API_BIND_HOST deve ser localhost ou um endereço IP válido');
+    }
+    const rawPort = process.env.PORT || '3456';
+    const port = Number(rawPort);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error('PORT deve ser um inteiro entre 1 e 65535');
+    }
+    if (!String(process.env.API_KEY || '').trim() && !isLoopbackHost(host)) {
+      throw new Error('API_KEY é obrigatória para expor o painel fora de localhost; configure API_KEY ou use API_BIND_HOST=127.0.0.1');
+    }
+    return { host, port };
+  }
+
+  validateSettingsUpdate(input = {}) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      throw new Error('Settings must be a JSON object');
+    }
+    const updates = {};
+    const booleanFields = ['approval_required', 'notification_enabled'];
+    for (const key of booleanFields) {
+      if (input[key] === undefined) continue;
+      const value = input[key];
+      if (typeof value !== 'boolean' && value !== 'true' && value !== 'false') {
+        throw new Error(`${key} must be a boolean`);
+      }
+      updates[key] = String(value);
+    }
+    if (input.channel_timezone !== undefined) {
+      if (typeof input.channel_timezone !== 'string' || input.channel_timezone.length > 100) {
+        throw new Error('channel_timezone must be a string up to 100 characters');
+      }
+      if (input.channel_timezone.trim()) {
+        try { new Intl.DateTimeFormat('en-US', { timeZone: input.channel_timezone }).format(); }
+        catch (_error) { throw new Error('channel_timezone must be a valid IANA timezone'); }
+      }
+      updates.channel_timezone = input.channel_timezone.trim();
+    }
+    for (const [key, min, max] of [['max_daily_posts', 1, 100], ['content_buffer_days', 0, 90],
+      ['video_clip_duration', 3, 30], ['video_max_generated_seconds', 0, 600]]) {
+      if (input[key] === undefined) continue;
+      const value = Number(input[key]);
+      if (!Number.isInteger(value) || value < min || value > max) {
+        throw new Error(`${key} must be an integer between ${min} and ${max}`);
+      }
+      updates[key] = String(value);
+    }
+    if (input.video_provider !== undefined) {
+      const supported = ['slideshow', 'auto', 'seedance', 'minimax_h3', 'google_omni', 'kling', 'wan'];
+      if (typeof input.video_provider !== 'string' || !supported.includes(input.video_provider)) {
+        throw new Error('Unsupported video provider');
+      }
+      updates.video_provider = input.video_provider;
+    }
+    if (input.video_generation_mode !== undefined) {
+      if (!['hybrid', 'slideshow'].includes(input.video_generation_mode)) {
+        throw new Error('Unsupported video generation mode');
+      }
+      updates.video_generation_mode = input.video_generation_mode;
+    }
+    return updates;
+  }
+
   validateChannelStrategy(body = {}, current = {}) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       throw new Error('Channel strategy must be a JSON object');
@@ -373,11 +470,17 @@ class YouTubeAutomationAgent {
     };
   }
   setupAPI() {
-    this.app.use(express.json({ limit: '1mb' }));
+    this.app.use(express.json({ limit: '1mb', type: shouldParseJsonRequest }));
     this.app.use(express.static(path.join(__dirname, 'dashboard')));
+    // API responses contain channel data and assets; protect every read and
+    // write route before registering any of them. Static dashboard files and
+    // /health remain available for local setup and process checks.
+    this.app.use('/api', this.requireAPIKey());
 
     if (!process.env.API_KEY) {
-      this.logger.warn('API_KEY is not set; mutating API routes are unprotected');
+      this.logger.info(isLoopbackHost(configuredBindHost())
+        ? 'API_KEY is unset; API access is limited to the loopback interface'
+        : 'API_KEY is required for a non-loopback API_BIND_HOST');
     }
     
     // Main dashboard route
@@ -417,7 +520,7 @@ class YouTubeAutomationAgent {
     });
 
     // Get analytics
-    this.app.get('/analytics', async (req, res) => {
+    this.app.get('/analytics', this.requireAPIKey(), async (req, res) => {
       try {
         if (!this.agents.analytics) return res.json({ totalVideos: 0, averagePerformanceScore: 0, topPerformers: [], insights: [], learning: null });
         const analytics = await this.agents.analytics.getRecentAnalytics();
@@ -440,7 +543,7 @@ class YouTubeAutomationAgent {
     });
 
     // Get upcoming schedule
-    this.app.get('/schedule', async (req, res) => {
+    this.app.get('/schedule', this.requireAPIKey(), async (req, res) => {
       try {
         const schedule = await this.db.getUpcomingSchedule();
         res.json(schedule);
@@ -471,6 +574,56 @@ class YouTubeAutomationAgent {
 
   setupOperatorAPI() {
     const protect = this.requireAPIKey();
+
+    this.app.get('/api/knowledge-base/documents', async (_req, res) => {
+      try {
+        return res.json({ success: true, documents: await this.knowledgeBase?.list() || [] });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
+    this.app.post(
+      '/api/knowledge-base/documents',
+      protect,
+      express.raw({ type: () => true, limit: MAX_UPLOAD_BYTES }),
+      async (req, res) => {
+        try {
+          if (!this.knowledgeBase) return res.status(503).json({ success: false, error: 'Knowledge base is unavailable until the database is initialized.' });
+          const document = await this.knowledgeBase.add({
+            filename: req.get('x-file-name'),
+            contentType: req.get('content-type'),
+            buffer: req.body
+          });
+          return res.status(201).json({ success: true, document });
+        } catch (error) {
+          return res.status(error.status || 500).json({ success: false, error: error.message, code: error.code });
+        }
+      }
+    );
+
+    this.app.delete('/api/knowledge-base/documents/:documentId', protect, async (req, res) => {
+      try {
+        if (!this.knowledgeBase) return res.status(503).json({ success: false, error: 'Knowledge base is unavailable until the database is initialized.' });
+        return res.json({ success: true, result: await this.knowledgeBase.remove(req.params.documentId) });
+      } catch (error) {
+        return res.status(error.status || 500).json({ success: false, error: error.message, code: error.code });
+      }
+    });
+
+    this.app.get('/api/daily-performance', async (_req, res) => {
+      try {
+        const [result, runtime] = await Promise.all([
+          readDailyPerformanceReports(path.join(__dirname, 'data', 'reports', 'performance'), 14),
+          readSchedulerRuntimeHealth({ root: __dirname })
+        ]);
+        result.runtime = runtime;
+        return res.json(result);
+      } catch (error) {
+        this.logger.error('Daily performance snapshot could not be read:', error);
+        return res.status(503).json({ status: 'unavailable', reports: [] });
+      }
+    });
 
     this.app.get('/api/dashboard', async (_req, res) => {
       try {
@@ -1229,31 +1382,10 @@ class YouTubeAutomationAgent {
     });
 
     this.app.put('/api/settings', protect, async (req, res) => {
-      const allowed = ['approval_required', 'notification_enabled', 'channel_timezone', 'max_daily_posts', 'content_buffer_days'];
-      for (const key of allowed) {
-        if (req.body?.[key] !== undefined) await this.db.setSetting(key, String(req.body[key]));
-      }
-      const provider = req.body?.video_provider;
-      if (provider !== undefined) {
-        const supported = ['slideshow', 'auto', 'seedance', 'minimax_h3', 'google_omni', 'kling', 'wan'];
-        if (!supported.includes(provider)) return res.status(400).json({ error: 'Unsupported video provider' });
-        await this.db.setSetting('video_provider', provider);
-      }
-      const mode = req.body?.video_generation_mode;
-      if (mode !== undefined) {
-        if (!['hybrid', 'slideshow'].includes(mode)) return res.status(400).json({ error: 'Unsupported video generation mode' });
-        await this.db.setSetting('video_generation_mode', mode);
-      }
-      if (req.body?.video_clip_duration !== undefined) {
-        const value = Number(req.body.video_clip_duration);
-        if (!Number.isInteger(value) || value < 3 || value > 30) return res.status(400).json({ error: 'Clip duration must be between 3 and 30 seconds' });
-        await this.db.setSetting('video_clip_duration', String(value));
-      }
-      if (req.body?.video_max_generated_seconds !== undefined) {
-        const value = Number(req.body.video_max_generated_seconds);
-        if (!Number.isInteger(value) || value < 0 || value > 600) return res.status(400).json({ error: 'Generated seconds cap must be between 0 and 600' });
-        await this.db.setSetting('video_max_generated_seconds', String(value));
-      }
+      let updates;
+      try { updates = this.validateSettingsUpdate(req.body || {}); }
+      catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+      for (const [key, value] of Object.entries(updates)) await this.db.setSetting(key, value);
       return res.json({ success: true, result: await this.db.getAllSettings() });
     });
 
@@ -1449,6 +1581,11 @@ class YouTubeAutomationAgent {
     // Step 1: Strategy
     const strategy = await this.runGenerationStage(jobId, 'strategy', 10, async () => {
       const generated = await this.agents.strategy.generateContentStrategy(topic);
+      const knowledgeContext = await buildKnowledgeBaseContext(
+        this.db,
+        [topic, generated.topic, generated.angle, generated.targetAudience].filter(Boolean).join(' ')
+      );
+      generated.knowledgeBaseContext = knowledgeContext.prompt;
       const contentStyles = new Set(['tutorial', 'explainer', 'list', 'review', 'story']);
       const requestedStyle = style || profile.default_style || null;
       if (requestedStyle && contentStyles.has(requestedStyle.toLowerCase())) {
@@ -1662,18 +1799,29 @@ class YouTubeAutomationAgent {
   }
 
   validateProfile(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Profile must be a JSON object');
     const textFields = ['channelName', 'goal', 'targetAudience', 'brandVoice', 'defaultStyle', 'callToAction', 'visualStyle', 'timezone'];
     const result = {};
     for (const field of textFields) {
       if (input[field] !== undefined) {
-        const value = String(input[field]).trim();
+        if (typeof input[field] !== 'string') throw new Error(`${field} must be a string`);
+        const value = input[field].trim();
         if (value.length > 500) throw new Error(`${field} is too long`);
+        if (field === 'timezone' && value) {
+          try { new Intl.DateTimeFormat('en-US', { timeZone: value }).format(); }
+          catch (_error) { throw new Error('timezone must be a valid IANA timezone'); }
+        }
         result[field] = value;
       }
     }
     if (input.bannedTopics !== undefined) {
-      const topics = Array.isArray(input.bannedTopics) ? input.bannedTopics : String(input.bannedTopics).split(',');
-      result.bannedTopics = topics.map(topic => String(topic).trim()).filter(Boolean).slice(0, 50);
+      if (typeof input.bannedTopics !== 'string' && !Array.isArray(input.bannedTopics)) {
+        throw new Error('bannedTopics must be a string or an array of strings');
+      }
+      const topics = Array.isArray(input.bannedTopics) ? input.bannedTopics : input.bannedTopics.split(',');
+      if (topics.some(topic => typeof topic !== 'string')) throw new Error('bannedTopics entries must be strings');
+      result.bannedTopics = topics.map(topic => topic.trim()).filter(Boolean).slice(0, 50);
+      if (result.bannedTopics.some(topic => topic.length > 100)) throw new Error('Each banned topic must be at most 100 characters');
     }
     return result;
   }
@@ -1824,6 +1972,7 @@ class YouTubeAutomationAgent {
   }
 
   async start() {
+    const { host, port } = this.validateServerConfig();
     const initialized = await this.initialize();
     
     if (!initialized) {
@@ -1831,14 +1980,14 @@ class YouTubeAutomationAgent {
       process.exit(1);
     }
     
-    const PORT = process.env.PORT || 3456;
-    this.app.listen(PORT, () => {
-      console.log(chalk.green(`\n✅ YouTube Automation Agent running on port ${PORT}`));
+    this.app.listen(port, host, () => {
+      console.log(chalk.green(`\n✅ YouTube Automation Agent running on ${host}:${port}`));
       console.log(chalk.gray('─'.repeat(50)));
-      console.log(chalk.white('📊 Dashboard: ') + chalk.cyan(`http://localhost:${PORT}`));
-      console.log(chalk.white('🔧 API Health: ') + chalk.cyan(`http://localhost:${PORT}/health`));
-      console.log(chalk.white('📅 Schedule: ') + chalk.cyan(`http://localhost:${PORT}/schedule`));
-      console.log(chalk.white('📈 Analytics: ') + chalk.cyan(`http://localhost:${PORT}/analytics`));
+      const displayHost = isLoopbackHost(host) ? 'localhost' : host;
+      console.log(chalk.white('📊 Dashboard: ') + chalk.cyan(`http://${displayHost}:${port}`));
+      console.log(chalk.white('🔧 API Health: ') + chalk.cyan(`http://${displayHost}:${port}/health`));
+      console.log(chalk.white('📅 Schedule: ') + chalk.cyan(`http://${displayHost}:${port}/schedule`));
+      console.log(chalk.white('📈 Analytics: ') + chalk.cyan(`http://${displayHost}:${port}/analytics`));
       console.log(chalk.gray('─'.repeat(50)));
       if (this.setupRequired) {
         console.log(chalk.yellow('\n⚙️  Setup is required. The dashboard is available; run npm run walkthrough to enable generation.'));
@@ -1858,4 +2007,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { YouTubeAutomationAgent };
+module.exports = { YouTubeAutomationAgent, shouldParseJsonRequest };

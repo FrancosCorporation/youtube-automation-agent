@@ -1,0 +1,17 @@
+{
+  "themes": [
+    {"id": "ia", "brand": "Pulso IA", "primary": "#5EEAD4", "secondary": "#60A5FA"},
+    {"id": "curiosidades", "brand": "Pulso Curiosidades", "primary": "#FBBF24", "secondary": "#FB7185"},
+    {"id": "dinheiro", "brand": "Pulso Dinheiro", "primary": "#34D399", "secondary": "#FBBF24"},
+    {"id": "saude", "brand": "Pulso Saúde", "primary": "#2DD4BF", "secondary": "#4ADE80"},
+    {"id": "economize", "brand": "Pulso Economia", "primary": "#22C55E", "secondary": "#FACC15"},
+    {"id": "psicologia", "brand": "Pulso Mente", "primary": "#A78BFA", "secondary": "#C084FC"},
+    {"id": "relacionamentos", "brand": "Pulso Relações", "primary": "#FB7185", "secondary": "#F472B6"},
+    {"id": "fitness", "brand": "Pulso Fitness", "primary": "#84CC16", "secondary": "#22D3EE"},
+    {"id": "misterios", "brand": "Pulso Mistérios", "primary": "#8B5CF6", "secondary": "#6366F1"},
+    {"id": "carreira", "brand": "Pulso Carreira", "primary": "#60A5FA", "secondary": "#6366F1"}
+  ],
+  "renderer_selection": "Precedencia: verifica robotConfig.script.visualPalettes.variants.length primeiro; se inexistente ou vazio, cai para theme.visualPalettes. Selecao por seed: paleta escolhada em indice palettes.length, calculado como robotConfig.seed % palettes.length, garantindo selecao ciclica deterministica pelo seed. Fallback para acentos defaults caso palette ou accents estejam ausentes.",
+  "recommended_neutral_shell": "#F8FAFC",
+  "notes": "Relatorio mecanico gerado a partir de extracao de visualPalettes variantes e logica de selecao por seed. Cores extraidas diretamente do themes.json. Output nao sera automaticamente integrado ao pipeline de video."
+}

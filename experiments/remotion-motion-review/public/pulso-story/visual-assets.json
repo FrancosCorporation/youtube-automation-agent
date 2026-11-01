@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "file": "approved-robot.png",
+      "role": "original approved reference, unchanged",
+      "sha256": "dfe15946cb4d907f80bc67d779ce8981ffec40d2ea2344ae970019af24a02ccf",
+      "bytes": 1493859
+    },
+    {
+      "file": "approved-robot-cutout-v1.png",
+      "role": "imagegen background extraction for preview, not a 3D rig",
+      "sha256": "99c2bd9ba2616d23adf348608cce4e17d3ae60a8d38131bc7523e0bd674c8bd1",
+      "bytes": 1676111
+    },
+    {
+      "file": "human-sender-v1.png",
+      "role": "imagegen anonymous illustration of claimed sender, not an identified real person",
+      "sha256": "a33483db4dbf29bc475730a63690324069ce83c90d9691efe5750a90d141aba9",
+      "bytes": 985833
+    },
+    {
+      "file": "approved-robot-rigged.glb",
+      "role": "Tencent image-to-3D from exact approved original, Mixamo own skin, optimized runtime; integrated in PulsoStory Studio preview with reviewed gestures, blink and audio-envelope mouth; production QA pending",
+      "sha256": "6a9eb38d99229ac5519bb2900bda50df462b6d4eed411daa2a872e41fbc48df5",
+      "bytes": 9810184,
+      "provenance": "experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/provenance.json"
+    }
+  ],
+  "approvedReferenceSha256": "dfe15946cb4d907f80bc67d779ce8981ffec40d2ea2344ae970019af24a02ccf"
+}

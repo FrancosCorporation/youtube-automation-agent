@@ -1,0 +1,39 @@
+{
+  "reference": {
+    "path": "assets/pulso-robo-referencia-apose.png",
+    "method": "built-in imagegen",
+    "source_reference": "../../renders/pulso-robo-moderno-esquerda.png",
+    "description": "Robô branco cerâmico, juntas de titânio, visor preto e luz ciano; corpo inteiro frontal em A-pose, fundo branco.",
+    "status": "generated-and-visually-reviewed",
+    "prompt": "prompt-referencia.txt"
+  },
+  "model": {
+    "path": "assets/pulso-robo-hunyuan.glb",
+    "provider": "Tencent Hunyuan 3D",
+    "version": "3.1",
+    "requested_faces": 500000,
+    "quota_before": 20,
+    "quota_after": 19,
+    "status": "downloaded-and-loaded-in-Three.js",
+    "bytes": 49959816,
+    "sha256": "c362d1154b5792edb9ecdc8ef1d9906012d3fccff5cf2cafd8d69d1ba922fb0a",
+    "vertices": 294213,
+    "triangles": 500000,
+    "meshes": 1,
+    "skins": 0,
+    "animations": 0,
+    "embedded_images": 3
+  },
+  "integration": {
+    "production_changed": false,
+    "articulation": "pending: single static mesh, no skin or animation clips",
+    "preview": "rendered: 1920x1080, 24fps, 8s, H.264, silent visual preview",
+    "preview_file": "../../renders/pulso-robo-gerado-preview.mp4",
+    "validation": [
+      "strict HyperFrames check: 0 errors, 0 warnings, 51/51 contrast checks",
+      "source and reverse seek: identical PNGs at 6.5/0.5/6.5",
+      "six snapshots around all three camera cuts",
+      "mesh-audit.json: finite positions and valid indices"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "triangles": 499984,
+  "uvCornerMaxError": 0.0,
+  "positionCornerMaxErrorAfterAxisCenterTransform": 2.5331974029541016e-07,
+  "sameTriangleOrder": true,
+  "sourceCenteredXYBeforeFbx": [
+    -0.00028198957443237305,
+    -0.04183800518512726,
+    -0.5573019981384277
+  ],
+  "compatible": true
+}

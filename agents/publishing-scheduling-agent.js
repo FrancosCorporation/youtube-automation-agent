@@ -214,8 +214,7 @@ class PublishingSchedulingAgent {
         description: safeMetadata.description,
         tags: safeMetadata.tags,
         categoryId: safeMetadata.categoryId,
-        defaultLanguage: safeMetadata.defaultLanguage,
-        defaultAudioLanguage: safeMetadata.defaultAudioLanguage
+        defaultLanguage: safeMetadata.defaultLanguage
       },
       status: {
         privacyStatus: futureSchedule ? 'private' : requestedPrivacy,
@@ -383,8 +382,7 @@ class PublishingSchedulingAgent {
           description: snippet.description || '',
           tags: snippet.tags || [],
           categoryId: snippet.categoryId || '22',
-          defaultLanguage: snippet.defaultLanguage,
-          defaultAudioLanguage: snippet.defaultAudioLanguage
+          defaultLanguage: snippet.defaultLanguage
         }
       }
     });

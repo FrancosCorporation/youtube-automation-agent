@@ -1,0 +1,23 @@
+{
+  "url": "https://francoscorporation.ddns.net/games/play/pulso-ia/robo-bonito-preview.mp4",
+  "https": {
+    "status": 200,
+    "contentType": "video/mp4",
+    "bytes": 7323142,
+    "sha256Matches": true
+  },
+  "range": {
+    "status": 206,
+    "contentRange": "bytes 0-1023/7323142",
+    "bytes": 1024,
+    "matches": true
+  },
+  "browserPlayback": {
+    "duration": 8,
+    "width": 1920,
+    "height": 1080,
+    "readyState": 4,
+    "currentTime": 0.253109,
+    "error": null
+  }
+}

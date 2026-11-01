@@ -1,5 +1,6 @@
 const { Logger } = require('../utils/logger');
 const { AITextService } = require('../utils/ai-text-service');
+const { buildKnowledgeBaseContext } = require('../utils/knowledge-base');
 
 class ContentStrategyAgent {
   constructor(db, credentials) {
@@ -230,7 +231,8 @@ class ContentStrategyAgent {
     try {
       let topic, angle, targetAudience, contentType;
 
-      const aiStrategy = await this.generateContentStrategyWithAI(requestedTopic);
+      const knowledge = await buildKnowledgeBaseContext(this.db, requestedTopic || 'YouTube channel content strategy');
+      const aiStrategy = await this.generateContentStrategyWithAI(requestedTopic, knowledge.prompt);
       if (aiStrategy) {
         await this.db.saveContentStrategy(aiStrategy);
         this.logger.info(`Generated AI strategy for: ${aiStrategy.topic}`);
@@ -320,7 +322,15 @@ class ContentStrategyAgent {
       }))
     };
 
-    let plan = await this.generateAutonomousPlanWithAI(channelStrategy, research, targetCount);
+    const knowledgeQuery = [
+      channelStrategy.objective,
+      channelStrategy.audience,
+      channelStrategy.value_proposition,
+      channelStrategy.constraints,
+      ...(channelStrategy.contentPillars || [])
+    ].filter(Boolean).join(' ');
+    const knowledge = await buildKnowledgeBaseContext(this.db, knowledgeQuery || 'YouTube channel content strategy');
+    let plan = await this.generateAutonomousPlanWithAI(channelStrategy, research, targetCount, knowledge.prompt);
     plan = this.normalizeAutonomousPlan(plan, channelStrategy, targetCount, research);
     if (plan.length < targetCount) {
       const fallback = this.buildFallbackAutonomousPlan(channelStrategy, research, targetCount);
@@ -330,7 +340,7 @@ class ContentStrategyAgent {
     return { research, plan };
   }
 
-  async generateAutonomousPlanWithAI(channelStrategy, research, targetCount) {
+  async generateAutonomousPlanWithAI(channelStrategy, research, targetCount, knowledgeContext = '') {
     if (!this.aiTextService.isAvailable()) return [];
     const prompt = `You are the strategy lead for an autonomous YouTube channel.
 Turn the channel strategy and the supplied research signals into a focused content plan.
@@ -353,7 +363,8 @@ Allowed source catalog: ${JSON.stringify(research.sourceCatalog)}
 Recent topics to avoid repeating: ${JSON.stringify(research.recentTopics)}
 Operator-approved performance learnings to apply: ${JSON.stringify(research.approvedLearnings)}
 
-Do not invent trend data, statistics, sources, URLs, or factual claims. Use only exact URLs from the supplied source catalog. Apply only the supplied approved learnings; pending or rejected recommendations are not authorized. Prefer evergreen topics when the supplied signals are weak. Learnings with category "audience_demand" are audience-requested topics mined from real comments on published videos; prefer planning a video that directly answers one when it fits the channel objective, and cite it in the rationale.`;
+Do not invent trend data, statistics, sources, URLs, or factual claims. Use only exact URLs from the supplied source catalog. Apply only the supplied approved learnings; pending or rejected recommendations are not authorized. Prefer evergreen topics when the supplied signals are weak. Learnings with category "audience_demand" are audience-requested topics mined from real comments on published videos; prefer planning a video that directly answers one when it fits the channel objective, and cite it in the rationale.
+${knowledgeContext}`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, { maxTokens: 8000, temperature: 0.65 });
@@ -420,7 +431,7 @@ Do not invent trend data, statistics, sources, URLs, or factual claims. Use only
       .slice(0, targetCount);
   }
 
-  async generateContentStrategyWithAI(requestedTopic = null) {
+  async generateContentStrategyWithAI(requestedTopic = null, knowledgeContext = '') {
     if (!this.aiTextService.isAvailable()) {
       this.logger.info('Using template content strategy generation because no AI text provider is configured');
       return null;
@@ -444,7 +455,8 @@ Requested topic: ${requestedTopic || 'none'}
 Trending topics available: ${trendingTopics || 'Technology Trends'}
 Channel target audience: ${process.env.TARGET_AUDIENCE || 'General audience interested in educational content'}
 Content language: ${process.env.CONTENT_LANGUAGE || 'en'} — write every string field (topic, angle, targetAudience, keywords) in this language.
-Avoid fabricated claims and unsupported numbers.`;
+Avoid fabricated claims and unsupported numbers.
+${knowledgeContext}`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {

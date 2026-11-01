@@ -1,0 +1,31 @@
+{
+  "textures": [
+    {
+      "source": [
+        4096,
+        4096
+      ],
+      "sourceBytes": 7732816,
+      "outputBytes": 2924437
+    },
+    {
+      "source": [
+        4096,
+        4096
+      ],
+      "sourceBytes": 19648181,
+      "outputBytes": 8956477
+    },
+    {
+      "source": [
+        4096,
+        4096
+      ],
+      "sourceBytes": 14788995,
+      "outputBytes": 6059727
+    }
+  ],
+  "bytes": 19009824,
+  "materialPropertiesUnchanged": true,
+  "staticNotRigged": true
+}

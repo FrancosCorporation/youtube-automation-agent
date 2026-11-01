@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Atualiza o PERFIL das redes (avatar + nome + bio) com a identidade do canal.
- * Uso: node scripts/update-social-profiles.js --platform tiktok|x|instagram|kwai
+ * Uso: node scripts/update-social-profiles.js --platform tiktok|x|instagram
  */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
@@ -91,7 +91,7 @@ async function tiktok() {
     }
     await snap(page, 'tiktok_avatar');
 
-    // campos do modal (nome, usuário, bio)
+    // campos do modal (nome, usuário, bio); nunca tenta renomear o @handle.
     const fields = page.locator('input[placeholder], textarea[placeholder], input[type="text"], textarea');
     const count = await fields.count().catch(() => 0);
     log(`  ${count} campos no modal`);
@@ -103,9 +103,11 @@ async function tiktok() {
       if (/bio/i.test(ph)) {
         await clearAndType(page, el, BIO);
         log('    → bio preenchida');
-      } else if (val && String(val).length < 40 && String(val) !== NAME) {
+      } else if (/^(nome|name|display name)$/i.test(ph.trim()) && String(val) !== NAME) {
         await clearAndType(page, el, NAME);
         log('    → nome preenchido');
+      } else if (/usuário|username|user name/i.test(ph)) {
+        log('    → @handle preservado');
       }
     }
     await snap(page, 'tiktok_campos');
@@ -246,7 +248,7 @@ async function instagram() {
   if (p === 'tiktok') await tiktok();
   else if (p === 'x') await x();
   else if (p === 'instagram') await instagram();
-  else { log('plataformas suportadas: tiktok | x | instagram'); process.exit(1); }
+  else { log('plataformas suportadas: tiktok | x | instagram (Kwai ainda sem rotina de branding)'); process.exit(1); }
   log('✅ perfil atualizado');
   process.exit(0);
 })().catch(e => { console.error('ERRO:', e.message); process.exit(1); });

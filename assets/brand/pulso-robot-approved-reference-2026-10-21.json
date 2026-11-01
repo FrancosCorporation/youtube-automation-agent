@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "pulso-robot-reference-20261021",
+  "imagePath": "assets/brand/pulso-robot-approved-reference-2026-10-21.png",
+  "sha256": "dfe15946cb4d907f80bc67d779ce8981ffec40d2ea2344ae970019af24a02ccf",
+  "bytes": 1493859,
+  "originalPath": "/home/servidor/.codex/generated_images/01a12c81-5a91-7302-98b6-562317eb169f/exec-cb499112-8af7-4cf3-a43c-2b8820431bff.png",
+  "generatedAtFilesystemUTC": "2026-10-11T21:47:59.351Z",
+  "generationPromptVerified": false,
+  "approvedAt": "2026-10-21T14:53:47.732Z",
+  "approvedBy": "project owner in current conversation",
+  "approvalScope": "canonical visual reference for future robot models, pilots and videos",
+  "approvalText": "a partir desse ícone desse robôzinho gerado nessa imagem ... ficou melhor do que o outro",
+  "productionIntegration": "planned_not_deployed",
+  "features": [
+    "pearl white shell and dark teal joints/panels",
+    "glossy black face with cyan circular eyes and smile",
+    "pink spherical antenna tip",
+    "cyan circular chest light",
+    "rounded articulated humanoid body, hands and feet; preserve image proportions"
+  ]
+}

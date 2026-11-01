@@ -1,0 +1,40 @@
+{
+  "provider": "gTTS",
+  "lang": "pt",
+  "tld": "com.br",
+  "duration": 27.616,
+  "cues": [
+    {
+      "start": 0.8,
+      "end": 3.344,
+      "text": "Oi! Eu sou o Pulso."
+    },
+    {
+      "start": 3.744,
+      "end": 9.504,
+      "text": "Agora, eu posso olhar para você, piscar e sorrir."
+    },
+    {
+      "start": 9.904,
+      "end": 14.608,
+      "text": "Enquanto falo, minha boca acompanha a voz."
+    },
+    {
+      "start": 15.008,
+      "end": 19.184,
+      "text": "E meus braços ajudam a explicar cada ideia."
+    },
+    {
+      "start": 19.584,
+      "end": 24.336,
+      "text": "Esse é o primeiro teste do meu novo corpo em movimento."
+    },
+    {
+      "start": 24.736,
+      "end": 26.416,
+      "text": "O que você achou?"
+    }
+  ],
+  "timing": "Phrase durations measured by ffprobe; silence inserted explicitly.",
+  "fallbackReason": "Installed Edge-TTS 7.2.8 returned HTTP 403; no paid API used."
+}

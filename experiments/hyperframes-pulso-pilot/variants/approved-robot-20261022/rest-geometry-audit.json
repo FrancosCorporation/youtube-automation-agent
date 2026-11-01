@@ -1,0 +1,18 @@
+{
+  "vertices": 94292,
+  "nearestSourceVertexDistanceMax": 1.5382966408174212e-05,
+  "nearestSourceVertexDistanceP99": 1.2944238276708064e-05,
+  "candidateBoundsMin": [
+    -0.31112098693847656,
+    0.00014405755791813135,
+    -0.19424808025360107
+  ],
+  "candidateBoundsMax": [
+    0.31113284826278687,
+    1.1144402027130127,
+    0.1944480538368225
+  ],
+  "sameRestGeometryWithinTolerance": true,
+  "toleranceMeters": 0.001,
+  "method": "Runtime GLTFLoader mesh.applyBoneTransform, mesh.matrixWorld, inverse loaded scene matrix; compare centered Hunyuan source vertices with KDTree. Covers rest/bind, not animated deformation."
+}

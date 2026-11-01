@@ -1,0 +1,1 @@
+{"speaking_times": [2.544, 5.76, 4.704, 4.176], "silent_times": [0.8, 0.4, 0.4, 0.4], "total_duration": 27.616, "method": "max_envelope_level * phrase_duration from speech.json cues; silent_times from initial pause and explicit gaps between phrases"}

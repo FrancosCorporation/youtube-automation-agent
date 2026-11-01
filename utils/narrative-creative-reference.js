@@ -1,0 +1,17 @@
+'use strict';
+// Persisted in code and injected into every adaptive author request, including
+// retries. The model need not read local Markdown or download a reference video.
+const CREATIVE_REFERENCE = Object.freeze({
+  id: 'pulso-acted-narrative-20261101', revision: 1,
+  status: 'approved-with-collision-correction',
+  artifact: 'docs/evidencias/fruit-sorting-motion-20261101/README.md',
+  landscapeSha256: '2b72d9e73452bab7d342579960d82997b35b9f33861f2d97725b3bd5d2af1093',
+  portraitSha256: 'bd35571c860ffd40aed6bf452af7aefb2bc9bfa9a35051ee106ffbc858deef71',
+});
+function creativeReferencePrompt() {
+  return `REFERÊNCIA APROVADA ${CREATIVE_REFERENCE.id} r${CREATIVE_REFERENCE.revision}: o proprietário aprovou a criação da triagem animada, com ressalva de atravessamento de um suporte. Aprenda a relação entre narrativa e ação, não copie frutas, esteira, cores ou máquinas para outra pauta.
+PROCESSO DE CRIAÇÃO PARA CADA NOVA NARRATIVA: 1) extraia sujeito, verbo, ambiente, objeto afetado e resultado, respeitando incerteza/negação; 2) escolha formas e peças próprias do assunto; 3) estabeleça o ambiente e o estado inicial; 4) execute preparação, ação, contato/transferência/transformação e consequência em cues reais; 5) preserve identidades e resultado entre frases; 6) componha a câmera para revelar o mecanismo nos dois formatos. Descreva essas decisões em explanation e realize-as em meshes/shapes e tracks. Objetos precisam agir, não apenas aparecer. Câmera e texto apoiam a ação, não a substituem.
+PLAUSIBILIDADE: antes de mover uma peça, reserve o corredor inteiro considerando sua largura/altura, suportes, paredes, portas, mãos e objetos próximos. Contato não é atravessamento. Empurrar requer aproximação, toque, deslocamento compatível e recuo. Queda requer apoio anterior, espaço livre, impacto e acomodação. Abertura usa pivô e folga. Transformação/quebra exige peças e resultado narrado; não imponha gravidade a um sinal conceitual. No caso aprovado, o suporte foi colocado na saída lateral da fruta: mova o suporte ou a saída; jamais esconda o defeito pela câmera.
+CHECAGEM LOCAL 3D: forneça spatialChecks:[{subject:{nodeId,meshIndex},obstacles:[{nodeId,meshIndex}]}] para cada peça física com position3d (câmera excluída). Inclua todas as peças sólidas ao longo do trajeto, inclusive do mesmo objeto quando há articulação; contatos são aceitos, penetração acima da tolerância não. As referências apontam a meshes sphere/box/cylinder; decomponha geometria complexa em sólidos verificáveis. A checagem usa o percurso completo e os dois layouts, não somente as posições inicial/final. Não inclua volumes de luz/sinais sem corpo como obstáculos; não omita paredes/suportes para fazer o teste passar. Use tracks, não motions legados, para deslocar sólidos checados. Receber um diagnóstico de colisão exige reparar geometria/trajetória, não apagar a checagem. Não precisa de outra chamada de modelo para revisão: o verificador é local.`;
+}
+module.exports = { CREATIVE_REFERENCE, creativeReferencePrompt };

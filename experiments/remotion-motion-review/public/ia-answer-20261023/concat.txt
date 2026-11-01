@@ -1,0 +1,6 @@
+file 'chapter-01.wav'
+file 'chapter-02.wav'
+file 'chapter-03.wav'
+file 'chapter-04.wav'
+file 'chapter-05.wav'
+file 'chapter-06.wav'

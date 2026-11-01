@@ -1,0 +1,515 @@
+1
+00:00:00,051 --> 00:00:03,776
+A inteligência artificial pode escrever bonito e ainda errar
+
+2
+00:00:03,827 --> 00:00:07,165
+Para entender por quê acompanhe a viagem de uma pergunta até a
+
+3
+00:00:07,165 --> 00:00:09,163
+resposta que aparece na tela
+
+4
+00:00:09,214 --> 00:00:12,448
+Quando um modelo de linguagem gera texto ele estima quais
+
+5
+00:00:12,448 --> 00:00:15,478
+pedaços podem continuar a sequência que recebeu
+
+6
+00:00:15,528 --> 00:00:19,510
+O novo pedaço entra no texto vira parte do contexto e ajuda a
+
+7
+00:00:19,510 --> 00:00:21,277
+orientar o próximo passo
+
+8
+00:00:21,327 --> 00:00:25,258
+Esse processo se repete até a resposta terminar respeitando
+
+9
+00:00:25,258 --> 00:00:28,132
+também as instruções e os limites do sistema
+
+10
+00:00:28,183 --> 00:00:32,384
+Pense na frase o gato dorme no sofá Ela aparece aqui apenas
+
+11
+00:00:32,384 --> 00:00:34,292
+como um exemplo simplificado
+
+12
+00:00:34,343 --> 00:00:38,595
+Na geração existem diferentes continuações possíveis a escolha
+
+13
+00:00:38,595 --> 00:00:42,076
+depende do modelo do contexto e das configurações
+
+14
+00:00:42,126 --> 00:00:45,567
+Isso é diferente de abrir uma gaveta e retirar uma resposta
+
+15
+00:00:45,567 --> 00:00:47,346
+pronta para aquela pergunta
+
+16
+00:00:47,397 --> 00:00:51,263
+Um aplicativo pode conectar o modelo à busca a documentos ou a
+
+17
+00:00:51,263 --> 00:00:54,473
+outras ferramentas mas isso é uma etapa adicional
+
+18
+00:00:54,523 --> 00:00:57,835
+Por isso uma resposta fluente não prova que houve pesquisa na
+
+19
+00:00:57,835 --> 00:01:01,006
+internet nem que cada afirmação foi conferida
+
+20
+00:01:02,343 --> 00:01:05,359
+Uma palavra pode virar vários pedaços dentro de uma
+
+21
+00:01:05,359 --> 00:01:06,983
+inteligência artificial
+
+22
+00:01:07,034 --> 00:01:10,874
+Antes de chegar ao modelo a pergunta passa por um tokenizador
+
+23
+00:01:10,874 --> 00:01:13,799
+o componente que transforma o texto em uma sequência de
+
+24
+00:01:13,799 --> 00:01:15,695
+unidades chamadas tokens
+
+25
+00:01:15,745 --> 00:01:19,521
+Um token pode corresponder a uma palavra inteira a parte dela
+
+26
+00:01:19,521 --> 00:01:21,236
+ou a um sinal de pontuação
+
+27
+00:01:21,286 --> 00:01:24,882
+Os espaços também podem participar dessa representação
+
+28
+00:01:24,882 --> 00:01:27,099
+dependendo do tokenizador usado
+
+29
+00:01:27,150 --> 00:01:31,183
+Na tela separamos uma frase em peças para visualizar a ideia a
+
+30
+00:01:31,183 --> 00:01:34,187
+divisão é ilustrativa e varia entre modelos
+
+31
+00:01:34,238 --> 00:01:37,665
+Cada peça é associada a uma identificação numérica porque a
+
+32
+00:01:37,665 --> 00:01:39,380
+rede trabalha com números
+
+33
+00:01:39,431 --> 00:01:42,820
+A tokenização procura uma representação adequada para aquele
+
+34
+00:01:42,820 --> 00:01:45,965
+modelo combinando unidades de seu vocabulário
+
+35
+00:01:46,016 --> 00:01:50,063
+Por isso contar palavras não é a mesma coisa que contar tokens
+
+36
+00:01:50,114 --> 00:01:53,593
+A escolha do tokenizador também importa ele precisa ser
+
+37
+00:01:53,593 --> 00:01:56,545
+compatível com o modelo que receberá a sequência
+
+38
+00:01:56,596 --> 00:02:00,758
+Na saída as unidades geradas voltam a ser texto legível A
+
+39
+00:02:00,758 --> 00:02:03,748
+frase que você lê passou por essa transformação nos dois
+
+40
+00:02:03,748 --> 00:02:04,677
+sentidos
+
+41
+00:02:06,052 --> 00:02:09,312
+A mesma palavra pode levar uma inteligência artificial a
+
+42
+00:02:09,312 --> 00:02:10,743
+caminhos diferentes
+
+43
+00:02:10,794 --> 00:02:14,608
+Imagine duas frases sentei no banco da praça depositei
+
+44
+00:02:14,608 --> 00:02:15,808
+dinheiro no banco
+
+45
+00:02:15,858 --> 00:02:19,440
+A palavra banco é igual mas as palavras ao redor ajudam a
+
+46
+00:02:19,440 --> 00:02:21,039
+distinguir os sentidos
+
+47
+00:02:21,090 --> 00:02:24,763
+Nos modelos baseados em Transformer mecanismos de atenção
+
+48
+00:02:24,763 --> 00:02:28,229
+relacionam partes da sequência para construir representações
+
+49
+00:02:28,229 --> 00:02:29,893
+dependentes do contexto
+
+50
+00:02:29,943 --> 00:02:33,951
+Em nossa animação as conexões destacadas mostram essa relação
+
+51
+00:02:33,951 --> 00:02:37,947
+de forma esquemática sem representar pesos reais de um modelo
+
+52
+00:02:37,997 --> 00:02:41,258
+Não existe aqui um olhar humano lendo a frase existem
+
+53
+00:02:41,258 --> 00:02:44,841
+operações matemáticas sobre representações numéricas
+
+54
+00:02:44,892 --> 00:02:48,513
+O contexto disponível pode incluir a pergunta instruções e
+
+55
+00:02:48,513 --> 00:02:51,748
+trechos anteriores que o aplicativo envia ao modelo
+
+56
+00:02:51,799 --> 00:02:55,124
+Essa informação ajuda a orientar a continuação mas a
+
+57
+00:02:55,124 --> 00:02:58,359
+quantidade de texto que cabe em uma entrada tem limite
+
+58
+00:02:58,410 --> 00:03:01,979
+Por isso uma conversa mostrada na tela não deve ser confundida
+
+59
+00:03:01,979 --> 00:03:05,795
+automaticamente com todo o material recebido naquela chamada
+
+60
+00:03:05,845 --> 00:03:09,466
+O ponto central é este o modelo gera a partir do contexto
+
+61
+00:03:09,466 --> 00:03:13,192
+disponível e mudar esse contexto pode mudar a resposta
+
+62
+00:03:14,510 --> 00:03:17,783
+Treinar uma inteligência artificial e conversar com ela são
+
+63
+00:03:17,783 --> 00:03:19,214
+etapas diferentes
+
+64
+00:03:19,265 --> 00:03:22,616
+Durante o treinamento a rede ajusta parâmetros numéricos a
+
+65
+00:03:22,616 --> 00:03:25,890
+partir dos exemplos e do objetivo de aprendizado
+
+66
+00:03:25,940 --> 00:03:29,806
+No caso de modelos que geram texto prevendo a próxima unidade
+
+67
+00:03:29,806 --> 00:03:32,835
+aprender padrões de sequência é uma parte central desse
+
+68
+00:03:32,835 --> 00:03:33,699
+processo
+
+69
+00:03:33,750 --> 00:03:37,152
+Esses parâmetros aprendidos participam dos cálculos usados
+
+70
+00:03:37,152 --> 00:03:39,382
+depois para produzir respostas
+
+71
+00:03:39,433 --> 00:03:43,350
+Na conversa comum enviar uma nova mensagem fornece contexto
+
+72
+00:03:43,350 --> 00:03:46,675
+para a execução do modelo isso não equivale a refazer seu
+
+73
+00:03:46,675 --> 00:03:48,531
+treinamento a cada pergunta
+
+74
+00:03:48,582 --> 00:03:52,332
+Um aplicativo pode guardar histórico recuperar documentos ou
+
+75
+00:03:52,332 --> 00:03:56,263
+manter informações entre sessões conforme sua implementação
+
+76
+00:03:56,314 --> 00:03:59,768
+Essas funções precisam ser distinguidas da atualização dos
+
+77
+00:03:59,768 --> 00:04:01,134
+parâmetros da rede
+
+78
+00:04:01,185 --> 00:04:04,690
+Na animação mostramos primeiro o ajuste durante o treino e
+
+79
+00:04:04,690 --> 00:04:08,299
+depois a passagem de uma pergunta pelo modelo já preparado
+
+80
+00:04:08,350 --> 00:04:11,971
+O desenho é uma simplificação os blocos não representam a
+
+81
+00:04:11,971 --> 00:04:15,181
+quantidade real de camadas ou parâmetros de um produto
+
+82
+00:04:15,232 --> 00:04:18,827
+Assim lembrar algo na conversa consultar um arquivo e treinar
+
+83
+00:04:18,827 --> 00:04:22,332
+um modelo são mecanismos diferentes mesmo quando parecem
+
+84
+00:04:22,332 --> 00:04:24,137
+iguais para quem está usando
+
+85
+00:04:25,468 --> 00:04:29,115
+Uma resposta pode parecer segura e trazer uma informação sem
+
+86
+00:04:29,115 --> 00:04:29,838
+apoio
+
+87
+00:04:29,888 --> 00:04:33,368
+Modelos de linguagem podem gerar conteúdo incorreto ou
+
+88
+00:04:33,368 --> 00:04:36,860
+incompatível com o contexto recebido esse tipo de falha
+
+89
+00:04:36,860 --> 00:04:39,155
+costuma ser chamado de alucinação
+
+90
+00:04:39,205 --> 00:04:42,736
+Não é necessário imaginar uma intenção de enganar estamos
+
+91
+00:04:42,736 --> 00:04:46,294
+falando de um problema na confiabilidade do texto produzido
+
+92
+00:04:46,344 --> 00:04:49,914
+Uma forma de dar mais apoio à resposta é recuperar informação
+
+93
+00:04:49,914 --> 00:04:53,226
+de documentos e acrescentar os trechos relevantes à entrada do
+
+94
+00:04:53,226 --> 00:04:53,987
+modelo
+
+95
+00:04:54,038 --> 00:04:57,066
+Esse processo é conhecido como geração aumentada por
+
+96
+00:04:57,066 --> 00:04:58,768
+recuperação ou RAG
+
+97
+00:04:58,832 --> 00:05:02,749
+A pergunta orienta uma busca a busca seleciona trechos e esses
+
+98
+00:05:02,749 --> 00:05:05,997
+trechos acompanham a solicitação enviada ao modelo
+
+99
+00:05:06,048 --> 00:05:09,863
+Aqui mostramos uma biblioteca de documentos ilustrativa e não
+
+100
+00:05:09,863 --> 00:05:11,887
+resultados de uma pesquisa real.
+
+101
+00:05:11,937 --> 00:05:15,430
+A recuperação pode falhar o trecho necessário pode não
+
+102
+00:05:15,430 --> 00:05:18,884
+aparecer ou perder contexto quando o documento é dividido
+
+103
+00:05:18,935 --> 00:05:22,015
+Por isso encontrar algum texto parecido não basta para
+
+104
+00:05:22,015 --> 00:05:24,168
+garantir que ele sustenta a conclusão
+
+105
+00:05:24,218 --> 00:05:27,698
+A fonte precisa ser pertinente e a resposta ainda precisa
+
+106
+00:05:27,698 --> 00:05:30,958
+respeitar o que ela realmente diz incluindo limites e
+
+107
+00:05:30,958 --> 00:05:32,041
+incertezas
+
+108
+00:05:33,343 --> 00:05:37,235
+Antes de confiar numa resposta de inteligência artificial siga
+
+109
+00:05:37,235 --> 00:05:38,679
+o caminho da evidência
+
+110
+00:05:38,730 --> 00:05:41,939
+Comece deixando claro o que você quer saber e oferecendo o
+
+111
+00:05:41,939 --> 00:05:44,465
+material necessário para aquela tarefa
+
+112
+00:05:44,516 --> 00:05:48,150
+Se a informação não estiver disponível peça ao sistema para
+
+113
+00:05:48,150 --> 00:05:51,385
+reconhecer a incerteza em vez de preencher a lacuna
+
+114
+00:05:51,436 --> 00:05:55,147
+Quando a resposta citar uma fonte abra o documento e confira o
+
+115
+00:05:55,147 --> 00:05:57,313
+trecho que sustentaria a afirmação
+
+116
+00:05:57,364 --> 00:06:00,921
+Veja se ele fala do mesmo assunto se mantém as ressalvas e se
+
+117
+00:06:00,921 --> 00:06:03,602
+a conclusão não foi além do que está escrito
+
+118
+00:06:03,652 --> 00:06:07,042
+Uma referência exibida na tela é um ponto de partida para essa
+
+119
+00:06:07,042 --> 00:06:09,762
+checagem não uma garantia automática
+
+120
+00:06:09,812 --> 00:06:13,614
+Na animação a afirmação só se conecta ao documento depois que
+
+121
+00:06:13,614 --> 00:06:15,973
+encontramos apoio no trecho mostrado
+
+122
+00:06:16,024 --> 00:06:19,542
+Se esse apoio faltar a saída adequada pode ser corrigir o
+
+123
+00:06:19,542 --> 00:06:23,614
+texto buscar outra fonte ou admitir que a resposta permanece
+
+124
+00:06:23,614 --> 00:06:24,414
+incerta
+
+125
+00:06:24,464 --> 00:06:28,163
+Esses cuidados ajudam a reduzir erros mas não transformam o
+
+126
+00:06:28,163 --> 00:06:30,226
+modelo em uma fonte infalível
+
+127
+00:06:30,276 --> 00:06:33,910
+A ideia final é simples a inteligência artificial monta uma
+
+128
+00:06:33,910 --> 00:06:37,725
+resposta a confiabilidade depende também do contexto das
+
+129
+00:06:37,725 --> 00:06:39,427
+fontes e da verificação

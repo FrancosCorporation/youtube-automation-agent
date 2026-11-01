@@ -1,0 +1,13 @@
+[Unit]
+Description=Pulso — coleta diária somente leitura de desempenho
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Git/youtube_ai/youtube-automation-agent
+ExecStart=/usr/bin/node scripts/collect-daily-performance.js
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+UMask=0077
+TimeoutStartSec=20min
+Nice=10

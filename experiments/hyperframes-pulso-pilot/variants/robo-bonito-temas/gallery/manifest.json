@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ia",
+    "brand": "Pulso IA",
+    "paletteIndex": 1,
+    "accents": [
+      "#22D3EE",
+      "#818CF8",
+      "#4ADE80",
+      "#F8C172"
+    ],
+    "image": "ia.png"
+  },
+  {
+    "id": "curiosidades",
+    "brand": "Pulso Curiosidades",
+    "paletteIndex": 0,
+    "accents": [
+      "#FBBF24",
+      "#FB7185",
+      "#A78BFA",
+      "#22D3EE"
+    ],
+    "image": "curiosidades.png"
+  },
+  {
+    "id": "dinheiro",
+    "brand": "Pulso Dinheiro",
+    "paletteIndex": 0,
+    "accents": [
+      "#34D399",
+      "#FBBF24",
+      "#60A5FA",
+      "#A3E635"
+    ],
+    "image": "dinheiro.png"
+  },
+  {
+    "id": "saude",
+    "brand": "Pulso Saúde",
+    "paletteIndex": 0,
+    "accents": [
+      "#2DD4BF",
+      "#4ADE80",
+      "#60A5FA",
+      "#F472B6"
+    ],
+    "image": "saude.png"
+  },
+  {
+    "id": "economize",
+    "brand": "Pulso Economia",
+    "paletteIndex": 0,
+    "accents": [
+      "#22C55E",
+      "#FACC15",
+      "#38BDF8",
+      "#F97316"
+    ],
+    "image": "economize.png"
+  },
+  {
+    "id": "psicologia",
+    "brand": "Pulso Mente",
+    "paletteIndex": 0,
+    "accents": [
+      "#A78BFA",
+      "#C084FC",
+      "#60A5FA",
+      "#F472B6"
+    ],
+    "image": "psicologia.png"
+  },
+  {
+    "id": "relacionamentos",
+    "brand": "Pulso Relações",
+    "paletteIndex": 0,
+    "accents": [
+      "#FB7185",
+      "#F472B6",
+      "#C084FC",
+      "#FDBA74"
+    ],
+    "image": "relacionamentos.png"
+  },
+  {
+    "id": "fitness",
+    "brand": "Pulso Fitness",
+    "paletteIndex": 0,
+    "accents": [
+      "#84CC16",
+      "#22D3EE",
+      "#FB923C",
+      "#34D399"
+    ],
+    "image": "fitness.png"
+  },
+  {
+    "id": "misterios",
+    "brand": "Pulso Mistérios",
+    "paletteIndex": 0,
+    "accents": [
+      "#8B5CF6",
+      "#6366F1",
+      "#22D3EE",
+      "#F472B6"
+    ],
+    "image": "misterios.png"
+  },
+  {
+    "id": "carreira",
+    "brand": "Pulso Carreira",
+    "paletteIndex": 0,
+    "accents": [
+      "#60A5FA",
+      "#6366F1",
+      "#FBBF24",
+      "#2DD4BF"
+    ],
+    "image": "carreira.png"
+  }
+]

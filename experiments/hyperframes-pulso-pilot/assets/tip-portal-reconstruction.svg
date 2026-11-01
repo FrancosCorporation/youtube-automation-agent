@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="390" viewBox="0 0 1320 390" fill="none">
+  <defs>
+    <linearGradient id="stage" x1="0" y1="0" x2="1320" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#153331"/>
+      <stop offset=".58" stop-color="#0c2426"/>
+      <stop offset="1" stop-color="#07181c"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="64" y1="44" x2="710" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fbf9f0"/>
+      <stop offset="1" stop-color="#e4eadf"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="64" y1="44" x2="714" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16413e"/>
+      <stop offset="1" stop-color="#0d2c2d"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="760" y1="62" x2="1270" y2="332" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#76d9bd" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#328c7e" stop-opacity=".12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(230 190 -210 255 1090 195)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#52bb9a" stop-opacity=".17"/>
+      <stop offset="1" stop-color="#52bb9a" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse">
+      <path d="M38 0H0V38" stroke="#b3d5c5" stroke-opacity=".065"/>
+    </pattern>
+    <filter id="paper-shadow" x="35" y="28" width="714" height="338" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+  <rect width="1320" height="390" rx="28" fill="url(#stage)"/>
+  <rect width="1320" height="390" rx="28" fill="url(#grid)"/>
+  <rect width="1320" height="390" rx="28" fill="url(#glow)"/>
+  <path d="M717 194H826" stroke="url(#signal)" stroke-width="2" stroke-dasharray="5 8"/>
+  <circle cx="826" cy="194" r="4" fill="#9af0d5"/>
+  <circle cx="1068" cy="194" r="154" stroke="#91e2c8" stroke-opacity=".11"/>
+  <circle cx="1068" cy="194" r="115" stroke="#91e2c8" stroke-opacity=".14"/>
+  <circle cx="1068" cy="194" r="76" stroke="#91e2c8" stroke-opacity=".18"/>
+  <path d="M930 90c38-31 87-50 139-50" stroke="url(#signal)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="1068" cy="40" r="4" fill="#98edd2" fill-opacity=".8"/>
+  <rect x="63" y="42" width="650" height="294" rx="22" fill="#000" fill-opacity=".28" filter="url(#paper-shadow)"/>
+  <rect x="57" y="36" width="650" height="294" rx="22" fill="url(#paper)" stroke="#fff" stroke-opacity=".64"/>
+  <path d="M79 36h606a22 22 0 0 1 22 22v45H57V58a22 22 0 0 1 22-22Z" fill="url(#bar)"/>
+  <circle cx="91" cy="70" r="7" fill="#e9ad73"/>
+  <text x="113" y="76" fill="#f3f5ea" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="750" letter-spacing="2">TIP PORTAL</text>
+  <text x="676" y="75" text-anchor="end" fill="#b5d3c3" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1.3">EDITORIAL RECONSTRUCTION</text>
+  <text x="89" y="145" fill="#728074" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="760" letter-spacing="1.25">PHILLY UNSOLVED MURDERS</text>
+  <text x="89" y="183" fill="#102729" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="720">An anonymous tip was submitted</text>
+  <path d="M89 203h586" stroke="#c7d2c8"/>
+  <text x="89" y="235" fill="#6f7d70" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="750" letter-spacing="1.1">REPORTED DATE</text>
+  <text x="89" y="268" fill="#173a36" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="720">July 18, 2026</text>
+  <rect x="89" y="287" width="170" height="26" rx="13" fill="#d4e8dd"/>
+  <circle cx="106" cy="300" r="4" fill="#16796d"/>
+  <text x="120" y="304" fill="#245449" font-family="Inter,Arial,sans-serif" font-size="10" font-weight="760" letter-spacing=".8">TIP RECEIVED</text>
+  <rect x="1268" y="18" width="2" height="354" rx="1" fill="url(#signal)" fill-opacity=".5"/>
+</svg>

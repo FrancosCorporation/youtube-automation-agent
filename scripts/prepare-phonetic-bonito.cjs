@@ -1,0 +1,28 @@
+const fs=require('node:fs/promises'),path=require('node:path');
+const{createCompositionHtml}=require('../utils/hyperframes-video-renderer');
+const{ScenePlanBuilder}=require('../utils/scene-plan-builder');
+const{extractSpeechEnvelope}=require('../utils/speech-envelope');
+const{extractSpeechVisemes}=require('../utils/speech-visemes');
+(async()=>{
+ const root=path.resolve(__dirname,'../experiments/hyperframes-pulso-pilot');
+ const source=path.join(root,'variants/phonetic-robo-bonito/assets');
+ const manifest=JSON.parse(await fs.readFile(path.join(source,'voice-manifest.json'),'utf8'));
+ const portrait=process.argv.includes('--portrait'),dir=path.join(root,'variants/phonetic-robo-bonito'+(portrait?'-vertical':''));
+ await fs.mkdir(path.join(dir,'assets'),{recursive:true});
+ const audio=path.join(source,'narration.wav'),envelope=await extractSpeechEnvelope(audio),mouthCues=await extractSpeechVisemes(audio);
+ const parts=manifest.sentences;
+ const script={seed:0,themeId:'ia',hook:{text:parts[0][1]},mainContent:{sections:parts.slice(1,-1).map(([title,content])=>({title,content}))},conclusion:{finalThought:parts.at(-1)[1]},timings:manifest.timings};
+ const duration=manifest.duration,scenes=new ScenePlanBuilder().buildScenes(script,duration*1000,{},envelope);
+ scenes.at(-1).durationMs+=Math.round(duration*1000)-scenes.reduce((sum,s)=>sum+s.durationMs,0);
+ const kitCss=await fs.readFile(path.resolve(__dirname,'../assets/scenes/kit.css'),'utf8'),kitJs=await fs.readFile(path.resolve(__dirname,'../assets/scenes/kit.js'),'utf8');
+ const composition=createCompositionHtml({width:portrait?1080:1920,height:portrait?1920:1080,fps:24,duration,scenes,imageAssets:[],audioFile:'assets/narration.wav',robotConfig:{script,seed:0,speechEnvelope:envelope,mouthCues},kitCss,kitJs});
+ await fs.writeFile(path.join(dir,'index.html'),composition.html);
+ for(const[n,data]of Object.entries(composition.assets))await fs.writeFile(path.join(dir,'assets',n),data);
+ if(portrait)await fs.copyFile(audio,path.join(dir,'assets/narration.wav'));
+ await fs.copyFile(path.join(root,'assets/pulso-robot.glb'),path.join(dir,'assets/pulso-robot.glb'));
+ await fs.copyFile(path.join(root,'node_modules/gsap/dist/gsap.min.js'),path.join(dir,'assets/gsap.min.js'));
+ await fs.writeFile(path.join(dir,'assets/mouth-cues.json'),JSON.stringify(mouthCues));
+ await fs.writeFile(path.join(dir,'assets/speech-envelope.json'),JSON.stringify(envelope));
+ await fs.writeFile(path.join(dir,'scene-plan.json'),JSON.stringify(scenes,null,2));
+ console.log(JSON.stringify({dir,duration,scenes:scenes.length,words:manifest.words.length,cues:mouthCues.cues.length}));
+})().catch(e=>{console.error(e);process.exitCode=1;});

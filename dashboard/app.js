@@ -1,5 +1,7 @@
 const ui = {
   state: null,
+  dailyPerformance: null,
+  knowledgeDocuments: [],
   currentView: 'overview',
   refreshing: false,
   toastTimer: null,
@@ -54,6 +56,8 @@ function showToast(message, type = 'success') {
   const toast = $('#toast');
   toast.textContent = message;
   toast.className = `toast ${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+  toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
   clearTimeout(ui.toastTimer);
   ui.toastTimer = setTimeout(() => toast.classList.add('hidden'), 4200);
 }
@@ -91,12 +95,40 @@ function statusChip(value) {
   return `<span class="status ${escapeHTML(safe)}">${escapeHTML(label(safe))}</span>`;
 }
 
+const activeLoadingTasks = new Map();
+let loadingSequence = 0;
+
+function renderLoadingState() {
+  const loading = $('#loading');
+  const messages = [...activeLoadingTasks.values()];
+  loading.classList.toggle('active', messages.length > 0);
+  const announcement = loading.querySelector('.sr-only');
+  if (announcement) announcement.textContent = messages.at(-1) || '';
+  $('#main-content')?.setAttribute('aria-busy', String(messages.length > 0));
+}
+
+function startLoading(message) {
+  const id = ++loadingSequence;
+  activeLoadingTasks.set(id, String(message || 'Loading dashboard data'));
+  renderLoadingState();
+  return () => {
+    if (!activeLoadingTasks.delete(id)) return;
+    renderLoadingState();
+  };
+}
+
 async function refreshDashboard(silent = false) {
   if (ui.refreshing) return;
   ui.refreshing = true;
-  if (!silent) $('#loading').classList.add('active');
+  const stopLoading = silent ? null : startLoading('Refreshing dashboard data');
   try {
-    ui.state = await api('/api/dashboard');
+    const [dashboardResult, dailyResult] = await Promise.allSettled([
+      api('/api/dashboard'), api('/api/daily-performance')
+    ]);
+    if (dashboardResult.status === 'rejected') throw dashboardResult.reason;
+    ui.state = dashboardResult.value;
+    ui.dailyPerformance = dailyResult.status === 'fulfilled'
+      ? dailyResult.value : { status: 'unavailable', reports: [] };
     renderDashboard();
   } catch (error) {
     $('#system-label').textContent = 'Dashboard unavailable';
@@ -104,8 +136,43 @@ async function refreshDashboard(silent = false) {
     if (!silent) showToast(error.message, 'error');
   } finally {
     ui.refreshing = false;
-    $('#loading').classList.remove('active');
+    stopLoading?.();
   }
+}
+
+async function refreshKnowledgeBase() {
+  const container = $('#knowledge-documents');
+  if (!container) return;
+  container.innerHTML = empty('Loading your documents…');
+  try {
+    const result = await api('/api/knowledge-base/documents');
+    ui.knowledgeDocuments = Array.isArray(result.documents) ? result.documents : [];
+    renderKnowledgeDocuments();
+  } catch (error) {
+    container.innerHTML = empty(error.message || 'Knowledge base could not be loaded.');
+  }
+}
+
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function renderKnowledgeDocuments() {
+  const container = $('#knowledge-documents');
+  if (!container) return;
+  const documents = ui.knowledgeDocuments || [];
+  $('#knowledge-document-count').textContent = `${documents.length} document${documents.length === 1 ? '' : 's'}`;
+  container.innerHTML = documents.length ? documents.map(document => {
+    const date = document.created_at ? formatDate(document.created_at) : 'Just uploaded';
+    return `<article class="knowledge-document">
+      <div class="knowledge-document-icon" aria-hidden="true">▤</div>
+      <div class="knowledge-document-copy"><strong>${escapeHTML(document.original_name)}</strong><small>${formatFileSize(document.size_bytes)} · ${Number(document.extracted_characters || 0).toLocaleString()} characters · ${escapeHTML(date)}</small></div>
+      <button type="button" class="text-button danger-text" data-remove-knowledge-document="${escapeHTML(document.id)}" aria-label="Remove ${escapeHTML(document.original_name)}">Remove</button>
+    </article>`;
+  }).join('') : empty('No reference documents yet. Add a document above to give your agents channel specific context.');
 }
 
 function renderDashboard() {
@@ -139,6 +206,7 @@ function renderDashboard() {
   renderCalendar(state.schedule);
   renderIdeas(state.ideas);
   renderAnalytics(state.analytics, state.learning);
+  renderDailyPerformance(ui.dailyPerformance || {});
   renderGrowthExperiments(state.experiments || {});
   renderEngagement(ui.state.engagement || {});
   renderActivation(state.activation);
@@ -146,6 +214,107 @@ function renderDashboard() {
   renderOperator(state.channelStrategy, state.operatorRuns || [], { ...state.system, readiness: state.readiness });
   populateSettings(state.profile, state.settings, state.system.videoProviders || []);
 }
+
+function metricText(value, suffix = '') {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return 'Unavailable';
+  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(Number(value))}${suffix}`;
+}
+
+function renderDailyPerformance(data = {}) {
+  const report = Array.isArray(data.reports) ? data.reports[0] : null;
+  const selectedPlatform = $('#daily-performance-platform')?.value || 'all';
+  const meta = $('#daily-performance-meta');
+  const status = $('#daily-performance-status');
+  const health = $('#daily-performance-platform-health');
+  const runtimeHealth = $('#scheduler-runtime-health');
+  const body = $('#daily-performance-rows');
+  const runtime = data.runtime;
+  if (runtimeHealth) {
+    const blocked = runtime?.producer?.state === 'waiting_resources' && runtime?.renderGate?.renderSafe === false;
+    const status = runtime?.status === 'active' ? blocked ? 'process active · production waiting for resources' : 'process active' : runtime?.status === 'not_running' ? 'process not running' : 'status unavailable';
+    const activity = Number.isFinite(runtime?.activityAgeSeconds)
+      ? runtime.heartbeatAvailable
+        ? runtime.heartbeatFresh ? `heartbeat fresh (${Math.max(1, runtime.activityAgeSeconds)}s ago)` : `heartbeat stale (${metricText(runtime.activityAgeSeconds / 3600, ' h')} ago)`
+        : `last scheduler activity ${metricText(runtime.activityAgeSeconds / 3600, ' h')} ago`
+      : 'scheduler activity unavailable';
+    const queue = runtime?.queue?.pending === null || runtime?.queue?.pending === undefined
+      ? 'queue state unavailable' : `queue ${runtime.queue.pending} pending · ${runtime.queue.inFlight ? 'upload in flight' : 'no upload in flight'}`;
+    const failure = runtime?.lastGenerationFailure;
+    const retry = runtime?.nextGenerationRetryAt ? ` · next retry ${formatDate(runtime.nextGenerationRetryAt)}` : '';
+    const generation = failure ? `last generation failure ${failure.code}${retry}` : 'no generation failure recorded';
+    const phases = [runtime?.producer?.state ? `producer ${runtime.producer.state}` : null, runtime?.consumer?.state ? `consumer ${runtime.consumer.state}` : null].filter(Boolean).join(' · ');
+    const slotLabel = runtime?.consumer?.state === 'missed_slot_waiting_for_video' ? 'missed slot awaiting video' : 'next configured slot';
+    const slot = runtime?.nextConfiguredSlotAt
+      ? `${slotLabel} ${formatDate(runtime.nextConfiguredSlotAt)} · ${runtime.configuredVideosPerDay ?? 'unknown'} configured/day${phases ? ` · ${phases}` : ''}`
+      : 'next configured slot unavailable';
+    const gate = blocked ? `last resource check: ${runtime.renderGate.reasons.join(', ') || 'reason unavailable'} · available RAM ${metricText(runtime.renderGate.availableMemoryBytes === null ? null : runtime.renderGate.availableMemoryBytes / (1024 ** 3), ' GiB')}` : '';
+    runtimeHealth.innerHTML = `<article class="daily-platform-card"><div><strong>Scheduler</strong><span class="daily-platform-state">${escapeHTML(status)}</span></div><small>${escapeHTML(activity)}</small><small>${escapeHTML(queue)}</small><small>${escapeHTML(generation)}</small><small>${escapeHTML(slot)}</small>${gate ? `<small>${escapeHTML(gate)}</small>` : ''}</article>`;
+  }
+  if (!report) {
+    meta.textContent = 'No daily snapshot has been recorded yet.';
+    status.textContent = data.status === 'unavailable'
+      ? 'The saved report could not be read. No values are estimated.'
+      : 'Waiting for the daily collector. No values are estimated.';
+    health.innerHTML = '';
+    body.innerHTML = `<tr><td colspan="9">${escapeHTML(data.status === 'unavailable' ? 'Performance report unavailable.' : 'No confirmed videos are in the daily report yet.')}</td></tr>`;
+    return;
+  }
+  const collected = report.collectedAt ? formatDate(report.collectedAt) : 'collection time unavailable';
+  const ageHours = report.collectedAt ? (Date.now() - Date.parse(report.collectedAt)) / 3600000 : Infinity;
+  const stale = !Number.isFinite(ageHours) || ageHours > 36;
+  meta.textContent = `Snapshot ${report.reportDate} · collected ${collected}${stale ? ' · stale' : ''}`;
+  const stateLabels = { observed: 'Metrics observed', partial: 'Some metrics observed', blocked: 'Collection blocked', empty: 'No confirmed posts', unavailable: 'Metrics unavailable' };
+  status.textContent = `${stateLabels[report.status] || 'Collection status unavailable'}${stale ? ' · last snapshot is over 36 hours old' : ''}`;
+  status.className = `daily-performance-status ${escapeHTML(report.status || 'unavailable')}${stale ? ' stale' : ''}`;
+  health.innerHTML = Object.entries(report.coverage || {}).map(([platform, coverage]) => {
+    const platformPosts = (report.posts || []).filter(post => post.platform === platform);
+    const confirmedAt = report.publicationHealth?.[platform]?.lastConfirmedAt
+      || platformPosts.map(post => post.confirmedAt).filter(value => Number.isFinite(Date.parse(value || '')))
+        .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || null;
+    const ageDays = confirmedAt ? Math.max(0, (Date.now() - Date.parse(confirmedAt)) / 86400000) : null;
+    const lastPost = ageDays === null ? 'Publication date unavailable'
+      : ageDays < 1 ? 'Last confirmed post: less than a day ago'
+        : `Last confirmed post: ${Math.floor(ageDays)}d ago`;
+    const attempt = report.publicationHealth?.[platform];
+    const unresolved = attempt?.latestAttemptStatus && ['attempting', 'unknown', 'failed'].includes(attempt.latestAttemptStatus)
+      ? ` · latest attempt ${attempt.latestAttemptStatus}${attempt.latestFailureCode ? ` (${attempt.latestFailureCode})` : ''}` : '';
+    const reason = coverage?.reason ? ` · ${escapeHTML(coverage.reason)}` : '';
+    return `<article class="daily-platform-card"><div><strong>${escapeHTML(platform)}</strong><span class="daily-platform-state">${escapeHTML(label(coverage?.status || 'unavailable'))}</span></div><small>${escapeHTML(lastPost)}</small><small>${attempt?.confirmed ?? platformPosts.length} confirmed in ledger${escapeHTML(unresolved)}${reason}</small></article>`;
+  }).join('');
+  const posts = (report.posts || []).filter(post => selectedPlatform === 'all' || post.platform === selectedPlatform)
+    .sort((a, b) => {
+      const aViews = a.delta?.viewsPer24Hours, bViews = b.delta?.viewsPer24Hours;
+      return (Number.isFinite(bViews) ? bViews : -Infinity) - (Number.isFinite(aViews) ? aViews : -Infinity);
+    });
+  if (!posts.length) {
+    body.innerHTML = `<tr><td colspan="9">${escapeHTML(selectedPlatform === 'all' ? 'No confirmed videos in this snapshot.' : `No confirmed ${selectedPlatform} videos in this snapshot.`)}</td></tr>`;
+    return;
+  }
+  body.innerHTML = posts.map(post => {
+    const title = escapeHTML(post.title || 'Untitled video');
+    const linkedTitle = post.url ? `<a href="${escapeHTML(post.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : title;
+    const latest = post.analytics?.days?.at(-1)?.metrics || {};
+    const views = post.counters?.views;
+    const engaged = post.counters?.engagedViews ?? latest.engagedViews;
+    const retention = post.counters?.averageViewPercentage ?? latest.averageViewPercentage;
+    const publishedAt = Number.isFinite(Date.parse(post.publishedAt || '')) ? Date.parse(post.publishedAt) : null;
+    const ageHours = publishedAt === null ? null : Math.max(0, (Date.now() - publishedAt) / 3600000);
+    const ageLabel = ageHours === null ? 'Unavailable'
+      : ageHours < 48 ? `${metricText(ageHours, ' h')}` : `${metricText(ageHours / 24, ' d')}`;
+    const duration = Number.isFinite(post.durationSeconds) ? `${metricText(post.durationSeconds / 60, ' min')}` : 'Unavailable';
+    const formatCell = `${escapeHTML(post.formatId || 'Unknown format')}${post.experimentId
+      ? `<small>Experiment ${escapeHTML(post.experimentId)}</small>` : ''}`;
+    const delta = post.delta?.metrics?.views;
+    const window = Number.isFinite(post.delta?.hours)
+      ? `${metricText(delta, ' views')} / ${metricText(post.delta.hours, 'h')} · ${metricText(post.delta.viewsPer24Hours, ' views/24h rate')}` : 'Unavailable';
+    const collectedMetric = post.analytics?.availableThrough
+      ? `through ${escapeHTML(post.analytics.availableThrough)}`
+      : escapeHTML(post.status === 'observed' ? 'counter observed' : post.reason || post.status || 'unavailable');
+    return `<tr><th scope="row"><div class="daily-video-title">${linkedTitle}</div><small>${escapeHTML(post.platform || 'unknown')}${post.theme ? ` · ${escapeHTML(post.theme)}` : ''}</small></th><td>${formatCell}</td><td>${escapeHTML(ageLabel)}</td><td>${escapeHTML(duration)}</td><td>${escapeHTML(metricText(views))}</td><td>${escapeHTML(window)}</td><td>${escapeHTML(metricText(engaged))}</td><td>${escapeHTML(metricText(retention, '%'))}</td><td>${collectedMetric}</td></tr>`;
+  }).join('');
+}
+
+$('#daily-performance-platform')?.addEventListener('change', () => renderDailyPerformance(ui.dailyPerformance || {}));
 
 function renderReadiness(readiness = {}) {
   const status = readiness.status || 'unverified';
@@ -780,13 +949,11 @@ function populateSettings(profile = {}, settings = {}, providers = []) {
       : selected?.available ? `${label(selected.id)} is configured (${selected.model}).` : `${label(videoMapping.videoProvider)} credentials are not configured.`;
 }
 
-function switchView(view) {
-  ui.currentView = view;
-  $$('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
-  $$('.view').forEach(item => item.classList.toggle('active', item.id === `${view}-view`));
+function switchView(view, { focus = true, updateHash = true } = {}) {
   const titles = {
     overview: ['OPERATOR OVERVIEW', 'Know what happens next.'],
     operator: ['AUTONOMOUS OPERATOR', 'Give Lumen the strategy.'],
+    knowledge: ['AGENT KNOWLEDGE', 'Give every agent your reference material.'],
     pipeline: ['CONTENT OPERATIONS', 'From idea to published.'],
     calendar: ['EDITORIAL PLANNING', 'Plan before you generate.'],
     analytics: ['PERFORMANCE', 'Turn results into the next move.'],
@@ -794,9 +961,20 @@ function switchView(view) {
     readiness: ['PRODUCTION READINESS', 'Verify before autonomy runs.'],
     settings: ['CHANNEL GUARDRAILS', 'Make every agent sound like you.']
   };
+  if (!titles[view]) return;
+  ui.currentView = view;
+  $$('.nav-item').forEach(item => {
+    const active = item.dataset.view === view;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
+  $$('.view').forEach(item => item.classList.toggle('active', item.id === `${view}-view`));
   $('#view-eyebrow').textContent = titles[view][0];
   $('#view-title').textContent = titles[view][1];
-  location.hash = view;
+  if (updateHash && location.hash.slice(1) !== view) location.hash = view;
+  if (focus) $('#view-title').focus({ preventScroll: true });
+  if (view === 'knowledge') void refreshKnowledgeBase();
 }
 
 function selectOptions(options, selected) {
@@ -987,7 +1165,7 @@ function renderShortsStudio(item) {
 }
 
 async function openContent(productionId) {
-  $('#loading').classList.add('active');
+  const stopLoading = startLoading('Loading content for review');
   try {
     const item = await api(`/api/content/${encodeURIComponent(productionId)}`);
     const data = item.editorData || {};
@@ -1000,7 +1178,7 @@ async function openContent(productionId) {
     const selectedTitleVariant = Number(data.selectedTitleVariant || 0);
     const selectedThumbnailVariant = Number(data.selectedThumbnailVariant || 0);
     $('#content-detail').innerHTML = `
-      <div class="dialog-heading"><div><p class="eyebrow">CONTENT REVIEW</p><h2>${escapeHTML(title)}</h2><div class="meta-line">${statusChip(item.schedule?.status || item.review_status || item.status)} · Quality ${qualityScore(item.qualityChecks)}%</div></div><button type="button" class="close-button" data-close>×</button></div>
+      <div class="dialog-heading"><div><p class="eyebrow">CONTENT REVIEW</p><h2 id="content-dialog-title">${escapeHTML(title)}</h2><div class="meta-line">${statusChip(item.schedule?.status || item.review_status || item.status)} · Quality ${qualityScore(item.qualityChecks)}%</div></div><button type="button" class="close-button" data-close aria-label="Close content review">×</button></div>
       <form id="content-review-form" class="editor content-review-editor">
         <div class="content-layout">
           <div>
@@ -1039,7 +1217,7 @@ async function openContent(productionId) {
   } catch (error) {
     showToast(error.message, 'error');
   } finally {
-    $('#loading').classList.remove('active');
+    stopLoading();
   }
 }
 
@@ -1100,7 +1278,7 @@ async function refreshContentDialog(productionId, message) {
 async function uploadSceneAsset(productionId, sceneId, file) {
   if (!confirm('Confirm you own or have permission to use this replacement asset.')) return;
   const synthetic = confirm('Does this replacement contain realistic altered or synthetic media that should be disclosed to YouTube?');
-  $('#loading').classList.add('active');
+  const stopLoading = startLoading('Uploading replacement scene asset');
   try {
     await api(`/api/content/${encodeURIComponent(productionId)}/scenes/${encodeURIComponent(sceneId)}/asset`, {
       method: 'PUT',
@@ -1116,7 +1294,7 @@ async function uploadSceneAsset(productionId, sceneId, file) {
   } catch (error) {
     showToast(error.message, 'error');
   } finally {
-    $('#loading').classList.remove('active');
+    stopLoading();
   }
 }
 
@@ -1160,7 +1338,7 @@ function currentSourceOptions() {
 }
 
 async function persistProvenance(productionId, successMessage = null) {
-  $('#loading').classList.add('active');
+  const stopLoading = startLoading('Saving source and claim details');
   try {
     const result = await api(`/api/content/${encodeURIComponent(productionId)}/provenance`, {
       method: 'PUT',
@@ -1176,12 +1354,12 @@ async function persistProvenance(productionId, successMessage = null) {
     showToast(error.message, 'error');
     throw error;
   } finally {
-    $('#loading').classList.remove('active');
+    stopLoading();
   }
 }
 
 async function mutate(url, method, body, successMessage) {
-  $('#loading').classList.add('active');
+  const stopLoading = startLoading('Saving dashboard changes');
   try {
     const result = await api(url, { method, body: body === undefined ? undefined : JSON.stringify(body) });
     showToast(successMessage);
@@ -1192,13 +1370,86 @@ async function mutate(url, method, body, successMessage) {
     showToast(failures ? `${error.message}: ${failures.join(', ')}` : error.message, 'error');
     throw error;
   } finally {
-    $('#loading').classList.remove('active');
+    stopLoading();
   }
 }
+
+async function uploadKnowledgeFiles(files) {
+  const selected = Array.from(files || []);
+  if (!selected.length) return;
+  const status = $('#knowledge-upload-status');
+  const successes = [];
+  const failures = [];
+  const stopLoading = startLoading(`Adding ${selected.length} knowledge document${selected.length === 1 ? '' : 's'}`);
+  for (const file of selected) {
+    status.textContent = `Uploading and extracting ${file.name}…`;
+    if (file.size > 10 * 1024 * 1024) {
+      failures.push(`${file.name}: files must be 10 MB or smaller.`);
+      continue;
+    }
+    try {
+      await api('/api/knowledge-base/documents', {
+        method: 'POST',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'x-file-name': file.name
+        }
+      });
+      successes.push(file.name);
+    } catch (error) {
+      failures.push(`${file.name}: ${error.message}`);
+    }
+  }
+  try {
+    await refreshKnowledgeBase();
+    if (failures.length) {
+      status.textContent = `${successes.length} document${successes.length === 1 ? '' : 's'} added; ${failures.join(' · ')}`;
+      showToast(failures[0], 'error');
+    } else {
+      status.textContent = `${successes.length} document${successes.length === 1 ? '' : 's'} added and ready for the agents.`;
+      showToast(status.textContent);
+    }
+  } finally {
+    stopLoading();
+  }
+}
+
+$('#knowledge-browse').addEventListener('click', () => $('#knowledge-files').click());
+$('#knowledge-files').addEventListener('change', event => {
+  void uploadKnowledgeFiles(event.currentTarget.files);
+  event.currentTarget.value = '';
+});
+$('#knowledge-dropzone').addEventListener('dragover', event => {
+  event.preventDefault();
+  event.currentTarget.classList.add('is-dragging');
+});
+$('#knowledge-dropzone').addEventListener('dragleave', event => {
+  if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.classList.remove('is-dragging');
+});
+$('#knowledge-dropzone').addEventListener('drop', event => {
+  event.preventDefault();
+  event.currentTarget.classList.remove('is-dragging');
+  void uploadKnowledgeFiles(event.dataTransfer?.files);
+});
+$('#knowledge-refresh').addEventListener('click', () => void refreshKnowledgeBase());
 
 document.addEventListener('click', async event => {
   const nav = event.target.closest('[data-view]');
   if (nav) return switchView(nav.dataset.view);
+  const removeKnowledgeDocument = event.target.closest('[data-remove-knowledge-document]');
+  if (removeKnowledgeDocument) {
+    const documentId = removeKnowledgeDocument.dataset.removeKnowledgeDocument;
+    if (!confirm(`Remove ${removeKnowledgeDocument.getAttribute('aria-label').replace(/^Remove /, '')} from the agent knowledge base?`)) return;
+    try {
+      await api(`/api/knowledge-base/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' });
+      showToast('Document removed from the agent knowledge base.');
+      await refreshKnowledgeBase();
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+    return;
+  }
   const go = event.target.closest('[data-go]');
   if (go) return switchView(go.dataset.go);
   if (event.target.closest('[data-close]')) return event.target.closest('dialog').close();
@@ -1746,6 +1997,11 @@ $('#api-key-button').addEventListener('click', () => {
 });
 
 const initialView = location.hash.slice(1);
-if (['overview', 'operator', 'pipeline', 'calendar', 'analytics', 'engagement', 'readiness', 'settings'].includes(initialView)) switchView(initialView);
+const viewIds = ['overview', 'operator', 'knowledge', 'pipeline', 'calendar', 'analytics', 'engagement', 'readiness', 'settings'];
+if (viewIds.includes(initialView)) switchView(initialView, { focus: false, updateHash: false });
+window.addEventListener('hashchange', () => {
+  const view = location.hash.slice(1) || 'overview';
+  if (viewIds.includes(view)) switchView(view, { focus: false, updateHash: false });
+});
 refreshDashboard();
 setInterval(() => refreshDashboard(true), 8000);

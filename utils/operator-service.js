@@ -1,11 +1,23 @@
 const fs = require('fs').promises;
 const axios = require('axios');
 const { Logger } = require('./logger');
+const { safeErrorTag } = require('./safe-error-tag');
+
+function successfulHttpStatus(status) {
+  const code = Number(status);
+  return Number.isInteger(code) && code >= 200 && code < 300;
+}
+
+function safeHttpStatus(status) {
+  const code = Number(status);
+  return Number.isInteger(code) && code >= 100 && code <= 599 ? code : null;
+}
 
 class OperatorService {
-  constructor(db) {
+  constructor(db, { httpPost, logger } = {}) {
     this.db = db;
-    this.logger = new Logger('OperatorService');
+    this.httpPost = httpPost || ((...args) => axios.post(...args));
+    this.logger = logger || new Logger('OperatorService');
   }
 
   async runQualityChecks(production, profile = {}) {
@@ -161,16 +173,37 @@ class OperatorService {
 
     const id = await this.db.createNotification(notification);
     const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+    const delivery = webhookUrl
+      ? { status: 'failed' }
+      : { status: 'not_configured' };
     if (webhookUrl) {
       try {
-        await axios.post(webhookUrl, {
+        const response = await this.httpPost(webhookUrl, {
           text: `${notification.title}: ${notification.message}`,
           content: `${notification.title}: ${notification.message}`,
           ...notification
         }, { timeout: 5000 });
+        const status = safeHttpStatus(response?.status);
+        if (successfulHttpStatus(status)) {
+          delivery.status = 'delivered';
+        } else {
+          delivery.httpStatus = status;
+          this.logger.warn(`Notification webhook failed (${status ? `HTTP ${status}` : 'invalid_http_status'})`);
+        }
       } catch (error) {
-        this.logger.warn(`Notification webhook failed: ${error.message}`);
+        const status = safeHttpStatus(error?.response?.status);
+        delivery.httpStatus = status;
+        delivery.errorCode = safeErrorTag(error);
+        this.logger.warn(`Notification webhook failed (${status ? `HTTP ${status}` : delivery.errorCode})`);
       }
+    }
+    try {
+      await this.db.updateNotificationData(id, {
+        ...(notification.data && typeof notification.data === 'object' ? notification.data : {}),
+        webhookDelivery: delivery
+      });
+    } catch (_error) {
+      this.logger.warn('Notification webhook result could not be persisted');
     }
     return id;
   }

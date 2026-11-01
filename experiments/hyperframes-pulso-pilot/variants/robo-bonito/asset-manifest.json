@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-10-12T08:08:07.400433+00:00",
+  "originalReference": "../../renders/exemplo robo bonito.png",
+  "referencePreparation": "imagegen integrated, identity-preserving frontal A-pose on white",
+  "referencePrompt": "prompt-referencia.txt",
+  "meshProvider": "Tencent Hunyuan 3D V3.1",
+  "providerWebsite": "https://3d.hunyuan.tencent.com/",
+  "requestedFaces": 500000,
+  "observedQuota": {
+    "before": 19,
+    "after": 18
+  },
+  "files": {
+    "assets/exemplo-robo-bonito-original.png": {
+      "bytes": 2019719,
+      "sha256": "2343d02b49c30d88e00eb08b2266e8b6c30e7f739639fba5e63c25e43ad4f981"
+    },
+    "assets/robo-bonito-referencia-apose.png": {
+      "bytes": 1479796,
+      "sha256": "1930fb8d15f088f4ecfb92a022488dd4d5ede995da0378516fd49508400bf061"
+    },
+    "assets/robo-bonito-hunyuan.glb": {
+      "bytes": 49815868,
+      "sha256": "f588d0449e71fb60cc649c400ff04b47c964248cadf9e015e74a36653c5554ff"
+    }
+  },
+  "integration": "candidate only; production presenter unchanged",
+  "animationReadiness": "static: no skins or animation clips; facial graphics baked in texture",
+  "licenseNote": "Existing account and displayed provider agreement; no commercial-license certification."
+}

@@ -1,0 +1,10 @@
+export type IllustrationShape = {type: 'rect' | 'ellipse' | 'path' | 'line'; d?: string; fill: string; stroke: string; strokeWidth?: number; opacity?: number; x?:number; y?:number; width?:number; height?:number; rx?:number; ry?:number; cx?:number; cy?:number; x1?:number; x2?:number; y1?:number; y2?:number};
+export type IllustrationPose = {x:number; y:number; scale:number; rotate:number};
+export type IllustrationMesh = {type:string; color:string; position:[number,number,number]; rotation:[number,number,number]; size:[number,number,number]; opacity:number; metalness:number; points?:Array<[number,number,number]>};
+import type { AnimationTrack } from './narrative-animation-tracks.js';
+export type IllustrationNode = {id:string; evidence:string; evidenceSentenceId?:string; label:string; prop?:string; shapes:IllustrationShape[]; meshes:IllustrationMesh[]; depth:number; layout:Record<'landscape'|'portrait', IllustrationPose>};
+export type IllustrationMotion = {targetId:string; cueText:string; kind:string; startFrame:number; endFrame:number; amount?:number; to?:Record<'landscape'|'portrait', IllustrationPose>; cueAlignment:string};
+export type SpatialRef = {nodeId:string;meshIndex:number};
+export type NarrativeIllustration = {version:number; dimension:'2d'|'3d'; cueSentenceId:string; explanation:string; nodes:IllustrationNode[]; motions:IllustrationMotion[]; tracks?:AnimationTrack[]; spatialChecks?:Array<{subject:SpatialRef;obstacles:SpatialRef[]}>; camera?:Partial<Record<'landscape'|'portrait', {position:[number,number,number]; target:[number,number,number];fov:number}>>};
+export function normalizeIllustrations(raw:unknown, sentences:Array<{id:string; text:string; startFrame:number; endFrame:number; wordTimings?:Array<{text:string;startFrame:number}>}>, fps:number):NarrativeIllustration[];
+export function illustrationPrompt():string;

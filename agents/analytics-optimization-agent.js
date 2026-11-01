@@ -1,6 +1,13 @@
 const { google } = require('googleapis');
 const { Logger } = require('../utils/logger');
 const { ChannelLearningEngine } = require('../utils/channel-learning-engine');
+const { collectYouTubeVideoMetrics } = require('../utils/youtube-observed-metrics');
+
+function optionalCount(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const count = Number(value);
+  return Number.isFinite(count) ? count : null;
+}
 
 class AnalyticsOptimizationAgent {
   constructor(db, credentials) {
@@ -51,6 +58,14 @@ class AnalyticsOptimizationAgent {
     } catch (error) {
       this.logger.warn('No historical analytics data found');
     }
+  }
+
+  // Strict evidence path for daily animated-video reports. It deliberately
+  // bypasses simulated analytics, SEO scoring and generated recommendations.
+  async readObservedVideoMetrics(videoId, { channelId, now } = {}) {
+    return collectYouTubeVideoMetrics({
+      youtube: this.youtube, analytics: this.youtubeAnalytics, videoId, channelId, now
+    });
   }
 
   async analyzeVideoPerformance(videoId, options = {}) {
@@ -152,9 +167,9 @@ class AnalyticsOptimizationAgent {
       publishedAt: video.snippet.publishedAt,
       duration: video.contentDetails.duration,
       statistics: {
-        viewCount: parseInt(video.statistics.viewCount) || 0,
-        likeCount: parseInt(video.statistics.likeCount) || 0,
-        commentCount: parseInt(video.statistics.commentCount) || 0
+        viewCount: optionalCount(video.statistics.viewCount),
+        likeCount: optionalCount(video.statistics.likeCount),
+        commentCount: optionalCount(video.statistics.commentCount)
       }
     };
   }
@@ -180,6 +195,14 @@ class AnalyticsOptimizationAgent {
         this.getDeviceAnalytics(videoId, startDate, endDate),
         this.getOutcomeAnalytics(videoId, startDate, endDate, options.currency || 'USD')
       ]);
+
+      const hasObservedAnalytics = viewsData.totalViews !== null || viewsData.totalImpressions !== null
+        || watchTimeData.totalWatchTime !== null || outcomeData.subscribersAvailable || outcomeData.revenueAvailable;
+      if (!hasObservedAnalytics) {
+        const error = new Error('YouTube returned no observed analytics rows for this video and window');
+        error.code = 'analytics_no_observed_rows';
+        throw error;
+      }
       
       return {
         simulated: false,
@@ -194,7 +217,9 @@ class AnalyticsOptimizationAgent {
       };
     } catch (error) {
       this.logger.error(`Failed to get analytics for ${videoId}:`, error);
-      return this.getSimulatedAnalytics(videoId);
+      const unavailable = new Error('Observed YouTube analytics are unavailable');
+      unavailable.code = 'analytics_unavailable';
+      throw unavailable;
     }
   }
 
@@ -209,9 +234,11 @@ class AnalyticsOptimizationAgent {
     });
     
     return {
-      totalViews: response.data.rows?.reduce((sum, row) => sum + row[1], 0) || 0,
-      totalImpressions: response.data.rows?.reduce((sum, row) => sum + row[2], 0) || 0,
-      averageCTR: this.calculateAverage(response.data.rows?.map(row => row[3]) || []),
+      totalViews: response.data.rows?.length && response.data.rows.every(row => row[1] != null && Number.isFinite(Number(row[1])))
+        ? response.data.rows.reduce((sum, row) => sum + Number(row[1]), 0) : null,
+      totalImpressions: response.data.rows?.length && response.data.rows.every(row => row[2] != null && Number.isFinite(Number(row[2])))
+        ? response.data.rows.reduce((sum, row) => sum + Number(row[2]), 0) : null,
+      averageCTR: this.calculateAverage((response.data.rows || []).map(row => row[3]).filter(Number.isFinite)),
       dailyData: response.data.rows || []
     };
   }
@@ -225,13 +252,13 @@ class AnalyticsOptimizationAgent {
       filters: `video==${videoId}`
     });
     
-    const data = response.data.rows?.[0] || [0, 0, 0];
+    const data = response.data.rows?.[0] || [null, null, null];
     
     return {
-      totalWatchTime: data[0] || 0,
-      averageViewDuration: data[1] || 0,
-      averageViewPercentage: data[2] || 0,
-      retentionQuality: this.assessRetentionQuality(data[2])
+      totalWatchTime: data[0] == null ? null : Number(data[0]),
+      averageViewDuration: data[1] == null ? null : Number(data[1]),
+      averageViewPercentage: data[2] == null ? null : Number(data[2]),
+      retentionQuality: data[2] == null ? null : this.assessRetentionQuality(data[2])
     };
   }
 
@@ -262,7 +289,7 @@ class AnalyticsOptimizationAgent {
         primaryAudience: this.identifyPrimaryAudience(ageResponse.data.rows, genderResponse.data.rows)
       };
     } catch (error) {
-      return this.getSimulatedDemographics();
+      return { available: false, simulated: false, reason: 'demographics_unavailable', ageGroups: [], gender: [], primaryAudience: null };
     }
   }
 
@@ -283,10 +310,10 @@ class AnalyticsOptimizationAgent {
       sources: sources.map(row => ({
         source: row[0],
         views: row[1],
-        percentage: ((row[1] / totalViews) * 100).toFixed(1)
+        percentage: totalViews > 0 ? ((row[1] / totalViews) * 100).toFixed(1) : null
       })),
-      topSource: sources.length > 0 ? sources[0][0] : 'unknown',
-      organicPercentage: this.calculateOrganicPercentage(sources)
+      topSource: sources.length > 0 ? sources[0][0] : null,
+      organicPercentage: sources.length > 0 && totalViews > 0 ? this.calculateOrganicPercentage(sources) : null
     };
   }
 
@@ -307,9 +334,9 @@ class AnalyticsOptimizationAgent {
       devices: devices.map(row => ({
         device: row[0],
         views: row[1],
-        percentage: ((row[1] / totalViews) * 100).toFixed(1)
+        percentage: totalViews > 0 ? ((row[1] / totalViews) * 100).toFixed(1) : null
       })),
-      mobilePercentage: this.calculateMobilePercentage(devices)
+      mobilePercentage: devices.length > 0 && totalViews > 0 ? this.calculateMobilePercentage(devices) : null
     };
   }
 
@@ -327,23 +354,23 @@ class AnalyticsOptimizationAgent {
       query('estimatedRevenue,monetizedPlaybacks,playbackBasedCpm', true)
     ]);
     const subscribers = subscriberResult.status === 'fulfilled'
-      ? subscriberResult.value.data.rows?.[0] || [0, 0]
+      ? subscriberResult.value.data.rows?.[0] || null
       : null;
     const revenue = revenueResult.status === 'fulfilled'
-      ? revenueResult.value.data.rows?.[0] || [0, 0, 0]
+      ? revenueResult.value.data.rows?.[0] || null
       : null;
     if (!subscribers) this.logger.warn(`Subscriber outcomes unavailable for ${videoId}: ${subscriberResult.reason?.message || 'unknown error'}`);
     if (!revenue) this.logger.info(`Revenue outcomes unavailable for ${videoId}; monetization data will remain unavailable`);
     return {
-      subscribersAvailable: Boolean(subscribers),
-      subscribersGained: subscribers ? Number(subscribers[0] || 0) : null,
-      subscribersLost: subscribers ? Number(subscribers[1] || 0) : null,
-      netSubscribers: subscribers ? Number(subscribers[0] || 0) - Number(subscribers[1] || 0) : null,
-      revenueAvailable: Boolean(revenue),
-      currency: revenue ? currency : null,
-      estimatedRevenue: revenue ? Number(revenue[0] || 0) : null,
-      monetizedPlaybacks: revenue ? Number(revenue[1] || 0) : null,
-      playbackBasedCpm: revenue ? Number(revenue[2] || 0) : null
+      subscribersAvailable: Boolean(subscribers && subscribers.slice(0, 2).some(value => value != null)),
+      subscribersGained: subscribers?.[0] == null ? null : Number(subscribers[0]),
+      subscribersLost: subscribers?.[1] == null ? null : Number(subscribers[1]),
+      netSubscribers: subscribers?.[0] == null || subscribers?.[1] == null ? null : Number(subscribers[0]) - Number(subscribers[1]),
+      revenueAvailable: Boolean(revenue && revenue.slice(0, 3).some(value => value != null)),
+      currency: revenue && revenue.slice(0, 3).some(value => value != null) ? currency : null,
+      estimatedRevenue: revenue?.[0] == null ? null : Number(revenue[0]),
+      monetizedPlaybacks: revenue?.[1] == null ? null : Number(revenue[1]),
+      playbackBasedCpm: revenue?.[2] == null ? null : Number(revenue[2])
     };
   }
 
@@ -351,19 +378,19 @@ class AnalyticsOptimizationAgent {
     const videoDetails = await this.getVideoDetails(videoId);
     const stats = videoDetails.statistics;
     
-    const views = stats.viewCount || 0;
-    const likes = stats.likeCount || 0;
-    const comments = stats.commentCount || 0;
-    const interactions = likes + comments;
-    const engagementRate = views > 0 ? (interactions / views) * 100 : 0;
-    const likeRatio = interactions > 0 ? (likes / interactions) * 100 : 0;
-    const commentsPerView = views > 0 ? (comments / views) * 100 : 0;
+    const views = stats.viewCount;
+    const likes = stats.likeCount;
+    const comments = stats.commentCount;
+    const interactions = likes === null || comments === null ? null : likes + comments;
+    const engagementRate = views > 0 && interactions !== null ? (interactions / views) * 100 : null;
+    const likeRatio = interactions > 0 ? (likes / interactions) * 100 : null;
+    const commentsPerView = views > 0 && comments !== null ? (comments / views) * 100 : null;
     
     return {
-      engagementRate: parseFloat(engagementRate.toFixed(2)),
-      likeRatio: parseFloat(likeRatio.toFixed(2)),
-      commentsPerView: commentsPerView.toFixed(4),
-      engagementQuality: this.assessEngagementQuality(engagementRate)
+      engagementRate: engagementRate === null ? null : Number(engagementRate.toFixed(2)),
+      likeRatio: likeRatio === null ? null : Number(likeRatio.toFixed(2)),
+      commentsPerView: commentsPerView === null ? null : commentsPerView.toFixed(4),
+      engagementQuality: engagementRate === null ? null : this.assessEngagementQuality(engagementRate)
     };
   }
 
@@ -378,22 +405,21 @@ class AnalyticsOptimizationAgent {
         filters: `video==${videoId}`
       });
       
-      const data = response.data.rows?.[0] || [0, 0];
-      
-      const ctr = data[1] || 0;
+      const data = response.data.rows?.[0] || [null, null];
+      const ctr = optionalCount(data[1]);
       
       return {
-        impressions: data[0] || 0,
+        impressions: optionalCount(data[0]),
         clickThroughRate: ctr,
-        ctrQuality: this.assessCTRQuality(ctr),
-        recommendations: this.generateThumbnailRecommendations(ctr)
+        ctrQuality: ctr === null ? null : this.assessCTRQuality(ctr),
+        recommendations: ctr === null ? [] : this.generateThumbnailRecommendations(ctr)
       };
     } catch (error) {
       return {
-        impressions: 0,
-        clickThroughRate: 0,
-        ctrQuality: 'unknown',
-        recommendations: ['Unable to analyze thumbnail performance']
+        impressions: null,
+        clickThroughRate: null,
+        ctrQuality: null,
+        recommendations: []
       };
     }
   }
@@ -429,14 +455,14 @@ class AnalyticsOptimizationAgent {
     const insights = [];
     
     // Performance insights
-    if (analytics.views.totalViews > 10000) {
+    if (Number.isFinite(analytics.views.totalViews) && analytics.views.totalViews > 10000) {
       insights.push({
         type: 'success',
         category: 'views',
         message: 'Video is performing above average in terms of views',
         impact: 'high'
       });
-    } else if (analytics.views.totalViews < 1000) {
+    } else if (Number.isFinite(analytics.views.totalViews) && analytics.views.totalViews < 1000) {
       insights.push({
         type: 'warning',
         category: 'views',
@@ -447,14 +473,14 @@ class AnalyticsOptimizationAgent {
     }
     
     // Retention insights
-    if (analytics.watchTime.averageViewPercentage > 50) {
+    if (Number.isFinite(analytics.watchTime.averageViewPercentage) && analytics.watchTime.averageViewPercentage > 50) {
       insights.push({
         type: 'success',
         category: 'retention',
         message: 'Excellent audience retention rate',
         impact: 'medium'
       });
-    } else if (analytics.watchTime.averageViewPercentage < 30) {
+    } else if (Number.isFinite(analytics.watchTime.averageViewPercentage) && analytics.watchTime.averageViewPercentage < 30) {
       insights.push({
         type: 'critical',
         category: 'retention',
@@ -465,14 +491,14 @@ class AnalyticsOptimizationAgent {
     }
     
     // Thumbnail insights
-    if (thumbnailMetrics.clickThroughRate > 8) {
+    if (Number.isFinite(thumbnailMetrics.clickThroughRate) && thumbnailMetrics.clickThroughRate > 8) {
       insights.push({
         type: 'success',
         category: 'thumbnail',
         message: 'Thumbnail is highly effective at driving clicks',
         impact: 'high'
       });
-    } else if (thumbnailMetrics.clickThroughRate < 3) {
+    } else if (Number.isFinite(thumbnailMetrics.clickThroughRate) && thumbnailMetrics.clickThroughRate < 3) {
       insights.push({
         type: 'warning',
         category: 'thumbnail',
@@ -483,14 +509,14 @@ class AnalyticsOptimizationAgent {
     }
     
     // SEO insights
-    if (seoMetrics.overallSEOScore > 80) {
+    if (Number.isFinite(seoMetrics.overallSEOScore) && seoMetrics.overallSEOScore > 80) {
       insights.push({
         type: 'success',
         category: 'seo',
         message: 'Video is well-optimized for search',
         impact: 'medium'
       });
-    } else if (seoMetrics.overallSEOScore < 50) {
+    } else if (Number.isFinite(seoMetrics.overallSEOScore) && seoMetrics.overallSEOScore < 50) {
       insights.push({
         type: 'warning',
         category: 'seo',
@@ -501,14 +527,14 @@ class AnalyticsOptimizationAgent {
     }
     
     // Engagement insights
-    if (analytics.engagement.engagementRate > 5) {
+    if (Number.isFinite(analytics.engagement.engagementRate) && analytics.engagement.engagementRate > 5) {
       insights.push({
         type: 'success',
         category: 'engagement',
         message: 'High audience engagement',
         impact: 'medium'
       });
-    } else if (analytics.engagement.engagementRate < 1) {
+    } else if (Number.isFinite(analytics.engagement.engagementRate) && analytics.engagement.engagementRate < 1) {
       insights.push({
         type: 'warning',
         category: 'engagement',
@@ -524,42 +550,33 @@ class AnalyticsOptimizationAgent {
   calculatePerformanceScore(analytics) {
     let score = 0;
     let maxScore = 0;
-    
-    // Views score (30 points max)
-    const viewsScore = Math.min(30, (analytics.views.totalViews / 10000) * 30);
-    score += viewsScore;
-    maxScore += 30;
-    
-    // Retention score (25 points max)
-    const retentionScore = (analytics.watchTime.averageViewPercentage / 100) * 25;
-    score += retentionScore;
-    maxScore += 25;
-    
-    // Engagement score (25 points max)
-    const engagementScore = Math.min(25, analytics.engagement.engagementRate * 5);
-    score += engagementScore;
-    maxScore += 25;
-    
-    // CTR score (20 points max)
-    const ctrScore = Math.min(20, analytics.views.averageCTR * 2);
-    score += ctrScore;
-    maxScore += 20;
-    
+    const breakdown = {};
+    const dimensions = [
+      ['views', analytics.views.totalViews, 30, value => Math.min(30, (value / 10000) * 30)],
+      ['retention', analytics.watchTime.averageViewPercentage, 25, value => Math.min(25, (value / 100) * 25)],
+      ['engagement', analytics.engagement.engagementRate, 25, value => Math.min(25, value * 5)],
+      ['ctr', analytics.views.averageCTR, 20, value => Math.min(20, value * 2)]
+    ];
+    for (const [key, value, weight, measure] of dimensions) {
+      if (!Number.isFinite(value)) { breakdown[key] = null; continue; }
+      const points = measure(value);
+      score += points;
+      maxScore += weight;
+      breakdown[key] = Math.round(points);
+    }
+    if (!maxScore) return { score: null, status: 'unavailable', breakdown, grade: null, measuredDimensions: 0 };
     const finalScore = Math.round((score / maxScore) * 100);
-    
     return {
       score: finalScore,
-      breakdown: {
-        views: Math.round(viewsScore),
-        retention: Math.round(retentionScore),
-        engagement: Math.round(engagementScore),
-        ctr: Math.round(ctrScore)
-      },
-      grade: this.getPerformanceGrade(finalScore)
+      status: maxScore === 100 ? 'observed' : 'partial',
+      breakdown,
+      grade: this.getPerformanceGrade(finalScore),
+      measuredDimensions: dimensions.filter(([, value]) => Number.isFinite(value)).length
     };
   }
 
   getPerformanceGrade(score) {
+    if (!Number.isFinite(score)) return null;
     if (score >= 90) return 'A+';
     if (score >= 80) return 'A';
     if (score >= 70) return 'B';
@@ -570,7 +587,7 @@ class AnalyticsOptimizationAgent {
 
   // Helper methods
   calculateAverage(values) {
-    if (!values.length) return 0;
+    if (!values.length) return null;
     return values.reduce((sum, val) => sum + val, 0) / values.length;
   }
 
@@ -705,33 +722,10 @@ class AnalyticsOptimizationAgent {
     return recommendations;
   }
 
-  // Simulation methods for when API is not available
-  getSimulatedAnalytics(_videoId) {
-    return {
-      simulated: true,
-      views: { totalViews: Math.floor(Math.random() * 50000), averageCTR: Math.random() * 10 },
-      watchTime: { averageViewPercentage: Math.random() * 100 },
-      engagement: { engagementRate: Math.random() * 10 },
-      trafficSources: { sources: [{ source: 'SEARCH', percentage: '30' }] },
-      outcomes: {
-        subscribersAvailable: false, subscribersGained: null, subscribersLost: null,
-        netSubscribers: null, revenueAvailable: false, estimatedRevenue: null,
-        monetizedPlaybacks: null, playbackBasedCpm: null
-      }
-    };
-  }
-
-  getSimulatedDemographics() {
-    return {
-      ageGroups: [['18-24', 30], ['25-34', 40], ['35-44', 20]],
-      gender: [['male', 60], ['female', 40]],
-      primaryAudience: 'Males 25-34'
-    };
-  }
-
   identifyPrimaryAudience(ageGroups, gender) {
-    const topAge = ageGroups?.[0]?.[0] || '25-34';
-    const topGender = gender?.[0]?.[0] || 'male';
+    const topAge = ageGroups?.[0]?.[0];
+    const topGender = gender?.[0]?.[0];
+    if (!topAge || !topGender) return null;
     return `${topGender}s ${topAge}`;
   }
 
@@ -755,6 +749,9 @@ class AnalyticsOptimizationAgent {
   async getRecentAnalytics(days = 7) {
     const recentReports = Array.from(this.performanceData.values())
       .filter(report => {
+        // Historical rows without an explicit observed/simulated marker are
+        // unverified too. Keep them in storage, but never rank them as evidence.
+        if (report?.analytics?.simulated !== false) return false;
         const reportDate = new Date(report.analyzedAt);
         const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
         return reportDate > cutoffDate;
@@ -824,9 +821,10 @@ class AnalyticsOptimizationAgent {
   }
 
   calculateAverageScore(reports) {
-    if (!reports.length) return 0;
-    const total = reports.reduce((sum, report) => sum + report.performance.score, 0);
-    return Math.round(total / reports.length);
+    const scores = reports.map(report => report?.performance?.score).filter(Number.isFinite);
+    if (!scores.length) return null;
+    const total = scores.reduce((sum, score) => sum + score, 0);
+    return Math.round(total / scores.length);
   }
 
   generateChannelInsights(reports) {
@@ -834,6 +832,7 @@ class AnalyticsOptimizationAgent {
     
     const insights = [];
     const avgScore = this.calculateAverageScore(reports);
+    if (!Number.isFinite(avgScore)) return insights;
     
     if (avgScore > 80) {
       insights.push('Channel is performing excellently across all metrics');

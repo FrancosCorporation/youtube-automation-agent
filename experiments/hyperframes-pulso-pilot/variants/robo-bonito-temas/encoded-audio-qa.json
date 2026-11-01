@@ -1,0 +1,9 @@
+{
+  "correlationAtZeroLag": 0.9999906870636833,
+  "bestLagMs": 0,
+  "bestCorrelation": 0.9999906870636833,
+  "decodedPeak": 0.628570556640625,
+  "envelopeStepMs": 10,
+  "sourceDuration": 27.616,
+  "decodedDuration": 27.626666666666665
+}

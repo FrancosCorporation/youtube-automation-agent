@@ -1,0 +1,9 @@
+{
+  "duration_seconds": 8,
+  "time_source": "GSAP timeline clock",
+  "absolute_transforms": ["root.dataset.presenterSide", "pivot.rotation.y", "camera.position", "camera.lookAt"],
+  "shot_boundaries": [0, 2, 4, 6],
+  "backward_seek_test": [6.5, 0.5, 6.5],
+  "issues": [],
+  "pending_checks": ["frame_before_2", "frame_after_2", "frame_before_4", "frame_after_4", "frame_before_6", "frame_after_6", "png_identical_after_seek", "glb_loading"]
+}

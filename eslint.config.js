@@ -4,6 +4,7 @@ module.exports = [
   {
     ignores: [
       'node_modules/**',
+      '**/.venv-neural/**',
       'coverage/**',
       'logs/**',
       'temp/**',
@@ -15,9 +16,20 @@ module.exports = [
       'data/scripts/**',
       'data/videos/**',
       'data/thumbnails/**',
+      // Authenticated browser profiles include vendor extension code; they are
+      // local runtime state, not application source.
+      'data/browser-profiles/**',
       'experiments/hyperframes-pulso-pilot/.agents/**',
       'experiments/hyperframes-pulso-pilot/.hyperframes/**',
-      'experiments/hyperframes-pulso-pilot/assets/pilot.bundle.js'
+      'experiments/hyperframes-pulso-pilot/assets/pilot.bundle.js',
+      'experiments/hyperframes-pulso-pilot/assets/production-presenter.js',
+      'experiments/remotion-motion-review/build-*/**',
+      // Remotion exports contain generated webpack/vendor bundles. Their
+      // authored source remains checked under src/ and scripts/.
+      'experiments/remotion-motion-review/renders/**/bundle/**',
+      // Variant asset JavaScript is generated/bundled output. Lint its source
+      // in src/ and scripts/ once, not every checked-in copy of the bundles.
+      'experiments/hyperframes-pulso-pilot/variants/**/assets/**/*.js'
     ]
   },
   js.configs.recommended,
@@ -64,6 +76,18 @@ module.exports = [
     }
   },
   {
+    // This historical source is bound to the reviewed evidence checksum.
+    // Preserve its bytes while still checking every other unused variable.
+    files: ['docs/evidencias/visual-standard-production-e2e-chrome-incognito-myth-correction-2026-10-23/generate-authored-scenes.cjs'],
+    rules: {
+      'no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^(?:_|envelope$)',
+        caughtErrors: 'none'
+      }]
+    }
+  },
+  {
     files: [
       '**/*.mjs',
       'scripts/verify-publications.js',
@@ -82,6 +106,20 @@ module.exports = [
         __VIDEO_THEME__: 'readonly',
         __THEME_PALETTE__: 'readonly',
         __AUDIO_ENVELOPE__: 'readonly'
+      }
+    }
+  },
+  {
+    files: [
+      'experiments/hyperframes-pulso-pilot/src/**/*.js',
+      'experiments/hyperframes-pulso-pilot/scripts/qa-*-publication.js',
+      'tests/presenter-framing.js'
+    ],
+    languageOptions: {
+      globals: {
+        Blob: 'readonly',
+        getComputedStyle: 'readonly',
+        innerWidth: 'readonly'
       }
     }
   }

@@ -1,0 +1,108 @@
+{
+  "videos": [
+    {
+      "id": "Xslo9OK3OCE",
+      "title": "The AI Wastelands of YouTube Shorts",
+      "channel": "Farrell McGuire",
+      "url": "https://www.youtube.com/watch?v=Xslo9OK3OCE",
+      "duration_seconds": 1547,
+      "observed_views": 1915694,
+      "qualified_by_views": true,
+      "editorial_fit": "core",
+      "reason": "AI wastelands explanation"
+    },
+    {
+      "id": "b-cl338mzCo",
+      "title": "AI Explained: The Short & Simple Version",
+      "channel": "Explain It All!",
+      "url": "https://www.youtube.com/watch?v=b-cl338mzCo",
+      "duration_seconds": 166,
+      "observed_views": 3090,
+      "qualified_by_views": false,
+      "editorial_fit": "core",
+      "reason": "AI explanation, view below threshold"
+    },
+    {
+      "id": "mEVl0NS0vu8",
+      "title": "That's AI (2026) - Short Film",
+      "channel": "maximise",
+      "url": "https://www.youtube.com/watch?v=mEVl0NS0vu8",
+      "duration_seconds": 125,
+      "observed_views": 5706743,
+      "qualified_by_views": true,
+      "editorial_fit": "adjacent",
+      "reason": "AI short film"
+    },
+    {
+      "id": "1fv0H5Q6sRo",
+      "title": "Claude AI Explained: Your AI Working Assistant #Shorts",
+      "channel": "Digitalents Academy",
+      "url": "https://www.youtube.com/watch?v=1fv0H5Q6sRo",
+      "duration_seconds": 11,
+      "observed_views": 1,
+      "qualified_by_views": false,
+      "editorial_fit": "core",
+      "reason": "AI explanation, view below threshold"
+    },
+    {
+      "id": "ZonG-qkGgTI",
+      "title": "YouTube's new AI feature is ruining shorts",
+      "channel": "JJJacksfilms",
+      "url": "https://www.youtube.com/watch?v=ZonG-qkGgTI",
+      "duration_seconds": 727,
+      "observed_views": 781485,
+      "qualified_by_views": false,
+      "editorial_fit": "adjacent",
+      "reason": "YouTube shorts commentary"
+    },
+    {
+      "id": "ygeCgN-SfE8",
+      "title": "how i make $36,438/mo posting YouTube Shorts (using AI)",
+      "channel": "Kellan Henneberry",
+      "url": "https://www.youtube.com/watch?v=ygeCgN-SfE8",
+      "duration_seconds": 1504,
+      "observed_views": 1244198,
+      "qualified_by_views": true,
+      "editorial_fit": "exclude",
+      "reason": "Monetization tutorial"
+    },
+    {
+      "id": "3JeKXrfPfLc",
+      "title": "How I Actually Make Viral Roblox AI Shorts In 5 Minutes",
+      "channel": "Syrax",
+      "url": "https://www.youtube.com/watch?v=3JeKXrfPfLc",
+      "duration_seconds": 334,
+      "observed_views": 315281,
+      "qualified_by_views": false,
+      "editorial_fit": "exclude",
+      "reason": "Viral creation tutorial"
+    },
+    {
+      "id": "mBrn8ana84w",
+      "title": "How to Make VIRAL Commentary Shorts with AI (Full Tutorial)",
+      "channel": "Alex Christian",
+      "url": "https://www.youtube.com/watch?v=mBrn8ana84w",
+      "duration_seconds": 640,
+      "observed_views": 190238,
+      "qualified_by_views": false,
+      "editorial_fit": "exclude",
+      "reason": "Viral commentary tutorial"
+    }
+  ],
+  "coverage": {
+    "total_videos": 8,
+    "qualified_by_views": {"true": 3, "false": 5},
+    "editorial_fit": {"core": 3, "adjacent": 2, "exclude": 3},
+    "url_domain": "youtube.com",
+    "verified_channels": 2,
+    "view_count_range": [1, 5706743]
+  },
+  "limitations": {
+    "no_retention_revenue_inference": true,
+    "no_causality_inference": true,
+    "data_collection_date": "2026-10-12",
+    "upload_date_missing": true,
+    "source": "yt-dlp initial search",
+    "content_type_restriction": "no_quality_pace_pubdate_attribution"
+  }
+}

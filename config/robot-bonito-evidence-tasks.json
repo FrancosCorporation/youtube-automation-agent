@@ -1,0 +1,33 @@
+{
+  "tasks": [
+    {
+      "id": "rig-evidence-summary",
+      "inputs": [
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-animado/arm-edge-audit.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/arm-edge-audit.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/serialized-rig-audit.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/animation-qa.json"
+      ],
+      "objective": "Execute um calculo sobre os JSONs e grave evidence-summary.json com before_wave_extra_length, after_wave_extra_length (use time 1.5, unidade nativa), source_vertices_preserved, source_triangles_preserved, rigid_triangles, history_independent_pose e limitations. Extraia fatos exatos. Nao aprove visualmente: nao recebeu imagens/video. Nao use percentagem inventada nem diga que visemas foram validados; fala somente envelope. Nenhuma edicao aos inputs nem outros providers.",
+      "outputs": [
+        {
+          "path": "evidence-summary.json",
+          "kind": "json",
+          "required_keys": [
+            "before_wave_extra_length",
+            "after_wave_extra_length",
+            "source_vertices_preserved",
+            "source_triangles_preserved",
+            "rigid_triangles",
+            "history_independent_pose",
+            "limitations"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "context": "Worker NVIDIA autorizado para extracao mecanica. Campos sourceVerticesCovered e sourceTrianglesCovered no rig audit. No animation-qa atualizado, poseStateMatchesReload compara os transforms completos dos ossos/controles face entre contextos; freshContextStable valida renderizações do contexto frio; hashes RGB entre contextos são evidência diagnóstica, não critério de igualdade de pose. geometryStableAcrossPoses valida contagens; warmMatchesRevisit e deterministicSeek validam seeks quentes. Sem julgamento anatômico ou promoção à produção."
+    }
+  ]
+}

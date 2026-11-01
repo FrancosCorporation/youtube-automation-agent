@@ -2,9 +2,34 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { clipUploadsSucceeded, longUploadsSucceeded, normalizedClips } = require('./publication-status');
+const { allArtifactOwnersConfirmed, artifactOwnerPublicationProofs, clipCanBeDeletedAfterPublication, longUploadsSucceeded, normalizedClips, publicationSucceeded } = require('./publication-status');
+const { deleteMediaWithEvidence } = require('./media-deletion');
+const { scanDiskMediaInventory } = require('./disk-media-inventory');
+const { sha256StableRegularFile, verifyArtifactOwnersForPublication } = require('./video-qa-manifest');
+const { isApprovedExistingEpisode } = require('./video-generation-control');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function isSafeUnapprovedDeletion(ownerProofs) {
+  if (!Array.isArray(ownerProofs) || !ownerProofs.length) return false;
+  const conclusivelyNotSubmitted = new Set([
+    'not_attempted', 'not_logged_legacy', 'skipped', 'disabled_or_not_targeted_legacy', 'quota_skipped_legacy'
+  ]);
+  return ownerProofs.every(owner => {
+    if (!(owner.publicationEligible === false || owner.publicationReviewStatus === 'rejected')
+      || !Array.isArray(owner.destinations) || !owner.destinations.length) return false;
+    return owner.destinations.every(destination => {
+      if (destination.status === 'confirmed') {
+        const reviewedHash = String(owner.reviewedAssetSha256 || '').toLowerCase();
+        const destinationHash = String(destination.artifactSha256 || '').toLowerCase();
+        return /^[a-f0-9]{64}$/.test(reviewedHash) && destination.legacyProof !== true
+          && destinationHash === reviewedHash;
+      }
+      return conclusivelyNotSubmitted.has(destination.status)
+        || (destination.status === 'failed' && destination.evidenceKind === 'confirmed_no_send');
+    });
+  });
+}
 
 function positiveDays(value, fallback) {
   const number = Number(value);
@@ -149,19 +174,20 @@ async function cleanupDisk(options = {}) {
   const snapshotDays = positiveDays(options.snapshotRetentionDays ?? process.env.DISK_SNAPSHOT_RETENTION_DAYS, 7);
   const imageDays = positiveDays(options.imageRetentionDays ?? process.env.DISK_IMAGE_RETENTION_DAYS, 14);
   const browserDays = positiveDays(options.browserCacheRetentionDays ?? process.env.DISK_BROWSER_CACHE_RETENTION_DAYS, 7);
-  const uploadedGraceHoursValue = Number(options.uploadedGraceHours ?? process.env.DISK_UPLOADED_MASTER_GRACE_HOURS ?? 24);
-  const uploadedGraceHours = Number.isFinite(uploadedGraceHoursValue) && uploadedGraceHoursValue >= 1
+  const uploadedGraceHoursValue = Number(options.uploadedGraceHours ?? process.env.DISK_UPLOADED_MASTER_GRACE_HOURS ?? 0);
+  const uploadedGraceHours = Number.isFinite(uploadedGraceHoursValue) && uploadedGraceHoursValue >= 0
     ? Math.min(uploadedGraceHoursValue, 24 * 365)
-    : 24;
+    : 0;
   const videoRoot = path.join(root, 'data', 'videos');
   const candidates = [];
-  const report = { apply, removedFiles: 0, removedDirectories: 0, reclaimedBytes: 0, skipped: [] };
+  const report = { apply, removedFiles: 0, removedDirectories: 0, reclaimedBytes: 0,
+    candidates: [], deleted: [], skipped: [], inventory: null };
   const seen = new Set();
-  const addFile = (category, filePath, bytes) => {
+  const addFile = (category, filePath, bytes, expectedSha256 = null) => {
     const resolved = path.resolve(filePath);
     if (seen.has(resolved)) return;
     seen.add(resolved);
-    candidates.push({ category, path: resolved, bytes, type: 'file' });
+    candidates.push({ category, path: resolved, bytes, type: 'file', ...(expectedSha256 ? { expectedSha256 } : {}) });
   };
   const addDirectory = (category, dirPath, bytes) => {
     const resolved = path.resolve(dirPath);
@@ -216,6 +242,8 @@ async function cleanupDisk(options = {}) {
   }
 
   const state = await readManagedState(root, options.stateDir);
+  const allEntriesForInventory = state.ledgers.flatMap(ledger => ledger.entries);
+  report.inventory = await scanDiskMediaInventory({ root, stateDir: options.stateDir, now });
   for (const protectedPath of options.protectedVideoPaths || []) {
     if (protectedPath) state.protectedPaths.add(projectPath(root, protectedPath));
   }
@@ -224,39 +252,78 @@ async function cleanupDisk(options = {}) {
     for (const ledger of state.ledgers) {
       for (const entry of ledger.entries) {
         if (!entry || typeof entry !== 'object') continue;
+        // Its QA manifest covers the master and all parts. Removing one
+        // confirmed asset makes the remaining approved parts unverifiable.
+        if (isApprovedExistingEpisode(entry)) continue;
         const generatedAt = Date.parse(entry.generatedAt || '');
-        const confirmedYouTubeUrl = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)/i.test(String(entry.ytUrl || ''));
+        const youtubeResult = entry.results?.long?.youtube || entry.ytUrl;
+        const confirmedYouTubeUrl = publicationSucceeded(youtubeResult);
         if (entry.publicationEligible === false || !Number.isFinite(generatedAt) || generatedAt > graceCutoff
           || typeof entry.videoPath !== 'string' || !entry.videoPath) continue;
         const videoPath = projectPath(root, entry.videoPath);
         if (!inside(videoRoot, videoPath) || path.extname(videoPath).toLowerCase() !== '.mp4' || state.protectedPaths.has(videoPath)) continue;
 
-        if (confirmedYouTubeUrl && longUploadsSucceeded(entry, entry.results, { root })) {
-          try {
-            const stat = await fs.stat(videoPath);
-            if (stat.isFile()) addFile('confirmed-youtube-master', videoPath, stat.size);
-          } catch (_error) { /* already gone */ }
-          if (typeof entry.thumbnailPath === 'string' && entry.thumbnailPath) {
-            const thumbnailPath = projectPath(root, entry.thumbnailPath);
-            if (inside(videoRoot, thumbnailPath) && /\.(?:jpe?g|png|webp)$/i.test(thumbnailPath) && !state.protectedPaths.has(thumbnailPath)) {
-              try {
-                const stat = await fs.stat(thumbnailPath);
-                if (stat.isFile()) addFile('confirmed-youtube-thumbnail', thumbnailPath, stat.size);
-              } catch (_error) { /* already gone */ }
-            }
+        if (confirmedYouTubeUrl) {
+          let current;
+          try { current = await sha256StableRegularFile(videoPath); } catch (_error) { current = null; }
+          if (current
+            && longUploadsSucceeded(entry, entry.results, { root, expectedSha256: current.sha256 })
+            && allArtifactOwnersConfirmed(allEntriesForInventory, videoPath, {
+              root, expectedSha256: current.sha256, requirePublicationEligible: true
+            })
+            && (await verifyArtifactOwnersForPublication({
+              root, entries: allEntriesForInventory, artifactPath: videoPath, expectedSha256: current.sha256
+            })).status === 'verified') {
+            try {
+              const stat = await fs.stat(videoPath);
+              if (stat.isFile()) addFile('confirmed-youtube-master', videoPath, stat.size, current.sha256);
+            } catch (_error) { /* already gone */ }
           }
         }
 
         for (const [index, clip] of normalizedClips(entry).entries()) {
           const clipPath = projectPath(root, clip.path);
           if (!inside(videoRoot, clipPath) || path.extname(clipPath).toLowerCase() !== '.mp4'
-            || state.protectedPaths.has(clipPath) || !clipUploadsSucceeded(entry, entry.results, index, { root })) continue;
+            || state.protectedPaths.has(clipPath)) continue;
+          let current;
+          try { current = await sha256StableRegularFile(clipPath); } catch (_error) { current = null; }
+          if (!current || !clipCanBeDeletedAfterPublication(entry, entry.results, index, { root, expectedSha256: current.sha256 })
+            || !allArtifactOwnersConfirmed(allEntriesForInventory, clipPath, {
+              root, expectedSha256: current.sha256, requirePublicationEligible: true
+            })
+            || (await verifyArtifactOwnersForPublication({
+              root, entries: allEntriesForInventory, artifactPath: clipPath, expectedSha256: current.sha256
+            })).status !== 'verified') continue;
           try {
             const stat = await fs.stat(clipPath);
-            if (stat.isFile()) addFile('confirmed-social-clip', clipPath, stat.size);
+            if (stat.isFile()) addFile('confirmed-social-clip', clipPath, stat.size, current.sha256);
           } catch (_error) { /* already gone */ }
         }
       }
+    }
+  }
+
+  if (options.deleteUnapprovedMedia === true) {
+    const artifacts = new Set();
+    for (const entry of allEntriesForInventory) {
+      if (typeof entry?.videoPath === 'string' && entry.videoPath) artifacts.add(projectPath(root, entry.videoPath));
+      for (const clip of normalizedClips(entry)) artifacts.add(projectPath(root, clip.path));
+    }
+    for (const artifactPath of artifacts) {
+      if (!inside(videoRoot, artifactPath) || path.extname(artifactPath).toLowerCase() !== '.mp4'
+        || state.protectedPaths.has(artifactPath)) continue;
+      const ownerProofs = artifactOwnerPublicationProofs(allEntriesForInventory, artifactPath, { root });
+      if (!isSafeUnapprovedDeletion(ownerProofs)) continue;
+      const reviewedHashes = ownerProofs.map(owner => owner.reviewedAssetSha256);
+      if (!reviewedHashes.length || reviewedHashes.some(hash => !/^[a-f0-9]{64}$/i.test(String(hash || '')))
+        || new Set(reviewedHashes.map(hash => hash.toLowerCase())).size !== 1) continue;
+      try {
+        const stat = await fs.lstat(artifactPath);
+        if (!stat.isFile() || stat.isSymbolicLink()) continue;
+        const current = await sha256StableRegularFile(artifactPath);
+        if (current.sha256 !== reviewedHashes[0].toLowerCase()) continue;
+        addFile('qa-unapproved-media', artifactPath, stat.size, current.sha256);
+      } catch (_error) { /* already removed or inaccessible */ }
     }
   }
 
@@ -310,11 +377,32 @@ async function cleanupDisk(options = {}) {
         await fs.rm(candidate.path, { recursive: true, force: true });
         report.removedDirectories++;
       } else {
-        await fs.unlink(candidate.path);
+        if (candidate.category === 'confirmed-youtube-master' || candidate.category === 'confirmed-social-clip'
+          || candidate.category === 'qa-unapproved-media') {
+          const deletion = await deleteMediaWithEvidence({
+            root,
+            filePath: candidate.path,
+            allowedRoots: [videoRoot],
+            ledgerPath: path.join(path.resolve(root, options.stateDir || 'data/state'), 'media-deletions.jsonl'),
+            disposition: candidate.category === 'qa-unapproved-media'
+              ? { kind: candidate.category, reason: 'artefato sem liberação factual/QA; arquivo aposentado antes de recriação' }
+              : { kind: candidate.category, reason: 'todos os destinos esperados para cada referência ao arquivo foram confirmados' },
+            ...(candidate.expectedSha256 ? { expectedSha256: candidate.expectedSha256 } : {}),
+            ownerProofs: artifactOwnerPublicationProofs(allEntriesForInventory, candidate.path, { root })
+          });
+          candidate.sha256 = deletion.sha256;
+          candidate.deletionId = deletion.deletionId;
+        } else {
+          await fs.unlink(candidate.path);
+        }
         report.removedFiles++;
       }
       report.reclaimedBytes += candidate.bytes;
-    } catch (_error) { /* a concurrent process may have rotated/deleted it */ }
+      report.deleted.push({ category: candidate.category, path: candidate.path, bytes: candidate.bytes,
+        ...(candidate.sha256 ? { sha256: candidate.sha256 } : {}), ...(candidate.deletionId ? { deletionId: candidate.deletionId } : {}) });
+    } catch (error) {
+      report.skipped.push(`${candidate.category}: arquivo preservado após falha na exclusão (${String(error.message || error).slice(0, 180)})`);
+    }
   }
 
   const totals = new Map();
@@ -323,8 +411,15 @@ async function cleanupDisk(options = {}) {
     log(`${apply ? '🧹 limpeza' : '🔎 candidato'} ${category}: ${formatMb(bytes)} em ${candidates.filter(c => c.category === category).length} item(ns)`);
   }
   for (const reason of report.skipped) log(`⏭️ ${reason}`);
+  if (report.inventory) {
+    const { totals } = report.inventory;
+    log(`📂 inventário de vídeos: ${totals.files} arquivos, ${totals['ledger-linked']} vinculados, ${totals.queued} na fila, ${totals.untracked} sem vínculo (${formatMb(totals.bytes)})`);
+  }
   if (apply) log(`🧹 limpeza concluída: ${formatMb(report.reclaimedBytes)} liberados`);
   else log(`🔎 prévia: ${formatMb([...totals.values()].reduce((sum, bytes) => sum + bytes, 0))} seriam liberados; use --apply para excluir`);
+  report.candidates = candidates.map(({ category, path: candidatePath, bytes }) => ({ category, path: candidatePath, bytes }));
+  report.candidateFiles = candidates.length;
+  report.candidateBytes = candidates.reduce((sum, candidate) => sum + candidate.bytes, 0);
   return report;
 }
 
@@ -345,4 +440,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { cleanupDisk };
+module.exports = { cleanupDisk, isSafeUnapprovedDeletion };

@@ -1,0 +1,28 @@
+{
+  "source_hash": "f588d0449e71fb60cc649c400ff04b47c964248cadf9e015e74a36653c5554ff",
+  "joints": [
+    {"name": "Root", "parent": null, "pivot": [0, 0, 0]},
+    {"name": "Hips", "parent": "Root", "pivot": [0, 0.32, 0]},
+    {"name": "Chest", "parent": "Hips", "pivot": [0, 0.57, 0]},
+    {"name": "Neck", "parent": "Chest", "pivot": [0, 0.663, -0.01]},
+    {"name": "Head", "parent": "Neck", "pivot": [0, 0.69, -0.01]},
+    {"name": "UpperArm_L", "parent": "Chest", "pivot": [0.205, 0.615, -0.012]},
+    {"name": "Forearm_L", "parent": "UpperArm_L", "pivot": [0.288, 0.515, 0.012]},
+    {"name": "Hand_L", "parent": "Forearm_L", "pivot": [0.36, 0.385, 0.025]},
+    {"name": "UpperArm_R", "parent": "Chest", "pivot": [-0.205, 0.615, -0.012]},
+    {"name": "Forearm_R", "parent": "UpperArm_R", "pivot": [-0.288, 0.515, 0.012]},
+    {"name": "Hand_R", "parent": "Forearm_R", "pivot": [-0.36, 0.385, 0.025]},
+    {"name": "Thigh_L", "parent": "Hips", "pivot": [0.112, 0.31, -0.01]},
+    {"name": "Shin_L", "parent": "Thigh_L", "pivot": [0.127, 0.215, -0.005]},
+    {"name": "Foot_L", "parent": "Shin_L", "pivot": [0.131, 0.067, 0.028]},
+    {"name": "Thigh_R", "parent": "Hips", "pivot": [-0.112, 0.31, -0.01]},
+    {"name": "Shin_R", "parent": "Thigh_R", "pivot": [-0.127, 0.215, -0.005]},
+    {"name": "Foot_R", "parent": "Shin_R", "pivot": [-0.131, 0.067, 0.028]}
+  ],
+  "facial_controls": ["FaceEye_L", "FaceEye_R", "FaceSmile", "FaceMouth"],
+  "source_body_vertices": 315191,
+  "source_body_triangles": 500036,
+  "weights_normalized": true,
+  "max_influences": 2,
+  "pending_checks": ["shoulders", "elbows", "hands", "knees", "poses", "binds"]
+}

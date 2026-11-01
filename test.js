@@ -278,6 +278,8 @@ class SystemTest {
     let server;
     let job;
     let learningRecommendation;
+    const previousBindHost = process.env.API_BIND_HOST;
+    process.env.API_BIND_HOST = '127.0.0.1';
     const providerEnvKeys = [...Object.values(PROVIDERS).map(p => p.envKey), 'GEMINI_API_KEY', 'API_KEY'];
     const savedProviderEnv = {};
     for (const key of providerEnvKeys) {
@@ -334,6 +336,12 @@ class SystemTest {
       ) {
         throw new Error('Operator dashboard API did not return its data contract');
       }
+      const dailyPerformanceResponse = await fetch(`http://127.0.0.1:${port}/api/daily-performance`);
+      const dailyPerformance = await dailyPerformanceResponse.json();
+      if (!dailyPerformanceResponse.ok || !Array.isArray(dailyPerformance.reports)
+        || !['observed', 'partial', 'blocked', 'empty', 'unavailable', 'not_available'].includes(dailyPerformance.status)) {
+        throw new Error('Daily performance endpoint did not return its read-only report contract');
+      }
       const unavailableStart = await fetch(`http://127.0.0.1:${port}/api/operator/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -341,6 +349,21 @@ class SystemTest {
       });
       if (unavailableStart.status !== 503) {
         throw new Error('Autonomous operator did not fail closed when its strategy agent was unavailable');
+      }
+
+      process.env.API_KEY = 'operator-test-secret';
+      const privateRead = await fetch(`http://127.0.0.1:${port}/api/dashboard`);
+      const protectedRead = await fetch(`http://127.0.0.1:${port}/api/dashboard`, {
+        headers: { 'x-api-key': 'operator-test-secret' }
+      });
+      const privateDailyRead = await fetch(`http://127.0.0.1:${port}/api/daily-performance`);
+      const protectedDailyRead = await fetch(`http://127.0.0.1:${port}/api/daily-performance`, {
+        headers: { 'x-api-key': 'operator-test-secret' }
+      });
+      const publicHealth = await fetch(`http://127.0.0.1:${port}/health`);
+      if (privateRead.status !== 401 || !protectedRead.ok || privateDailyRead.status !== 401
+        || !protectedDailyRead.ok || !publicHealth.ok) {
+        throw new Error('API key did not protect private reads while leaving health public');
       }
 
       learningRecommendation = await db.saveLearningRecommendation({
@@ -354,7 +377,7 @@ class SystemTest {
       });
       const approveLearning = await fetch(
         `http://127.0.0.1:${port}/api/learning/recommendations/${learningRecommendation.id}/approve`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
+        { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': 'operator-test-secret' }, body: '{}' }
       );
       const approvedLearning = await approveLearning.json();
       if (!approveLearning.ok || approvedLearning.result?.status !== 'approved') {
@@ -365,6 +388,8 @@ class SystemTest {
         if (savedProviderEnv[key] === undefined) delete process.env[key];
         else process.env[key] = savedProviderEnv[key];
       }
+      if (previousBindHost === undefined) delete process.env.API_BIND_HOST;
+      else process.env.API_BIND_HOST = previousBindHost;
       if (server) await new Promise(resolve => server.close(resolve));
       if (job) await db.executeQuery('DELETE FROM generation_jobs WHERE id = ?', [job.id]);
       if (learningRecommendation) await db.executeQuery('DELETE FROM learning_recommendations WHERE id = ?', [learningRecommendation.id]);
@@ -716,6 +741,13 @@ class SystemTest {
       try { await service.approve(experiment.id); } catch (error) { confirmationBlocked = error.code === 'EXPERIMENT_CONFIRMATION_REQUIRED'; }
       if (!confirmationBlocked) throw new Error('Experiment approval did not require explicit confirmation');
       experiment = await service.approve(experiment.id, { confirmed: true });
+      let startConfirmationBlocked = false;
+      try { await service.start(experiment.id); } catch (error) {
+        startConfirmationBlocked = error.code === 'EXPERIMENT_CONFIRMATION_REQUIRED';
+      }
+      if (!startConfirmationBlocked || applied.length !== 0 || reportIndex !== 0) {
+        throw new Error('Unconfirmed experiment start called analytics or changed live packaging');
+      }
       experiment = await service.start(experiment.id, { confirmed: true });
       if (experiment.status !== 'running' || applied.length !== 1) throw new Error('Approved experiment did not start on its control arm');
 
@@ -731,6 +763,14 @@ class SystemTest {
         throw new Error('Experiment did not select an evidence-backed winner and restore the control');
       }
 
+      let adoptionConfirmationBlocked = false;
+      const appliedBeforeUnconfirmedAdoption = applied.length;
+      try { await service.adoptWinner(experiment.id); } catch (error) {
+        adoptionConfirmationBlocked = error.code === 'EXPERIMENT_CONFIRMATION_REQUIRED';
+      }
+      if (!adoptionConfirmationBlocked || applied.length !== appliedBeforeUnconfirmedAdoption) {
+        throw new Error('Unconfirmed winner adoption changed live packaging');
+      }
       experiment = await service.adoptWinner(experiment.id, { confirmed: true });
       const learned = (await db.listLearningRecommendations({ status: 'approved', limit: 20 }))
         .find(item => item.evidence?.experimentId === experiment.id);
@@ -2167,33 +2207,69 @@ class SystemTest {
     }
 
     const previousKey = process.env.API_KEY;
-    process.env.API_KEY = 'test-secret';
-    const middleware = agent.requireAPIKey();
-
-    let rejectedNextCalled = false;
-    const rejectedResponse = this.createMockResponse();
-    middleware({ get: () => 'wrong-secret' }, rejectedResponse, () => {
-      rejectedNextCalled = true;
-    });
-
-    if (rejectedNextCalled || rejectedResponse.statusCode !== 401) {
-      throw new Error('Invalid API key was not rejected');
-    }
-
-    let acceptedNextCalled = false;
-    const acceptedResponse = this.createMockResponse();
-    middleware({ get: () => 'test-secret' }, acceptedResponse, () => {
-      acceptedNextCalled = true;
-    });
-
-    if (!acceptedNextCalled || acceptedResponse.statusCode) {
-      throw new Error('Valid API key was not accepted');
-    }
-
-    if (previousKey === undefined) {
+    const previousBindHost = process.env.API_BIND_HOST;
+    const previousPort = process.env.PORT;
+    try {
+      process.env.API_BIND_HOST = '127.0.0.1';
+      process.env.PORT = '3456';
       delete process.env.API_KEY;
-    } else {
-      process.env.API_KEY = previousKey;
+      const localMiddleware = agent.requireAPIKey();
+      let localNextCalled = false;
+      localMiddleware({ get: () => undefined }, this.createMockResponse(), () => { localNextCalled = true; });
+      if (!localNextCalled || agent.validateServerConfig().host !== '127.0.0.1') {
+        throw new Error('Unauthenticated local mode did not remain loopback-only');
+      }
+
+      process.env.API_BIND_HOST = '0.0.0.0';
+      let remoteConfigRejected = false;
+      try { agent.validateServerConfig(); } catch (_error) { remoteConfigRejected = true; }
+      const remoteResponse = this.createMockResponse();
+      agent.requireAPIKey()({ get: () => undefined }, remoteResponse, () => {});
+      if (!remoteConfigRejected || remoteResponse.statusCode !== 503) {
+        throw new Error('Remote API bind was allowed without a key');
+      }
+
+      process.env.API_KEY = 'test-secret';
+      if (agent.validateServerConfig().host !== '0.0.0.0') {
+        throw new Error('A remote API bind with a key was rejected');
+      }
+      const middleware = agent.requireAPIKey();
+
+      let rejectedNextCalled = false;
+      const rejectedResponse = this.createMockResponse();
+      middleware({ get: () => 'wrong-secret' }, rejectedResponse, () => { rejectedNextCalled = true; });
+
+      if (rejectedNextCalled || rejectedResponse.statusCode !== 401) {
+        throw new Error('Invalid API key was not rejected');
+      }
+
+      let acceptedNextCalled = false;
+      const acceptedResponse = this.createMockResponse();
+      middleware({ get: () => 'test-secret' }, acceptedResponse, () => { acceptedNextCalled = true; });
+
+      if (!acceptedNextCalled || acceptedResponse.statusCode) {
+        throw new Error('Valid API key was not accepted');
+      }
+
+      const settings = agent.validateSettingsUpdate({ approval_required: false, video_clip_duration: 8 });
+      if (settings.approval_required !== 'false' || settings.video_clip_duration !== '8') {
+        throw new Error('Valid settings were not normalized');
+      }
+      let badSettingsRejected = false;
+      try { agent.validateSettingsUpdate({ video_provider: 'slideshow', video_clip_duration: 2 }); }
+      catch (_error) { badSettingsRejected = true; }
+      if (!badSettingsRejected) throw new Error('Invalid settings were not rejected as a whole');
+      let badProfileRejected = false;
+      try { agent.validateProfile({ channelName: { injected: true } }); }
+      catch (_error) { badProfileRejected = true; }
+      if (!badProfileRejected) throw new Error('Non-string profile values were accepted');
+    } finally {
+      if (previousKey === undefined) delete process.env.API_KEY;
+      else process.env.API_KEY = previousKey;
+      if (previousBindHost === undefined) delete process.env.API_BIND_HOST;
+      else process.env.API_BIND_HOST = previousBindHost;
+      if (previousPort === undefined) delete process.env.PORT;
+      else process.env.PORT = previousPort;
     }
 
     this.logger.info('API validation and security test completed successfully');
@@ -2898,43 +2974,60 @@ class SystemTest {
   async testGeminiWebImageProvider() {
     const fs = require('fs').promises;
     const os = require('os');
+    const { chromium } = require('playwright');
+    const originalLaunchPersistentContext = chromium.launchPersistentContext;
+    const originalAxiosGet = require('axios').get;
+    const originalGeminiWeb = process.env.GEMINI_WEB;
+    const originalTimeout = process.env.GEMINI_WEB_TIMEOUT_MS;
 
-    // Disabled via env: provider must report unavailable without launching a browser
-    process.env.GEMINI_WEB = '0';
-    const { GeminiWebImageGenerator } = require('./utils/gemini-web-image');
-    const disabled = new GeminiWebImageGenerator({ profileDir: path.join(os.tmpdir(), 'gemini-web-off') });
-    if (await disabled.isAvailable() !== false) {
-      throw new Error('Gemini web provider must stay disabled when GEMINI_WEB=0');
-    }
-    delete process.env.GEMINI_WEB;
-
-    // Enabled on a fresh (never logged in) profile: must answer false
-    // (anonymous sessions show a sign-in entry point) without throwing.
-    process.env.GEMINI_WEB_TIMEOUT_MS = '15000';
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gemini-web-test-'));
     try {
-      const provider = new GeminiWebImageGenerator({ profileDir: dir, timeoutMs: 15000 });
-      const available = await provider.isAvailable();
-      if (typeof available !== 'boolean') throw new Error('Gemini web availability probe did not return a boolean');
-      await provider.close();
-    } finally {
-      delete process.env.GEMINI_WEB_TIMEOUT_MS;
-      await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
-    }
+      // Disabled via env: provider must report unavailable without launching a browser.
+      process.env.GEMINI_WEB = '0';
+      const { GeminiWebImageGenerator } = require('./utils/gemini-web-image');
+      const disabled = new GeminiWebImageGenerator({ profileDir: path.join(os.tmpdir(), 'gemini-web-off') });
+      if (await disabled.isAvailable() !== false) {
+        throw new Error('Gemini web provider must stay disabled when GEMINI_WEB=0');
+      }
 
-    // With no API key and Gemini web unavailable, generateImage must still
-    // deliver a unique stock image (last-resort provider) — never crash.
-    const { AIVideoGenerator } = require('./utils/ai-video-generator');
-    const generator = new AIVideoGenerator({});
-    generator.geminiWeb = { isAvailable: async () => false, generateImage: async () => { throw new Error('should not be called'); } };
-    const stockPath = path.join(os.tmpdir(), `stock-fallback-${Date.now()}.png`);
-    try {
-      await generator.generateImage('a lighthouse on a cliff at golden hour', stockPath);
+      // Simulate an anonymous browser profile without opening a real browser or
+      // contacting Gemini. Missing editor means the profile cannot generate.
+      process.env.GEMINI_WEB = '1';
+      process.env.GEMINI_WEB_TIMEOUT_MS = '15000';
+      chromium.launchPersistentContext = async () => ({
+        newPage: async () => ({
+          goto: async () => {},
+          waitForSelector: async () => { throw new Error('fixture: no authenticated editor'); }
+        }),
+        close: async () => {}
+      });
+      // Keep the fixture hermetic when the developer .env points to a real
+      // authenticated CDP session. This test is for the anonymous-profile
+      // path and must never connect to the live browser.
+      const provider = new GeminiWebImageGenerator({ profileDir: dir, timeoutMs: 15000, cdpUrl: '' });
+      const available = await provider.isAvailable();
+      if (available !== false) throw new Error('Unauthenticated Gemini fixture must be unavailable');
+
+      // A synthetic stock response verifies fallback processing without HTTP.
       const sharp = require('sharp');
+      require('axios').get = async () => ({ data: await sharp({
+        create: { width: 320, height: 180, channels: 3, background: { r: 20, g: 80, b: 140 } }
+      }).png().toBuffer() });
+      const { AIVideoGenerator } = require('./utils/ai-video-generator');
+      const generator = new AIVideoGenerator({});
+      generator.geminiWeb = { isAvailable: async () => false, generateImage: async () => { throw new Error('should not be called'); } };
+      const stockPath = path.join(dir, 'stock-fallback.png');
+      await generator.generateImage('a lighthouse on a cliff at golden hour', stockPath);
       const meta = await sharp(stockPath).metadata();
       if (!meta.width || !meta.height) throw new Error('Stock fallback image is invalid');
     } finally {
-      await fs.rm(stockPath, { force: true }).catch(() => {});
+      chromium.launchPersistentContext = originalLaunchPersistentContext;
+      require('axios').get = originalAxiosGet;
+      if (originalGeminiWeb === undefined) delete process.env.GEMINI_WEB;
+      else process.env.GEMINI_WEB = originalGeminiWeb;
+      if (originalTimeout === undefined) delete process.env.GEMINI_WEB_TIMEOUT_MS;
+      else process.env.GEMINI_WEB_TIMEOUT_MS = originalTimeout;
+      await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
     }
 
     this.logger.info('Gemini web image provider test completed successfully');

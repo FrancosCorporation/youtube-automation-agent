@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-resolution="landscape">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+  <title>Pulso — robô bonito, novo candidato</title>
+  <style>
+    @font-face { font-family: Inter; src: url('assets/inter-regular.woff2'); font-weight: 400; }
+    @font-face { font-family: Inter; src: url('assets/inter-bold.woff2'); font-weight: 700; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+    body { font-family: Inter, sans-serif; color: #f3f7fc; background: #0c1420; }
+    #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(ellipse at 73% 43%, #253b50 0%, #142131 38%, #0c1420 77%); }
+    .clip { position: absolute; inset: 0; }
+    .brand { position: absolute; left: 100px; top: 70px; font-size: 28px; font-weight: 700; letter-spacing: .15em; }
+    .brand span { color: #86e3f7; }
+    .brand, .footnote { z-index: 2; }
+    .copy { position: absolute; left: 100px; top: 312px; width: 755px; }
+    .eyebrow { margin: 0; color: #8de7fa; font-size: 18px; letter-spacing: .17em; }
+    h1 { font-size: 104px; font-weight: 700; line-height: 1.04; letter-spacing: -.055em; margin: 25px 0; }
+    .description { font-size: 29px; line-height: 1.55; color: #c8d6e4; width: 630px; margin: 26px 0 47px; }
+    .details { display: flex; gap: 29px; border-top: 1px solid #536579; padding-top: 24px; font-size: 19px; color: #c8d6e4; }
+    .details b { display: block; color: #f3f7fc; font-size: 22px; margin-bottom: 8px; }
+    #three-layer { position: absolute; width: 1040px; height: 1040px; left: 860px; top: 20px; }
+    #root[data-presenter-side="left"] #three-layer { left: 0; }
+    #root[data-presenter-side="left"] .copy { left: 1050px; }
+    #root[data-presenter-side="center"] #three-layer { left: 440px; }
+    #root[data-presenter-side="center"] .copy { visibility: hidden; }
+    .footnote { position: absolute; left: 100px; bottom: 65px; font-size: 18px; color: #a5b9cc; letter-spacing: .02em; }
+  </style>
+</head>
+<body>
+  <main data-hf-id="hf-2zj4" id="root" data-composition-id="pulso-generated" data-width="1920" data-height="1080" data-duration="8" data-fps="24">
+    <section data-hf-id="hf-inpk" id="generated-studio" class="studio">
+      <div data-hf-id="hf-j4r2" class="brand">PULSO <span data-hf-id="hf-5ukb">IA</span></div>
+      <div data-hf-id="hf-bdx3" class="copy">
+        <p data-hf-id="hf-e06g" class="eyebrow">DO CONCEITO AO PERSONAGEM</p>
+        <h1 data-hf-id="hf-k7mi">Novo sorriso.<br data-hf-id="hf-x5px">Mais Pulso.</h1>
+        <p data-hf-id="hf-tfko" class="description">Uma nova referência ganhou volume. Corpo compacto, mãos articuladas e um sorriso luminoso.</p>
+        <div data-hf-id="hf-osyq" class="details">
+          <div data-hf-id="hf-4fgv"><b data-hf-id="hf-izo3">Silhueta</b>Corpo inteiro</div>
+          <div data-hf-id="hf-9nhq"><b data-hf-id="hf-fzr2">Acabamento</b>Branco e azul</div>
+          <div data-hf-id="hf-1e1x"><b data-hf-id="hf-2c5c">Visor</b>Sorriso azul</div>
+        </div>
+      </div>
+      <canvas data-hf-id="hf-uvq0" id="three-layer" class="clip" data-start="0" data-duration="8" data-track-index="0" width="1040" height="1040" aria-label="Robô Pulso tridimensional"></canvas>
+      <div data-hf-id="hf-pyx4" class="footnote">ESTUDO DE PERSONAGEM · 01</div>
+    </section>
+  </main>
+  <script src="assets/bonito.bundle.js"></script>
+  <script>
+    window.__hf.buildReady['pulso-generated-glb'].then(() => {
+      window.__timelines = window.__timelines || {};
+      window.__timelines['pulso-generated'] = window.generatedRobotTimeline;
+    });
+  </script>
+</body>
+</html>

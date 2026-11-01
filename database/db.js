@@ -1,11 +1,15 @@
 const sqlite3 = require('sqlite3').verbose();
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs').promises;
 const { Logger } = require('../utils/logger');
+const { backupSqliteConnection } = require('../utils/sqlite-backup');
 
 class Database {
   constructor() {
-    this.dbPath = path.join(__dirname, '..', 'data', 'youtube_automation.db');
+    this.dbPath = process.env.YOUTUBE_AUTOMATION_DB_PATH
+      ? path.resolve(process.env.YOUTUBE_AUTOMATION_DB_PATH)
+      : path.join(__dirname, '..', 'data', 'youtube_automation.db');
     this.db = null;
     this.logger = new Logger('Database');
   }
@@ -622,6 +626,20 @@ class Database {
         value TEXT NOT NULL,
         description TEXT,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS app_migrations (
+        id TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS knowledge_documents (
+        id TEXT PRIMARY KEY,
+        original_name TEXT NOT NULL,
+        stored_filename TEXT NOT NULL UNIQUE,
+        mime_type TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        sha256 TEXT NOT NULL UNIQUE,
+        extracted_text TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -679,7 +697,7 @@ class Database {
       ['max_daily_posts', '1', 'Maximum posts per day'],
       ['content_buffer_days', '3', 'Days of content to keep in buffer'],
       ['video_provider', 'slideshow', 'Video provider: slideshow, auto, seedance, minimax_h3, google_omni, kling, or wan'],
-      ['slideshow_style', 'dynamic', 'Slideshow style: dynamic (AI image sequence with Ken Burns motion) or classic (text slides)'],
+      ['slideshow_style', 'animated', 'Slideshow style: animated (HyperFrames visual kit) by default; dynamic and classic remain explicit legacy modes'],
       ['slideshow_seconds_per_image', '3.5', 'Seconds each generated image stays on screen in dynamic slideshow mode'],
       ['video_provider_order', 'seedance,minimax_h3,google_omni,kling,wan,slideshow', 'Provider priority used by automatic routing'],
       ['video_generation_mode', 'hybrid', 'Use provider clips within a locally assembled long-form video'],
@@ -695,6 +713,8 @@ class Database {
         [key, value, description]
       );
     }
+
+    await this.migrateLegacyVisualStandard();
 
     await this.executeQuery(
       `INSERT OR IGNORE INTO channel_profiles (
@@ -713,6 +733,30 @@ class Database {
         process.env.CHANNEL_TIMEZONE || 'America/Chicago'
       ]
     );
+  }
+
+  async migrateLegacyVisualStandard() {
+    const migrationId = 'visual-standard-v3-slideshow-default';
+    await this.executeQuery('BEGIN IMMEDIATE');
+    try {
+      const migration = await this.getRow('SELECT id FROM app_migrations WHERE id = ?', [migrationId]);
+      if (!migration) {
+        const style = await this.getSetting('slideshow_style');
+        if (style === 'dynamic') {
+          await this.executeQuery(
+            `UPDATE settings SET value = 'animated',
+              description = 'Slideshow style: animated (HyperFrames visual kit) by default; dynamic and classic remain explicit legacy modes',
+              updated_at = datetime('now')
+             WHERE key = 'slideshow_style' AND value = 'dynamic'`
+          );
+        }
+        await this.executeQuery('INSERT OR IGNORE INTO app_migrations (id) VALUES (?)', [migrationId]);
+      }
+      await this.executeQuery('COMMIT');
+    } catch (error) {
+      await this.executeQuery('ROLLBACK').catch(() => {});
+      throw error;
+    }
   }
 
   // Content Strategy methods
@@ -1751,6 +1795,13 @@ class Database {
     return id;
   }
 
+  async updateNotificationData(id, data) {
+    await this.executeQuery(
+      'UPDATE notifications SET data = ? WHERE id = ?',
+      [JSON.stringify(data || {}), id]
+    );
+  }
+
   async listNotifications(limit = 20) {
     const rows = await this.getAllRows('SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?', [limit]);
     return rows.map(row => ({ ...row, data: JSON.parse(row.data || '{}') }));
@@ -2778,6 +2829,54 @@ class Database {
     }, {});
   }
 
+  // Agent knowledge base
+  async listKnowledgeDocuments() {
+    return this.getAllRows(
+      `SELECT id, original_name, mime_type, size_bytes, sha256,
+              length(extracted_text) AS extracted_characters, created_at
+       FROM knowledge_documents ORDER BY created_at DESC, original_name COLLATE NOCASE`
+    );
+  }
+
+  async listKnowledgeDocumentsWithText() {
+    return this.getAllRows(
+      `SELECT id, original_name, extracted_text, created_at
+       FROM knowledge_documents ORDER BY created_at DESC, original_name COLLATE NOCASE`
+    );
+  }
+
+  async findKnowledgeDocumentByHash(sha256) {
+    return this.getRow(
+      'SELECT id, original_name FROM knowledge_documents WHERE sha256 = ?',
+      [sha256]
+    );
+  }
+
+  async getKnowledgeDocument(id) {
+    return this.getRow('SELECT * FROM knowledge_documents WHERE id = ?', [id]);
+  }
+
+  async saveKnowledgeDocument(document) {
+    await this.executeQuery(
+      `INSERT INTO knowledge_documents (
+        id, original_name, stored_filename, mime_type, size_bytes, sha256, extracted_text
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        document.id,
+        document.originalName,
+        document.storedFilename,
+        document.mimeType,
+        document.sizeBytes,
+        document.sha256,
+        document.extractedText
+      ]
+    );
+  }
+
+  async deleteKnowledgeDocument(id) {
+    return this.executeQuery('DELETE FROM knowledge_documents WHERE id = ?', [id]);
+  }
+
   // Production readiness
   async saveReadinessRun(run) {
     await this.executeQuery(
@@ -2870,15 +2969,13 @@ class Database {
   }
 
   async backup() {
+    if (!this.db) throw new Error('Database precisa estar inicializado para gerar backup consistente');
+
+    const backupName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}_${crypto.randomUUID()}.db`;
+    const backupPath = path.join(path.dirname(this.dbPath), backupName);
+
     try {
-      const backupPath = path.join(
-        path.dirname(this.dbPath),
-        `backup_${Date.now()}.db`
-      );
-      
-      const fs = require('fs').promises;
-      await fs.copyFile(this.dbPath, backupPath);
-      
+      await backupSqliteConnection(this.db, backupPath);
       this.logger.info(`Database backed up to: ${backupPath}`);
       return backupPath;
     } catch (error) {

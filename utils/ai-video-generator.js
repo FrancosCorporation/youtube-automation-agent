@@ -14,6 +14,7 @@ class AIVideoGenerator {
     this.logger = new Logger('AIVideoGenerator');
     const resolvedCredentials = credentials?.credentials || credentials || {};
     this.db = options.db || null;
+    this.jobId = options.jobId || null;
     this.getMediaDuration = options.getMediaDuration || getMediaDuration;
     this.lastVideoResult = null;
     this.lastNarrationResult = null;
@@ -599,9 +600,9 @@ class AIVideoGenerator {
 
     const settings = await this.resolveSlideshowSettings();
     if (settings.style === 'animated') {
-      const { HyperFramesVideoRenderer } = require('./hyperframes-video-renderer');
-      const renderer = new HyperFramesVideoRenderer({ logger: this.logger });
-      return await renderer.render({ script, audioPath, outputPath });
+      const { RemotionStoryVideoRenderer } = require('./remotion-story-video-renderer');
+      const renderer = new RemotionStoryVideoRenderer({ logger: this.logger });
+      return await renderer.render({ script, audioPath, outputPath, jobId: this.jobId });
     }
     if (settings.style === 'dynamic') {
       try {
@@ -759,9 +760,9 @@ class AIVideoGenerator {
 
   async resolveSlideshowSettings() {
     const stored = this.db?.getAllSettings ? await this.db.getAllSettings() : {};
-    const style = String(process.env.SLIDESHOW_STYLE || stored.slideshow_style || 'dynamic').toLowerCase();
+    const style = String(process.env.SLIDESHOW_STYLE || stored.slideshow_style || 'animated').toLowerCase();
     const secondsPerImage = Math.max(1, Number(process.env.SLIDESHOW_SECONDS_PER_IMAGE || stored.slideshow_seconds_per_image || 3.5));
-    const normalized = ['classic', 'animated'].includes(style) ? style : 'dynamic';
+    const normalized = ['classic', 'animated', 'dynamic'].includes(style) ? style : 'animated';
     return { style: normalized, secondsPerImage };
   }
 

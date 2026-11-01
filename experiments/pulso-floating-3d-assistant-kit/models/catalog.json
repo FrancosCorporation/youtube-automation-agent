@@ -1,0 +1,66 @@
+{
+  "catalogVersion": 1,
+  "note": "The component accepts any GLB through modelUrl. Two models are bundled for immediate reuse; other references remain workspace assets. Verify asset rights before public redistribution.",
+  "models": [
+    {
+      "id": "pulso-robot-web",
+      "label": "Pulso Web",
+      "status": "bundled",
+      "path": "models/pulso-robot-web.glb",
+      "sizeBytes": 8475776,
+      "sha256": "32784347372cec7befa3510c24a0112d5df87c8d8a930d4ff756f195574f911a",
+      "geometryFamily": "Pulso robot",
+      "skinCount": 1,
+      "rig": "1 skin, 17 joints, facial controls, no baked clips",
+      "profile": "bundled; intended for desktop and mobile",
+      "license": "workspace asset; public redistribution rights not established"
+    },
+    {
+      "id": "robo-bonito-rigged",
+      "label": "Robô Bonito rigged",
+      "status": "workspace-reference",
+      "path": "../../experiments/hyperframes-pulso-pilot/variants/robo-bonito-animado-vertical/assets/robo-bonito-rigged.glb",
+      "sizeBytes": 70961600,
+      "geometryFamily": "distinct humanoid robot",
+      "rig": "1 skin, same 17-joint contract, no baked clips",
+      "profile": "too large for an unoptimized mobile deployment",
+      "license": "workspace asset; public redistribution rights not established"
+    },
+    {
+      "id": "robo-bonito-hunyuan",
+      "label": "Robô Bonito Hunyuan",
+      "status": "workspace-reference",
+      "path": "../../experiments/hyperframes-pulso-pilot/variants/robo-bonito/assets/robo-bonito-hunyuan.glb",
+      "sizeBytes": 49815868,
+      "geometryFamily": "distinct Hunyuan geometry",
+      "rig": "static; no skin",
+      "profile": "desktop evaluation only until optimized and animated",
+      "license": "workspace asset; public redistribution rights not established"
+    },
+    {
+      "id": "pulso-robo-hunyuan",
+      "label": "Pulso Robô Hunyuan",
+      "status": "workspace-reference",
+      "path": "../../experiments/hyperframes-pulso-pilot/variants/robo-gerado/assets/pulso-robo-hunyuan.glb",
+      "sizeBytes": 49959816,
+      "geometryFamily": "distinct Hunyuan geometry",
+      "rig": "static; no skin",
+      "profile": "desktop evaluation only until optimized and animated",
+      "license": "workspace asset; public redistribution rights not established"
+    },
+    {
+      "id": "pulso-robo-moderno",
+      "label": "Pulso Robô Moderno",
+      "status": "bundled",
+      "path": "models/pulso-robo-moderno.glb",
+      "sizeBytes": 7365644,
+      "sha256": "48dd04140d3a5c08d5d12f1a5d4d505c811fbd51ffa8b4da8dc7d4b1a5531e20",
+      "geometryFamily": "modern multi-mesh robot",
+      "skinCount": 0,
+      "meshCount": 91,
+      "rig": "91 meshes, 12 materials, no skin",
+      "profile": "bundled 7.37 MB; procedural whole-body motion only; no skin or baked clips",
+      "license": "workspace asset; public redistribution rights not established"
+    }
+  ]
+}

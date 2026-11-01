@@ -15,6 +15,14 @@ const fs = require('fs');
 const os = require('os');
 
 const ROOT = path.join(__dirname, '..');
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulso_smoke_'));
+// Este smoke roda em checkout compartilhado; nunca reutilize data/state nem
+// dispare alertas configurados no ambiente de quem o executa.
+process.env.STATE_DIR = path.join(tmpDir, 'state');
+delete process.env.NOTIFICATION_WEBHOOK_URL;
+delete process.env.TELEGRAM_BOT_TOKEN;
+delete process.env.TELEGRAM_ADMIN_CHAT_ID;
+process.on('exit', () => fs.rmSync(tmpDir, { recursive: true, force: true }));
 let passed = 0;
 let failed = 0;
 
@@ -27,7 +35,7 @@ function check(name, condition, detail = '') {
   console.log('Smoke test do pipeline real\n');
 
   // 1. Módulos carregam sem erro
-  const { AnimatedSceneRenderer } = require(path.join(ROOT, 'utils', 'animated-scene-renderer'));
+  const { ScenePlanBuilder } = require(path.join(ROOT, 'utils', 'scene-plan-builder'));
   const { probeVideoHealth } = require(path.join(ROOT, 'utils', 'ffmpeg'));
   const { mixdownAudio, deriveMood } = require(path.join(ROOT, 'utils', 'audio-mix'));
   const { notifyFailure } = require(path.join(ROOT, 'utils', 'alerts'));
@@ -35,7 +43,7 @@ function check(name, condition, detail = '') {
   check('módulos carregam', true);
 
   // 2. buildScenes: cenas geradas com watermark em TODAS (identidade de marca)
-  const renderer = new AnimatedSceneRenderer();
+  const renderer = new ScenePlanBuilder();
   const fakeScript = {
     seed: 42,
     hook: { text: 'Uma IA nova acabou de mudar tudo o que você sabia sobre robôs.' },
@@ -48,12 +56,13 @@ function check(name, condition, detail = '') {
     conclusion: { finalThought: 'Se você usa IA no dia a dia, isso muda seu jogo.' }
   };
   const scenes = renderer.buildScenes(fakeScript, 20000, {});
-  check('buildScenes gera cenas', scenes.length >= 4, `${scenes.length} cenas`);
-  check('watermark em todas as cenas', scenes.every(s => s.components.some(c => c.type === 'watermark')));
-  check('caption presente em todas as cenas', scenes.every(s => s.components.some(c => c.type === 'caption')));
+  check('buildScenes agrupa batidas em cenas visuais estáveis', scenes.length >= 1, `${scenes.length} cenas`);
+  check('identidade visível em todas as cenas', scenes.every(s => s.components.some(c =>
+    c.type === 'watermark' || c.type === 'timestamp-hud')));
+  check('faixa de legendas sincronizadas presente em todas as cenas', scenes.every(s => s.components.some(c =>
+    c.type === 'caption' || c.type === 'caption-track')));
 
   // 3. QA pré-publicação: reprova arquivo quebrado/lixo
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulso_smoke_'));
   const fakeMp4 = path.join(tmpDir, 'fake.mp4');
   fs.writeFileSync(fakeMp4, Buffer.alloc(1024, 0));
   const badHealth = await probeVideoHealth(fakeMp4);
@@ -66,12 +75,12 @@ function check(name, condition, detail = '') {
 
   // 5. Controle de custo: gate lança quando estoura
   const fakeLimit = 2;
-  await apiUsage.recordCall('smoke_test');
-  await apiUsage.recordCall('smoke_test');
+  await apiUsage.reserveCall('smoke_test', fakeLimit);
+  await apiUsage.reserveCall('smoke_test', fakeLimit);
   let budgetThrew = false;
-  try { await apiUsage.assertBudget('smoke_test', fakeLimit); } catch (_e) { budgetThrew = true; }
+  try { await apiUsage.reserveCall('smoke_test', fakeLimit); } catch (_e) { budgetThrew = true; }
   check('gate de orçamento bloqueia ao estourar', budgetThrew);
-  check('recordCall conta chamadas', (await apiUsage.usedToday('smoke_test')) >= 2);
+  check('reserva conta chamadas', (await apiUsage.usedToday('smoke_test')) === 2);
 
   // 6. Alerts: sem env configurado = no-op (não lança)
   const sent = await notifyFailure('smoke test — ignore');
@@ -82,12 +91,10 @@ function check(name, condition, detail = '') {
   const { getFFmpegPath } = require(path.join(ROOT, 'utils', 'ffmpeg'));
   const narration = path.join(tmpDir, 'narration.mp3');
   execFileSync(getFFmpegPath(), ['-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3', '-c:a', 'libmp3lame', narration], { stdio: 'ignore' });
-  const mixed = await mixdownAudio({ narrationPath: narration, mood: 'curious', seed: 1, workDir: tmpDir });
+  const mixed = await mixdownAudio({ narrationPath: narration, mood: 'curious', seed: 1, workDir: tmpDir, includeMusic: false });
   check('mixdown produz áudio masterizado', fs.existsSync(mixed.path) && fs.statSync(mixed.path).size > 1000);
 
   // Limpeza
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-
   console.log(`\nResultado: ${passed} ok, ${failed} falharam`);
   process.exit(failed ? 1 : 0);
 })().catch(error => {

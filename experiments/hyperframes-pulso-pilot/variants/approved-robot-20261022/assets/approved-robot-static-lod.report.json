@@ -1,0 +1,20 @@
+{
+  "source": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-hunyuan.glb",
+  "status": "provisional_mesh_not_rigged",
+  "method": "attribute-aware index-only; NORMAL+UV weights1",
+  "trianglesBefore": 499984,
+  "triangles": 122960,
+  "target": 100000,
+  "errorLimit": 0.001,
+  "primitives": [
+    {
+      "attributes": [
+        "NORMAL",
+        "TEXCOORD_0"
+      ],
+      "trianglesBefore": 499984,
+      "triangles": 122960,
+      "appearanceError": 0.000978702213615179
+    }
+  ]
+}

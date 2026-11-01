@@ -23,8 +23,8 @@
           "https://g1.globo.com/rss/g1/tecnologia/"
         ],
         [
-          "TecMundo",
-          "https://www.tecmundo.com.br/rss"
+          "Tecnoblog",
+          "https://tecnoblog.net/feed/"
         ],
         [
           "Canaltech",
@@ -49,6 +49,10 @@
         [
           "MIT Tech Review",
           "https://www.technologyreview.com/feed/"
+        ],
+        [
+          "OpenAI News",
+          "https://openai.com/news/rss.xml"
         ]
       ],
       "hashtags": "#ia #inteligenciaartificial #tecnologia",
@@ -57,29 +61,33 @@
         "variants": [
           {
             "accents": [
-              "#5EEAD4",
-              "#60A5FA",
-              "#A78BFA",
-              "#FBBF24"
+              "#22D3EE",
+              "#67E8F9",
+              "#38BDF8",
+              "#E0F2FE"
             ]
           },
           {
             "accents": [
               "#22D3EE",
-              "#818CF8",
-              "#4ADE80",
-              "#F8C172"
+              "#38BDF8",
+              "#E0F2FE",
+              "#67E8F9"
             ]
           },
           {
             "accents": [
-              "#2DD4BF",
-              "#38BDF8",
-              "#C084FC",
-              "#F472B6"
+              "#22D3EE",
+              "#E0F2FE",
+              "#67E8F9",
+              "#38BDF8"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Ciano",
+          "color": "#22D3EE"
+        }
       }
     },
     {
@@ -99,8 +107,8 @@
       "gnews": "fato curioso OR descoberta surpreendente",
       "feeds": [
         [
-          "BBC Offbeat",
-          "https://feeds.bbci.co.uk/news/odd-but-true/rss.xml?edition=uk"
+          "ScienceDaily Strange & Offbeat",
+          "https://www.sciencedaily.com/rss/strange_offbeat.xml"
         ]
       ],
       "hashtags": "#curiosidades #voceconhecia #fatossurpreendentes",
@@ -109,29 +117,33 @@
         "variants": [
           {
             "accents": [
-              "#FBBF24",
-              "#FB7185",
-              "#A78BFA",
-              "#22D3EE"
-            ]
-          },
-          {
-            "accents": [
-              "#F97316",
-              "#FACC15",
-              "#F472B6",
-              "#38BDF8"
-            ]
-          },
-          {
-            "accents": [
-              "#FB923C",
               "#FDE047",
-              "#C084FC",
-              "#2DD4BF"
+              "#FBBF24",
+              "#FEF08A",
+              "#FFF7CC"
+            ]
+          },
+          {
+            "accents": [
+              "#FDE047",
+              "#FEF08A",
+              "#FFF7CC",
+              "#FBBF24"
+            ]
+          },
+          {
+            "accents": [
+              "#FDE047",
+              "#FFF7CC",
+              "#FBBF24",
+              "#FEF08A"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Amarelo",
+          "color": "#FDE047"
+        }
       }
     },
     {
@@ -160,29 +172,33 @@
         "variants": [
           {
             "accents": [
-              "#34D399",
-              "#FBBF24",
-              "#60A5FA",
-              "#A3E635"
+              "#22C55E",
+              "#4ADE80",
+              "#86EFAC",
+              "#DCFCE7"
             ]
           },
           {
             "accents": [
               "#22C55E",
-              "#F59E0B",
-              "#38BDF8",
-              "#84CC16"
+              "#86EFAC",
+              "#DCFCE7",
+              "#4ADE80"
             ]
           },
           {
             "accents": [
-              "#10B981",
-              "#FACC15",
-              "#818CF8",
-              "#2DD4BF"
+              "#22C55E",
+              "#DCFCE7",
+              "#4ADE80",
+              "#86EFAC"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Verde-esmeralda",
+          "color": "#22C55E"
+        }
       }
     },
     {
@@ -203,7 +219,7 @@
       "feeds": [
         [
           "ScienceDaily Health",
-          "https://www.sciencedaily.com/rss/top/health_medicine.xml"
+          "https://www.sciencedaily.com/rss/top/health.xml"
         ]
       ],
       "hashtags": "#saude #bemestar #qualidadedevida",
@@ -212,29 +228,33 @@
         "variants": [
           {
             "accents": [
-              "#2DD4BF",
-              "#4ADE80",
-              "#60A5FA",
-              "#F472B6"
+              "#F1F5F9",
+              "#CBD5E1",
+              "#E2E8F0",
+              "#FFFFFF"
             ]
           },
           {
             "accents": [
-              "#34D399",
-              "#22D3EE",
-              "#A3E635",
-              "#818CF8"
+              "#F1F5F9",
+              "#E2E8F0",
+              "#FFFFFF",
+              "#CBD5E1"
             ]
           },
           {
             "accents": [
-              "#14B8A6",
-              "#86EFAC",
-              "#38BDF8",
-              "#FBBF24"
+              "#F1F5F9",
+              "#FFFFFF",
+              "#CBD5E1",
+              "#E2E8F0"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Branco-gelo",
+          "color": "#F1F5F9"
+        }
       }
     },
     {
@@ -250,7 +270,7 @@
         "povertyfinance",
         "CanadaPersonalFinance"
       ],
-      "gnews": "economizar dinheiro OR dica gasto",
+      "gnews": "economizar dinheiro OR dica gasto when:7d",
       "feeds": [],
       "hashtags": "#economia #dinheiro #dicasdefinancas",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre economizar dinheiro e parar de pagar por coisas que deveriam ser grátis, estilo 'pare de pagar por isso'",
@@ -258,29 +278,33 @@
         "variants": [
           {
             "accents": [
-              "#22C55E",
-              "#FACC15",
-              "#38BDF8",
-              "#F97316"
+              "#FB923C",
+              "#FDBA74",
+              "#FED7AA",
+              "#FFF7ED"
             ]
           },
           {
             "accents": [
-              "#84CC16",
-              "#FBBF24",
-              "#2DD4BF",
-              "#60A5FA"
+              "#FB923C",
+              "#FED7AA",
+              "#FFF7ED",
+              "#FDBA74"
             ]
           },
           {
             "accents": [
-              "#16A34A",
-              "#FDE047",
-              "#0EA5E9",
-              "#FB923C"
+              "#FB923C",
+              "#FFF7ED",
+              "#FDBA74",
+              "#FED7AA"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Laranja",
+          "color": "#FB923C"
+        }
       }
     },
     {
@@ -295,7 +319,7 @@
         "scientificpsychology",
         "Neuropsychology"
       ],
-      "gnews": "psicologia OR estudo comportamento",
+      "gnews": "psicologia OR estudo comportamento when:7d",
       "feeds": [
         [
           "PsyPost",
@@ -309,29 +333,33 @@
         "variants": [
           {
             "accents": [
+              "#C084FC",
               "#A78BFA",
-              "#C084FC",
-              "#60A5FA",
-              "#F472B6"
-            ]
-          },
-          {
-            "accents": [
-              "#8B5CF6",
-              "#818CF8",
-              "#22D3EE",
-              "#F9A8D4"
+              "#D8B4FE",
+              "#F3E8FF"
             ]
           },
           {
             "accents": [
               "#C084FC",
-              "#6366F1",
-              "#2DD4BF",
-              "#FB7185"
+              "#D8B4FE",
+              "#F3E8FF",
+              "#A78BFA"
+            ]
+          },
+          {
+            "accents": [
+              "#C084FC",
+              "#F3E8FF",
+              "#A78BFA",
+              "#D8B4FE"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Violeta",
+          "color": "#C084FC"
+        }
       }
     },
     {
@@ -360,29 +388,33 @@
         "variants": [
           {
             "accents": [
-              "#FB7185",
               "#F472B6",
-              "#C084FC",
-              "#FDBA74"
+              "#F9A8D4",
+              "#FBCFE8",
+              "#FDF2F8"
             ]
           },
           {
             "accents": [
-              "#F43F5E",
-              "#FDA4AF",
-              "#A78BFA",
-              "#FBBF24"
-            ]
-          },
-          {
-            "accents": [
-              "#EC4899",
-              "#FB923C",
-              "#818CF8",
+              "#F472B6",
+              "#FBCFE8",
+              "#FDF2F8",
               "#F9A8D4"
             ]
+          },
+          {
+            "accents": [
+              "#F472B6",
+              "#FDF2F8",
+              "#F9A8D4",
+              "#FBCFE8"
+            ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Rosa",
+          "color": "#F472B6"
+        }
       }
     },
     {
@@ -403,7 +435,7 @@
       "feeds": [
         [
           "ScienceDaily Health",
-          "https://www.sciencedaily.com/rss/top/health_medicine.xml"
+          "https://www.sciencedaily.com/rss/top/health.xml"
         ]
       ],
       "hashtags": "#fitness #treino #emagrecimento",
@@ -413,29 +445,33 @@
         "variants": [
           {
             "accents": [
-              "#84CC16",
-              "#22D3EE",
-              "#FB923C",
-              "#34D399"
+              "#F87171",
+              "#EF4444",
+              "#FCA5A5",
+              "#FEE2E2"
             ]
           },
           {
             "accents": [
-              "#4ADE80",
-              "#F97316",
-              "#38BDF8",
-              "#FACC15"
+              "#F87171",
+              "#FCA5A5",
+              "#FEE2E2",
+              "#EF4444"
             ]
           },
           {
             "accents": [
-              "#A3E635",
-              "#14B8A6",
-              "#FBBF24",
-              "#60A5FA"
+              "#F87171",
+              "#FEE2E2",
+              "#EF4444",
+              "#FCA5A5"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Vermelho",
+          "color": "#F87171"
+        }
       }
     },
     {
@@ -451,7 +487,7 @@
         "RBI",
         "missingpersons"
       ],
-      "gnews": "mistério inexplicado OR desaparecimento",
+      "gnews": "mistério inexplicado OR desaparecimento when:7d",
       "feeds": [],
       "hashtags": "#misterios #assustador #inexplicavel",
       "persona": "roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL de mistérios sem solução e casos inexplicáveis, estilo 'ninguém explica isso'",
@@ -459,29 +495,33 @@
         "variants": [
           {
             "accents": [
-              "#8B5CF6",
-              "#6366F1",
-              "#22D3EE",
-              "#F472B6"
+              "#60A5FA",
+              "#3B82F6",
+              "#93C5FD",
+              "#DBEAFE"
             ]
           },
           {
             "accents": [
-              "#7C3AED",
-              "#818CF8",
-              "#38BDF8",
-              "#FB7185"
+              "#60A5FA",
+              "#93C5FD",
+              "#DBEAFE",
+              "#3B82F6"
             ]
           },
           {
             "accents": [
-              "#A78BFA",
-              "#4F46E5",
-              "#2DD4BF",
-              "#FBBF24"
+              "#60A5FA",
+              "#DBEAFE",
+              "#3B82F6",
+              "#93C5FD"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Azul-royal",
+          "color": "#60A5FA"
+        }
       }
     },
     {
@@ -511,29 +551,33 @@
         "variants": [
           {
             "accents": [
-              "#60A5FA",
-              "#6366F1",
-              "#FBBF24",
-              "#2DD4BF"
+              "#BFA07A",
+              "#D6BB97",
+              "#E8D8BF",
+              "#F5EEE4"
             ]
           },
           {
             "accents": [
-              "#3B82F6",
-              "#818CF8",
-              "#F59E0B",
-              "#34D399"
+              "#BFA07A",
+              "#E8D8BF",
+              "#F5EEE4",
+              "#D6BB97"
             ]
           },
           {
             "accents": [
-              "#38BDF8",
-              "#4F46E5",
-              "#FACC15",
-              "#A78BFA"
+              "#BFA07A",
+              "#F5EEE4",
+              "#D6BB97",
+              "#E8D8BF"
             ]
           }
-        ]
+        ],
+        "identity": {
+          "name": "Cobre",
+          "color": "#BFA07A"
+        }
       }
     }
   ]

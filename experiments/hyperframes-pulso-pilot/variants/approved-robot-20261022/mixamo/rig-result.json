@@ -1,0 +1,104 @@
+{
+  "placement": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/placement.json",
+  "visualReview": {
+    "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/visual-review.json",
+    "sha256": "8e1ef288e73f9f1dec0aff39377142bbb4fffbe462e506e592d0ddbb8b2db620",
+    "screenshotPath": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/markers-review.png",
+    "screenshotSha256": "ea57b27eed6b8e11e1cfbedbf5f3ff308b93a3cb77743dab3b15998b9b530e5c"
+  },
+  "state": "review-ready",
+  "responses": [
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/rig",
+      "method": "PUT",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 202,
+      "status": "processing"
+    },
+    {
+      "path": "/api/v1/characters/b49cce22-884e-4107-be06-91ce2a096c2e/monitor",
+      "method": "GET",
+      "http": 200,
+      "status": "completed"
+    }
+  ],
+  "uiNotices": [],
+  "screenshot": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/rig-result-ui.png"
+}

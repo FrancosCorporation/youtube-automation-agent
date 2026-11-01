@@ -5,10 +5,11 @@
   "scripts": {
     "build": "node scripts/build-pilot.js",
     "make-video": "node scripts/make-video.js",
-    "dev": "npx --yes hyperframes@0.8.149 preview",
-    "check": "npx --yes hyperframes@0.8.149 check",
-    "render": "npx --yes hyperframes@0.8.149 render",
-    "publish": "npx --yes hyperframes@0.8.149 publish"
+    "dev": "npx --yes hyperframes@0.8.185 preview",
+    "check": "npx --yes hyperframes@0.8.185 check",
+    "render": "npx --yes hyperframes@0.8.185 render",
+    "render:portrait": "npx --yes hyperframes@0.8.185 render --composition=variants/portrait/index.html --fps=24 --quality=high --workers=1",
+    "publish": "npx --yes hyperframes@0.8.185 publish"
   },
   "dependencies": {
     "esbuild": "0.28.2",

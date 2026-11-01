@@ -1,12 +1,22 @@
 /**
- * ClipMaker — gera cortes verticais (9:16) dos momentos mais fortes
- * de um vídeo longo, com fundo blur + legenda grande estilo Shorts/TikTok.
+ * ClipMaker — helper legado de prévias com cortes verticais. O gerador
+ * automático usa makeNarrativeSocialParts; estes clipes não são publicados
+ * automaticamente porque não carregam a narrativa completa.
  *
  * makeClips({ videoPath, script, outDir, maxClips }) → [{ path, title, sentence }]
  */
 const fs = require('fs').promises;
 const path = require('path');
-const { runFFmpeg } = require('./ffmpeg');
+const { getMediaDuration, runFFmpeg } = require('./ffmpeg');
+const { buildPortraitPartRender } = require('./portrait-part-ranges');
+const {
+  configuredNarrativePartDurationLimitSeconds,
+  createNarrativePartScript,
+  INSTAGRAM_MIN_NARRATIVE_SECONDS,
+  narrativePartDurationRejection,
+  narrativeBlocksFromScript,
+  splitNarrativeBlocks
+} = require('./platform-video-policy');
 
 // Quebra a frase em linhas curtas para a legenda.
 function wrapLines(text, max = 30) {
@@ -135,9 +145,8 @@ async function makeClips({ videoPath, script, outDir, maxClips = 3 }) {
 }
 
 /**
- * ClipMaker — cortes VERTICAIS NATIVOS (9:16) para TikTok/Reels/Shorts:
- * re-renderiza os melhores momentos no formato de celular, com imagem
- * full-bleed + legenda karaokê animada (preenche a tela de verdade).
+ * Helper de prévia para cortes VERTICAIS NATIVOS (9:16): re-renderiza
+ * momentos isolados no formato de celular. Não faz parte da rota automática.
  *
  * makeVerticalClips({ script, slug, imagesDir, ttsDir, outDir, maxClips })
  */
@@ -190,9 +199,20 @@ function pickSentencesV(script, maxClips = 3) {
   return chosen;
 }
 
-async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips = 3, baseName = 'corte' }) {
+async function makeVerticalClips({
+  script,
+  imagesDir,
+  ttsDir,
+  outDir,
+  maxClips = 3,
+  baseName = 'corte',
+  rendererFactory = options => new HyperFramesVideoRenderer(options),
+  ffmpegRunner = runFFmpeg
+}) {
   const picks = pickSentencesV(script, maxClips);
   if (!picks.length) return [];
+  const captionWordLimit = Math.max(8, Math.min(18, Number(process.env.SOCIAL_CAPTION_WORDS || 12)));
+  const imageLimit = Math.max(1, Math.min(3, Number(process.env.SOCIAL_CLIP_IMAGE_COUNT || 2)));
   await fs.mkdir(outDir, { recursive: true });
   const sharp = require('sharp');
   const clips = [];
@@ -206,7 +226,7 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       const groupAudio = path.join(ttsDir, `g${pick.gi}.mp3`);
       const start = Math.max(0, pick.startMs / 1000 - 0.25).toFixed(2);
       const durSec = (pick.durMs / 1000 + 0.7).toFixed(2);
-      await runFFmpeg(['-y', '-ss', start, '-t', durSec, '-i', groupAudio, '-c', 'copy', clipAudio]);
+      await ffmpegRunner(['-y', '-ss', start, '-t', durSec, '-i', groupAudio, '-c', 'copy', clipAudio]);
 
       // 2) Imagens da seção — até 3 fontes pra cada slide mostrar uma imagem
       //    diferente (rotação no renderer), fallback: qualquer imagem do vídeo
@@ -227,17 +247,11 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
           : files.filter(f => /^g\d+[a-f]\.png$/.test(f))).sort();
         const own = all.filter(f => new RegExp(`^g${pick.gi}[a-f](?:-visual-[a-f0-9]{8})?\\.png$`).test(f));
         const pool = own.length ? own : all;
-        for (const f of pool.slice(0, 3)) {
+        for (const f of pool.slice(0, imageLimit)) {
           const buf = await sharp(path.join(imagesDir, f)).resize({ width: 1080 }).jpeg({ quality: 84 }).toBuffer();
           images.sources.push(`data:image/jpeg;base64,${buf.toString('base64')}`);
         }
       } catch (_e) { /* sem imagem → cena com glow */ }
-
-      // 2b) Título cinético: primeiras palavras fortes da frase, em caixa alta
-      const titleWords = String(pick.text)
-        .replace(/[""'']/g, '')
-        .split(/\s+/).filter(Boolean).slice(0, 5)
-        .map(w => w.replace(/[^\wÀ-ú-]/g, '').toUpperCase()).filter(Boolean).slice(0, 5);
 
       // 3) Mini-roteiro vertical: a frase vira VÁRIOS slides curtos
       //    (≈7 palavras por tela) — cada slide com sua imagem e o karaokê
@@ -249,7 +263,7 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       const wt = (Array.isArray(pick.wordTimes) && pick.wordTimes.length === wordsAll.length)
         ? pick.wordTimes
         : null;
-      let pieces = chunkWords(wordsAll, 7);
+      let pieces = chunkWords(wordsAll, captionWordLimit);
       if (pieces.length > 1 && pieces[pieces.length - 1].length < 4) {
         const last = pieces.pop();
         pieces[pieces.length - 1] = pieces[pieces.length - 1].concat(last);
@@ -297,7 +311,7 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
         seed: script.seed,
         forceLayout: 'hero',
         minimal: true,
-        clip: { title: titleWords },
+        maxCaptionWords: captionWordLimit,
         timings: [{
           durationMs: durMs,
           sentences,
@@ -305,10 +319,20 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
       };
 
       // 4) Renderiza NATIVO em 1080x1920 + mux com o áudio recortado
-      const renderer = new HyperFramesVideoRenderer({ width: 1080, height: 1920, fps: 24 });
+      const renderer = rendererFactory({ width: 1080, height: 1920, fps: 30 });
       await renderer.render({ script: mini, audioPath: clipAudio, outputPath: outPath, images: images.sources.length ? { 0: images } : {} });
 
-      clips.push({ path: outPath, title: pick.text.slice(0, 90), sentence: pick.text, section: pick.gi });
+      clips.push({
+        path: outPath,
+        title: pick.text.slice(0, 90),
+        sentence: pick.text,
+        section: pick.gi,
+        kind: 'social-short-clip',
+        // Short cuts stay in short-form destinations. TikTok receives the
+        // contextual >1-minute narrative variant below, suitable for Creator
+        // Rewards eligibility when the account itself qualifies.
+        platforms: ['shorts', 'kwai', 'x']
+      });
       console.log(`      corte vertical ${i + 1}/${picks.length} ok: "${pick.text.slice(0, 55)}…"`);
     } catch (error) {
       console.warn(`      corte vertical ${i + 1}/${picks.length} falhou: ${error.message.slice(0, 150)}`);
@@ -319,4 +343,223 @@ async function makeVerticalClips({ script, imagesDir, ttsDir, outDir, maxClips =
   return clips;
 }
 
-module.exports = { makeClips, makeVerticalClips, pickSentences, wrapLines };
+function quoteConcatPath(filePath) {
+  return `file '${path.resolve(filePath).replace(/'/g, "'\\''")}'`;
+}
+
+async function makeNarrativeSocialParts({
+  script,
+  images = {},
+  ttsDir,
+  outDir,
+  portraitVideoPath = null,
+  platforms = ['instagram', 'tiktok', 'shorts', 'kwai', 'x'],
+  maxDurationSeconds,
+  baseName = 'social',
+  visualMode = 'minimal',
+  rendererFactory = options => new HyperFramesVideoRenderer(options),
+  ffmpegRunner = runFFmpeg,
+  mediaDurationReader = getMediaDuration,
+  legacyInstagramLayout = false
+} = {}) {
+  const requestedPlatforms = [...new Set((platforms || []).map(value => String(value).toLowerCase()))];
+  const variants = new Map();
+  for (const platform of requestedPlatforms) {
+    const configuredMaximum = configuredNarrativePartDurationLimitSeconds(platform);
+    if (!Number.isFinite(configuredMaximum) || configuredMaximum <= 0) continue;
+    const effectiveMaximum = maxDurationSeconds == null
+      ? configuredMaximum
+      : Math.min(configuredMaximum, Number(maxDurationSeconds));
+    if (!Number.isFinite(effectiveMaximum) || effectiveMaximum <= 0) {
+      throw new TypeError('duração máxima inválida para partes narrativas');
+    }
+    try {
+      const minimumDuration = platform === 'tiktok' ? INSTAGRAM_MIN_NARRATIVE_SECONDS + 0.001 : INSTAGRAM_MIN_NARRATIVE_SECONDS;
+      const blocks = narrativeBlocksFromScript(script, effectiveMaximum);
+      if (!blocks.length) continue;
+      // A short, already narrated opening gives later parts their own subject.
+      // Reserve its real audio duration inside the cap; never speed up speech.
+      const contextBlock = blocks.find(block => block.kind === 'hook'
+        && block.originalIndex === 0 && block.durationSeconds <= 8) || null;
+      let parts;
+      try {
+        parts = splitNarrativeBlocks(blocks, effectiveMaximum, minimumDuration, { contextBlock });
+      } catch (error) {
+        if (!(error instanceof RangeError)) throw error;
+        const refinedBlocks = narrativeBlocksFromScript(script, effectiveMaximum, minimumDuration);
+        if (refinedBlocks.length <= blocks.length) throw error;
+        console.warn(`      ${platform}: refinando fronteiras de seção para frases temporizadas`);
+        parts = splitNarrativeBlocks(refinedBlocks, effectiveMaximum, minimumDuration, { contextBlock });
+      }
+      const target = { kind: 'social-narrative-part', platforms: [platform] };
+      if (!parts.every(part => !narrativePartDurationRejection(platform, target, part.durationSeconds, effectiveMaximum))) continue;
+      const signature = JSON.stringify(parts.map(part => part.blocks.map(block => [
+        block.originalIndex,
+        Number.isFinite(block.audioStartMs) ? block.audioStartMs : null,
+        Number.isFinite(block.audioEndMs) ? block.audioEndMs : null,
+        block.text
+      ])));
+      const variant = variants.get(signature) || { parts, platforms: [], maximumByPlatform: {} };
+      variant.platforms.push(platform);
+      variant.maximumByPlatform[platform] = effectiveMaximum;
+      variants.set(signature, variant);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      console.warn(`      narrativa ignorada em ${platform}: ${error.message.slice(0, 160)}`);
+    }
+  }
+  if (!variants.size) return [];
+  await fs.mkdir(outDir, { recursive: true });
+  const results = [];
+  const safeName = String(baseName).toLowerCase().replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').slice(0, 48) || 'social';
+
+  for (const variant of variants.values()) {
+    const platformsForVariant = [...variant.platforms].sort();
+    const variantDir = legacyInstagramLayout
+      ? outDir
+      : path.join(outDir, platformsForVariant.join('_'));
+    const invalidPlatforms = new Set();
+    const renderedParts = [];
+    const variantOutputPaths = [];
+    try {
+      for (const part of variant.parts) {
+      const partDir = path.join(variantDir, `${safeName}_part${part.index}`);
+      await fs.mkdir(partDir, { recursive: true });
+      const audioListPath = path.join(partDir, 'audio-concat.txt');
+      const audioPath = path.join(partDir, 'narration.mp3');
+      const outputPath = path.join(partDir, `${safeName}_parte${part.index}-de-${part.count}.mp4`);
+      variantOutputPaths.push(outputPath);
+      const slicedAudioFiles = [];
+      try {
+        if (portraitVideoPath) {
+          const timingByGroup = script.timings || [];
+          const ranges = part.blocks.map(block => {
+            const timing = timingByGroup[block.originalIndex];
+            const offset = Number(timing?.audioOffsetMs) || 0;
+            const start = offset + (Number.isFinite(Number(block.audioStartMs)) ? Number(block.audioStartMs) : 0);
+            const end = offset + (Number.isFinite(Number(block.audioEndMs)) ? Number(block.audioEndMs) : Number(timing?.durationMs));
+            return { start, end };
+          });
+          const render = buildPortraitPartRender({ portraitVideoPath, outputPath, ranges });
+          await ffmpegRunner(render.args);
+          const renderedDuration = await mediaDurationReader(outputPath);
+          if (!Number.isFinite(Number(renderedDuration)) || Math.abs(Number(renderedDuration) - render.durationMs / 1000) > 0.45) {
+            throw new RangeError(`duração derivada do master vertical divergiu na parte ${part.index}/${part.count}`);
+          }
+          const validPlatforms = platformsForVariant.filter(platform => !narrativePartDurationRejection(
+            platform,
+            { kind: 'social-narrative-part', platforms: [platform] },
+            Number(renderedDuration),
+            variant.maximumByPlatform[platform]
+          ));
+          for (const platform of platformsForVariant) if (!validPlatforms.includes(platform)) invalidPlatforms.add(platform);
+          if (!validPlatforms.length) {
+            await fs.unlink(outputPath).catch(() => {});
+            break;
+          }
+          renderedParts.push({ part, outputPath, durationSeconds: Number(renderedDuration) });
+          continue;
+        }
+        const audioFiles = [];
+        for (const block of part.blocks) {
+          const audioPathForGroup = path.join(ttsDir, `g${block.originalIndex}.mp3`);
+          await fs.access(audioPathForGroup);
+          if (Number.isFinite(block.audioStartMs) && Number.isFinite(block.audioEndMs)) {
+            const sliceDurationMs = block.audioEndMs - block.audioStartMs;
+            if (block.audioStartMs < 0 || sliceDurationMs <= 0) {
+              throw new RangeError('limites de áudio inválidos para fragmento narrativo');
+            }
+            const slicePath = path.join(partDir, `audio-group-${block.originalIndex}-slice-${audioFiles.length + 1}.mp3`);
+            await ffmpegRunner([
+              '-y', '-ss', (block.audioStartMs / 1000).toFixed(3),
+              '-t', (sliceDurationMs / 1000).toFixed(3), '-i', audioPathForGroup,
+              '-vn', '-c:a', 'libmp3lame', '-q:a', '2', slicePath
+            ]);
+            slicedAudioFiles.push(slicePath);
+            audioFiles.push(slicePath);
+          } else {
+            audioFiles.push(audioPathForGroup);
+          }
+        }
+        await fs.writeFile(audioListPath, audioFiles.map(quoteConcatPath).join('\n'), 'utf8');
+        await ffmpegRunner(['-y', '-f', 'concat', '-safe', '0', '-i', audioListPath, '-c', 'copy', audioPath]);
+
+        const partScript = createNarrativePartScript(script, part.blocks, part.index, part.count, { visualMode });
+        const partImages = {};
+        part.blocks.forEach((block, index) => {
+          const sources = images[block.originalIndex]?.sources || [];
+          if (sources.length) partImages[index] = { sources: [...new Set(sources.filter(Boolean))] };
+        });
+        const renderer = rendererFactory({ width: 1080, height: 1920, fps: 30 });
+        await renderer.render({ script: partScript, audioPath, outputPath, images: partImages });
+        const renderedDuration = await mediaDurationReader(outputPath);
+        if (!Number.isFinite(Number(renderedDuration)) || Number(renderedDuration) <= 0) {
+          throw new RangeError(`duração renderizada não verificada na parte ${part.index}/${part.count}`);
+        }
+        const validPlatforms = platformsForVariant.filter(platform => !narrativePartDurationRejection(
+          platform,
+          { kind: 'social-narrative-part', platforms: [platform] },
+          renderedDuration,
+          variant.maximumByPlatform[platform]
+        ));
+        for (const platform of platformsForVariant) {
+          if (!validPlatforms.includes(platform)) invalidPlatforms.add(platform);
+        }
+        if (!validPlatforms.length) {
+          await fs.unlink(outputPath).catch(() => {});
+          const maximum = Math.min(...platformsForVariant.map(platform => variant.maximumByPlatform[platform]));
+          const prefix = legacyInstagramLayout ? 'Instagram parte' : 'parte social';
+          if (legacyInstagramLayout) {
+            throw new RangeError(`${prefix} ${part.index}/${part.count} renderizada acima do limite de ${maximum}s (${Number(renderedDuration).toFixed(2)}s)`);
+          }
+          for (const platform of platformsForVariant) invalidPlatforms.add(platform);
+          break;
+        }
+        renderedParts.push({ part, outputPath, durationSeconds: Number(renderedDuration) });
+      } finally {
+        await Promise.all([
+          fs.unlink(audioListPath).catch(() => {}),
+          fs.unlink(audioPath).catch(() => {}),
+          ...slicedAudioFiles.map(filePath => fs.unlink(filePath).catch(() => {}))
+        ]);
+      }
+      }
+    } catch (error) {
+      await Promise.all(variantOutputPaths.map(filePath => fs.unlink(filePath).catch(() => {})));
+      if (legacyInstagramLayout) throw error;
+      console.warn(`      variante narrativa ${platformsForVariant.join('/')} ignorada: ${error.message.slice(0, 180)}`);
+      continue;
+    }
+
+    const targetPlatforms = platformsForVariant.filter(platform => !invalidPlatforms.has(platform));
+    if (!targetPlatforms.length) {
+      await Promise.all(variantOutputPaths.map(filePath => fs.unlink(filePath).catch(() => {})));
+      console.warn(`      variante narrativa ${platformsForVariant.join('/')} ignorada: duração final incompatível com todos os destinos`);
+      continue;
+    }
+    for (const { part, outputPath, durationSeconds } of renderedParts) {
+      results.push({
+        path: outputPath,
+        title: script.title || 'Pulso IA',
+        platforms: targetPlatforms,
+        ...(part.count > 1 ? { partIndex: part.index, partCount: part.count } : {}),
+        durationSeconds,
+        kind: legacyInstagramLayout
+          ? (part.count > 1 ? 'instagram-narrative-part' : 'instagram-narrative')
+          : (part.count > 1 ? 'social-narrative-part' : 'social-narrative')
+      });
+    }
+  }
+  return results;
+}
+
+async function makeInstagramParts(options = {}) {
+  return makeNarrativeSocialParts({
+    ...options,
+    platforms: ['instagram', 'tiktok'],
+    baseName: options.baseName || 'instagram',
+    legacyInstagramLayout: true
+  });
+}
+
+module.exports = { makeClips, makeInstagramParts, makeNarrativeSocialParts, makeVerticalClips, pickSentences, wrapLines };

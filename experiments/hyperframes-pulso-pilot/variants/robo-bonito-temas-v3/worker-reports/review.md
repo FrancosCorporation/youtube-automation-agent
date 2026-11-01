@@ -1,0 +1,1 @@
+NVIDIA Nemotron extraiu os dez nomes, cores distintas, contagem de variantes estáveis e menores distâncias/contraste. Todos os campos foram conferidos contra a configuração e palette-audit.json. primaries_stable_in_variants veio como contagem de temas (10), validada. Métrica OKLab não aprova estética nem daltonismo; revisão final em capturas reais. Execução pulso-fleet-trd3ryzl.

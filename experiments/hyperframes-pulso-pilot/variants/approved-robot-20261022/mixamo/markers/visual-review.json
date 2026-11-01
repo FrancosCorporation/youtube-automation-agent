@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "Codex approved_robot_3d visual inspection",
+  "reviewedAt": "2026-10-22T15:58:07.917943+00:00",
+  "placementTargets": {
+    "chin": [
+      575,
+      333
+    ],
+    "larm": [
+      688,
+      459
+    ],
+    "rarm": [
+      460,
+      459
+    ],
+    "lelbow": [
+      665,
+      410
+    ],
+    "relbow": [
+      484,
+      410
+    ],
+    "lknee": [
+      619,
+      535
+    ],
+    "rknee": [
+      530,
+      535
+    ],
+    "groin": [
+      575,
+      483
+    ]
+  },
+  "screenshot": {
+    "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/markers-review.png",
+    "sha256": "ea57b27eed6b8e11e1cfbedbf5f3ff308b93a3cb77743dab3b15998b9b530e5c"
+  },
+  "markers": {
+    "chin": {
+      "label": "queixo (ciano)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro ciano coincide com a borda inferior central da carcaça da cabeça, abaixo da boca, imediatamente acima do pescoço."
+    },
+    "larm": {
+      "label": "pulso anatômico esquerdo (verde)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro verde à direita da vista frontal está na faixa articulada entre antebraço e mão esquerda, sem cair nos dedos."
+    },
+    "rarm": {
+      "label": "pulso anatômico direito (verde)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro verde à esquerda da vista frontal coincide com a faixa articulada do punho direito, entre antebraço e mão."
+    },
+    "lelbow": {
+      "label": "cotovelo anatômico esquerdo (amarelo)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro amarelo à direita está no eixo da articulação mecânica visível do cotovelo esquerdo."
+    },
+    "relbow": {
+      "label": "cotovelo anatômico direito (amarelo)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro amarelo à esquerda coincide com a articulação circular do cotovelo direito, entre placas."
+    },
+    "lknee": {
+      "label": "centro do joelho anatômico esquerdo (laranja)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro laranja à direita coincide com o centro da placa/junta circular do joelho esquerdo."
+    },
+    "rknee": {
+      "label": "centro do joelho anatômico direito (laranja)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro laranja à esquerda coincide com o centro da junta circular do joelho direito."
+    },
+    "groin": {
+      "label": "junção central da virilha (rosa)",
+      "anatomicalLandmarkMatched": true,
+      "notes": "Centro rosa coincide com o fim inferior central da peça pélvica na junção interna das coxas, abaixo da cintura."
+    }
+  }
+}

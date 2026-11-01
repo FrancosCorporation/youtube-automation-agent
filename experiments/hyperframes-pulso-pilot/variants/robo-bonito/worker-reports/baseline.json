@@ -1,0 +1,17 @@
+{
+  "bytes": 49959816,
+  "triangles": 500000,
+  "vertices": 294213,
+  "skins": 0,
+  "animations": 0,
+  "comparison_checks": {
+    "silhueta_compacta": "pending",
+    "cabeca_grande": "pending",
+    "maos": "pending",
+    "pes": "pending",
+    "visor_olhos_em_arco": "pending",
+    "sorriso": "pending",
+    "quatro_vistas": "pending"
+  },
+  "limitations": "rig e controle facial para etapa posterior; candidatos anterior e novo ainda nao comparados visualmente"
+}

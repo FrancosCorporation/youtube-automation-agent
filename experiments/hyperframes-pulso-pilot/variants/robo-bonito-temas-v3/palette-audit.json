@@ -1,0 +1,519 @@
+{
+  "beforePairs": [
+    {
+      "a": "dinheiro",
+      "b": "saude",
+      "distance": 0.052139687447152624
+    },
+    {
+      "a": "ia",
+      "b": "saude",
+      "distance": 0.07078082290810006
+    },
+    {
+      "a": "dinheiro",
+      "b": "economize",
+      "distance": 0.07527770014154693
+    },
+    {
+      "a": "economize",
+      "b": "fitness",
+      "distance": 0.07981776560718098
+    },
+    {
+      "a": "ia",
+      "b": "dinheiro",
+      "distance": 0.09679333247096669
+    },
+    {
+      "a": "psicologia",
+      "b": "carreira",
+      "distance": 0.10199171778895273
+    },
+    {
+      "a": "dinheiro",
+      "b": "fitness",
+      "distance": 0.1112078425266217
+    },
+    {
+      "a": "psicologia",
+      "b": "misterios",
+      "distance": 0.11939713419689439
+    },
+    {
+      "a": "saude",
+      "b": "economize",
+      "distance": 0.12346791541010192
+    },
+    {
+      "a": "saude",
+      "b": "fitness",
+      "distance": 0.15988168592798088
+    },
+    {
+      "a": "curiosidades",
+      "b": "fitness",
+      "distance": 0.16492776522312186
+    },
+    {
+      "a": "ia",
+      "b": "economize",
+      "distance": 0.17033441511449288
+    },
+    {
+      "a": "misterios",
+      "b": "carreira",
+      "distance": 0.17539648026499458
+    },
+    {
+      "a": "saude",
+      "b": "carreira",
+      "distance": 0.17843137080619126
+    },
+    {
+      "a": "ia",
+      "b": "fitness",
+      "distance": 0.1795336289155492
+    },
+    {
+      "a": "psicologia",
+      "b": "relacionamentos",
+      "distance": 0.21106525723187386
+    },
+    {
+      "a": "curiosidades",
+      "b": "dinheiro",
+      "distance": 0.2118263643280317
+    },
+    {
+      "a": "ia",
+      "b": "carreira",
+      "distance": 0.21440174063373915
+    },
+    {
+      "a": "ia",
+      "b": "curiosidades",
+      "distance": 0.21854174246103078
+    },
+    {
+      "a": "dinheiro",
+      "b": "carreira",
+      "distance": 0.22067745665347324
+    },
+    {
+      "a": "curiosidades",
+      "b": "economize",
+      "distance": 0.22447672786588074
+    },
+    {
+      "a": "curiosidades",
+      "b": "relacionamentos",
+      "distance": 0.22659711101736052
+    },
+    {
+      "a": "curiosidades",
+      "b": "saude",
+      "distance": 0.23024715513748725
+    },
+    {
+      "a": "saude",
+      "b": "psicologia",
+      "distance": 0.2532922488517535
+    },
+    {
+      "a": "economize",
+      "b": "carreira",
+      "distance": 0.26795152894237073
+    },
+    {
+      "a": "relacionamentos",
+      "b": "carreira",
+      "distance": 0.26924115758176714
+    },
+    {
+      "a": "relacionamentos",
+      "b": "misterios",
+      "distance": 0.27826490036852386
+    },
+    {
+      "a": "ia",
+      "b": "psicologia",
+      "distance": 0.27836473490471725
+    },
+    {
+      "a": "dinheiro",
+      "b": "psicologia",
+      "distance": 0.2908636139667294
+    },
+    {
+      "a": "saude",
+      "b": "relacionamentos",
+      "distance": 0.3070446208520187
+    },
+    {
+      "a": "fitness",
+      "b": "carreira",
+      "distance": 0.31286070887978296
+    },
+    {
+      "a": "dinheiro",
+      "b": "relacionamentos",
+      "distance": 0.3159691234296288
+    },
+    {
+      "a": "ia",
+      "b": "relacionamentos",
+      "distance": 0.3223425043177683
+    },
+    {
+      "a": "relacionamentos",
+      "b": "fitness",
+      "distance": 0.3233355428432808
+    },
+    {
+      "a": "curiosidades",
+      "b": "carreira",
+      "distance": 0.3304726007415989
+    },
+    {
+      "a": "economize",
+      "b": "psicologia",
+      "distance": 0.3343900856193681
+    },
+    {
+      "a": "economize",
+      "b": "relacionamentos",
+      "distance": 0.33501252529400466
+    },
+    {
+      "a": "curiosidades",
+      "b": "psicologia",
+      "distance": 0.33831066391008774
+    },
+    {
+      "a": "saude",
+      "b": "misterios",
+      "distance": 0.3436553137431389
+    },
+    {
+      "a": "psicologia",
+      "b": "fitness",
+      "distance": 0.3643308879297929
+    },
+    {
+      "a": "dinheiro",
+      "b": "misterios",
+      "distance": 0.3771178234366826
+    },
+    {
+      "a": "ia",
+      "b": "misterios",
+      "distance": 0.38196101293080903
+    },
+    {
+      "a": "economize",
+      "b": "misterios",
+      "distance": 0.40714461868004154
+    },
+    {
+      "a": "curiosidades",
+      "b": "misterios",
+      "distance": 0.4379688643712747
+    },
+    {
+      "a": "fitness",
+      "b": "misterios",
+      "distance": 0.4485100959415994
+    }
+  ],
+  "afterPairs": [
+    {
+      "a": "relacionamentos",
+      "b": "fitness",
+      "distance": 0.09690890764637611
+    },
+    {
+      "a": "economize",
+      "b": "carreira",
+      "distance": 0.10521847690462317
+    },
+    {
+      "a": "economize",
+      "b": "fitness",
+      "distance": 0.10559755295382144
+    },
+    {
+      "a": "ia",
+      "b": "misterios",
+      "distance": 0.13190484605775163
+    },
+    {
+      "a": "psicologia",
+      "b": "relacionamentos",
+      "distance": 0.13261664435660647
+    },
+    {
+      "a": "fitness",
+      "b": "carreira",
+      "distance": 0.1351625940450989
+    },
+    {
+      "a": "psicologia",
+      "b": "misterios",
+      "distance": 0.1409656583032153
+    },
+    {
+      "a": "relacionamentos",
+      "b": "carreira",
+      "distance": 0.17837323200101013
+    },
+    {
+      "a": "curiosidades",
+      "b": "saude",
+      "distance": 0.18284282693293608
+    },
+    {
+      "a": "economize",
+      "b": "relacionamentos",
+      "distance": 0.18582348407550991
+    },
+    {
+      "a": "curiosidades",
+      "b": "economize",
+      "distance": 0.18835000145074615
+    },
+    {
+      "a": "dinheiro",
+      "b": "carreira",
+      "distance": 0.1885636668678904
+    },
+    {
+      "a": "ia",
+      "b": "dinheiro",
+      "distance": 0.1901233253666317
+    },
+    {
+      "a": "ia",
+      "b": "carreira",
+      "distance": 0.20035897093661617
+    },
+    {
+      "a": "misterios",
+      "b": "carreira",
+      "distance": 0.20703478889308438
+    },
+    {
+      "a": "curiosidades",
+      "b": "carreira",
+      "distance": 0.21294260741809126
+    },
+    {
+      "a": "psicologia",
+      "b": "fitness",
+      "distance": 0.21319419320967545
+    },
+    {
+      "a": "ia",
+      "b": "saude",
+      "distance": 0.21397541186044478
+    },
+    {
+      "a": "psicologia",
+      "b": "carreira",
+      "distance": 0.22057397904993847
+    },
+    {
+      "a": "relacionamentos",
+      "b": "misterios",
+      "distance": 0.23641979403458674
+    },
+    {
+      "a": "curiosidades",
+      "b": "dinheiro",
+      "distance": 0.24080718005684362
+    },
+    {
+      "a": "ia",
+      "b": "psicologia",
+      "distance": 0.24106640405332866
+    },
+    {
+      "a": "saude",
+      "b": "carreira",
+      "distance": 0.2539859697336379
+    },
+    {
+      "a": "dinheiro",
+      "b": "economize",
+      "distance": 0.2593451295182172
+    },
+    {
+      "a": "dinheiro",
+      "b": "misterios",
+      "distance": 0.26795152894237073
+    },
+    {
+      "a": "saude",
+      "b": "economize",
+      "distance": 0.26801776970405583
+    },
+    {
+      "a": "ia",
+      "b": "curiosidades",
+      "distance": 0.27331601412577833
+    },
+    {
+      "a": "fitness",
+      "b": "misterios",
+      "distance": 0.27791700884993487
+    },
+    {
+      "a": "economize",
+      "b": "psicologia",
+      "distance": 0.2782488245177045
+    },
+    {
+      "a": "curiosidades",
+      "b": "fitness",
+      "distance": 0.28198171555141915
+    },
+    {
+      "a": "saude",
+      "b": "misterios",
+      "distance": 0.28884895812517863
+    },
+    {
+      "a": "ia",
+      "b": "economize",
+      "distance": 0.28906480905217985
+    },
+    {
+      "a": "ia",
+      "b": "relacionamentos",
+      "distance": 0.29797376182976065
+    },
+    {
+      "a": "saude",
+      "b": "relacionamentos",
+      "distance": 0.3004854244784302
+    },
+    {
+      "a": "saude",
+      "b": "psicologia",
+      "distance": 0.30127653162552337
+    },
+    {
+      "a": "economize",
+      "b": "misterios",
+      "distance": 0.3016271807908451
+    },
+    {
+      "a": "saude",
+      "b": "fitness",
+      "distance": 0.3092216597700924
+    },
+    {
+      "a": "ia",
+      "b": "fitness",
+      "distance": 0.311311711696002
+    },
+    {
+      "a": "dinheiro",
+      "b": "saude",
+      "distance": 0.3123648570272806
+    },
+    {
+      "a": "dinheiro",
+      "b": "fitness",
+      "distance": 0.32146341224660663
+    },
+    {
+      "a": "curiosidades",
+      "b": "relacionamentos",
+      "distance": 0.3298891857568091
+    },
+    {
+      "a": "curiosidades",
+      "b": "misterios",
+      "distance": 0.35813020592335915
+    },
+    {
+      "a": "dinheiro",
+      "b": "psicologia",
+      "distance": 0.36060396267567035
+    },
+    {
+      "a": "dinheiro",
+      "b": "relacionamentos",
+      "distance": 0.36157490658519803
+    },
+    {
+      "a": "curiosidades",
+      "b": "psicologia",
+      "distance": 0.3799295937055584
+    }
+  ],
+  "method": "Euclidean OKLab in normalized units; numeric guide, not a guarantee of perceptual or color-vision separation.",
+  "themes": [
+    {
+      "id": "ia",
+      "name": "Ciano",
+      "color": "#22D3EE",
+      "contrastOnStage": 10.22419932336342
+    },
+    {
+      "id": "curiosidades",
+      "name": "Amarelo",
+      "color": "#FDE047",
+      "contrastOnStage": 14.015883910190528
+    },
+    {
+      "id": "dinheiro",
+      "name": "Verde-esmeralda",
+      "color": "#22C55E",
+      "contrastOnStage": 8.108867426230749
+    },
+    {
+      "id": "saude",
+      "name": "Branco-gelo",
+      "color": "#F1F5F9",
+      "contrastOnStage": 16.86595256719684
+    },
+    {
+      "id": "economize",
+      "name": "Laranja",
+      "color": "#FB923C",
+      "contrastOnStage": 8.163859157665073
+    },
+    {
+      "id": "psicologia",
+      "name": "Violeta",
+      "color": "#C084FC",
+      "contrastOnStage": 6.992602010211026
+    },
+    {
+      "id": "relacionamentos",
+      "name": "Rosa",
+      "color": "#F472B6",
+      "contrastOnStage": 6.976386688516379
+    },
+    {
+      "id": "fitness",
+      "name": "Vermelho",
+      "color": "#F87171",
+      "contrastOnStage": 6.6796724438144786
+    },
+    {
+      "id": "misterios",
+      "name": "Azul-royal",
+      "color": "#60A5FA",
+      "contrastOnStage": 7.267454462963992
+    },
+    {
+      "id": "carreira",
+      "name": "Cobre",
+      "color": "#BFA07A",
+      "contrastOnStage": 7.500427062006067
+    }
+  ]
+}

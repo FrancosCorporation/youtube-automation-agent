@@ -1,5 +1,5 @@
 #!/bin/bash
-# Prepara o host para o redroid (Android em Docker, emulador on-demand do Kwai).
+# Prepara o host para o redroid (Android em Docker, usado no upload do Kwai e recuperado no boot).
 # Rodar UMA vez com sudo:
 #   sudo bash scripts/redroid-host-setup.sh
 set -e

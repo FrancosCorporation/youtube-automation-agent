@@ -1,0 +1,20 @@
+{
+  "name": "pulso-floating-3d-assistant-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Copyable, model-agnostic floating 3D assistant for React websites",
+  "exports": {
+    ".": "./src/Floating3DAssistant.tsx"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@react-three/drei": ">=10",
+    "@react-three/fiber": ">=9",
+    "react": ">=19",
+    "react-dom": ">=19",
+    "three": ">=0.185"
+  }
+}

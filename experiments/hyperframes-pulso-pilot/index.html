@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pt-BR" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+      <meta name="viewport" content="width=1920, height=1080, initial-scale=1" />
+    <title>Pulso IA — piloto HyperFrames</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #102729;
+        --deep: #091b1e;
+        --paper: #f1eee4;
+        --muted: #b2c2ba;
+        --theme-primary: #85c9b7;
+        --theme-secondary: #e4a66c;
+        --theme-cool: #60a5fa;
+        --hairline: rgba(239, 241, 228, .2);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; overflow: hidden; background: var(--deep); }
+      html[data-resolution="landscape"] { width: 1920px; height: 1080px; }
+      html[data-resolution="landscape"] body { width: 1920px; height: 1080px; }
+      body { color: var(--paper); font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; isolation: isolate; background: linear-gradient(180deg, #102729 0%, #102729 48%, #0b2022 70%, #071719 100%); }
+      #root::before { content: ""; position: absolute; z-index: 0; width: 900px; height: 820px; left: 960px; top: 205px; border-radius: 50%; background: radial-gradient(circle, rgba(126, 182, 160, .22) 0%, rgba(126, 182, 160, .08) 39%, transparent 70%); }
+      #root::after { content: ""; position: absolute; z-index: 0; left: 0; right: 0; top: 0; height: 500px; background: linear-gradient(180deg, rgba(8, 26, 29, .28), transparent); }
+      .grain { position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: .08; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.26'/%3E%3C/svg%3E"); mix-blend-mode: soft-light; }
+      .robot-reference-frame { position: absolute; z-index: 5; left: 1290px; top: 220px; display: grid; place-items: center; width: 590px; height: 780px; overflow: hidden; border: 1px solid rgba(255,255,255,.72); border-radius: 42px; background: #fff; box-shadow: 0 26px 64px rgba(0,0,0,.28), 0 0 48px rgba(94,234,212,.12); pointer-events: none; }
+      .robot-reference-image { display: block; width: 518px; height: 776px; object-fit: contain; object-position: center; }
+      .floor-shadow { position: absolute; z-index: 1; left: 1325px; top: 982px; width: 430px; height: 68px; border-radius: 50%; background: rgba(0, 0, 0, .52); filter: blur(30px); transform: scaleY(.46); }
+      .brand { position: absolute; z-index: 6; top: 42px; left: 78px; display: flex; align-items: center; gap: 16px; }
+      .brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(133, 201, 183, .65); border-radius: 15px; transform: rotate(-8deg); }
+      .brand-mark svg { width: 24px; height: 24px; transform: rotate(8deg); }
+      .brand-name { color: #f1eee4; font-size: 25px; font-weight: 770; letter-spacing: .09em; }
+      .brand-name span { color: var(--theme-primary); }
+      .edition { position: absolute; z-index: 6; top: 48px; right: 78px; color: #a9bbb3; font-size: 15px; font-weight: 720; letter-spacing: .15em; text-transform: uppercase; }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; opacity: 0; }
+      #scene-hook { opacity: 1; }
+      .hero-copy { position: absolute; z-index: 4; top: 154px; left: 78px; width: 1120px; }
+      .eyebrow { display: flex; align-items: center; gap: 12px; color: var(--theme-primary); font-size: 17px; font-weight: 760; letter-spacing: .18em; text-transform: uppercase; }
+      .eyebrow::before { content: ""; width: 30px; height: 2px; background: var(--theme-secondary); }
+      .headline { margin: 24px 0 0; max-width: 1080px; color: var(--paper); font-size: 88px; font-weight: 790; line-height: .98; letter-spacing: -.065em; text-wrap: balance; text-shadow: 0 8px 34px rgba(0,0,0,.17); }
+      .headline .accent { color: var(--theme-secondary); }
+      .subline { margin: 22px 0 0; max-width: 900px; color: #c0ccc4; font-size: 25px; font-weight: 450; line-height: 1.35; letter-spacing: -.016em; }
+      .hf-transition-tilt-card {
+        position: absolute;
+        z-index: 4;
+        left: 78px;
+        top: 575px;
+        width: 1120px;
+        height: 260px;
+        overflow: hidden;
+        border: 1px solid rgba(246, 241, 223, .62);
+        border-radius: 34px;
+        color: var(--ink);
+        background: linear-gradient(143deg, rgba(248, 246, 234, .98), rgba(225, 231, 216, .94));
+        box-shadow: 0 34px 90px rgba(0, 0, 0, .3), 0 2px 0 rgba(255,255,255,.6) inset;
+        transform-style: preserve-3d;
+      }
+      #delay-card { opacity: 0; }
+      .tilt-glow { position: absolute; inset: 0; background: radial-gradient(circle at 22% 10%, rgba(255, 255, 255, .88), transparent 40%); pointer-events: none; }
+      .delay-copy { position: relative; z-index: 1; display: flex; align-items: center; gap: 38px; height: 100%; padding: 28px 36px; transform: translateZ(34px); }
+      .delay-stat { display: grid; grid-template-columns: auto auto; align-items: end; gap: 0 10px; color: #193c39; }
+      .delay-number { grid-row: span 2; font-size: 122px; font-weight: 760; line-height: .78; letter-spacing: -.09em; }
+      .delay-unit { padding-bottom: 7px; color: #416459; font-size: 18px; font-weight: 820; letter-spacing: .14em; }
+      .delay-stat small { color: #637266; font-size: 13px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+      .delay-timeline { flex: 1; min-width: 0; display: grid; gap: 14px; }
+      .delay-caption { display: grid; gap: 6px; }
+      .delay-caption span, .card-kicker { color: #52665a; font-size: 13px; font-weight: 790; letter-spacing: .16em; text-transform: uppercase; }
+      .delay-caption strong { color: var(--ink); font-size: 31px; font-weight: 740; line-height: 1; letter-spacing: -.045em; }
+      .delay-track { position: relative; height: 9px; margin: 1px 8px 0; border-radius: 999px; background: rgba(27, 76, 64, .17); }
+      #delay-progress { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, #5eaa94, #157a75); transform: scaleX(0); transform-origin: left center; }
+      #delay-marker { position: absolute; z-index: 1; top: 50%; left: 0; width: 21px; height: 21px; border: 4px solid #fffdf2; border-radius: 50%; background: #16827c; box-shadow: 0 2px 9px rgba(11, 54, 47, .38); transform: translate(-50%, -50%); }
+      .delay-labels { display: flex; justify-content: space-between; gap: 16px; color: #52665a; font-size: 14px; font-weight: 760; }
+      .visual-card {
+        position: absolute;
+        z-index: 4;
+        left: 78px;
+        top: 535px;
+        width: 1200px;
+        height: 354px;
+        overflow: hidden;
+        border: 1px solid rgba(246, 241, 223, .66);
+        border-radius: 34px;
+        color: #eff1e8;
+        background: #122729;
+        box-shadow: 0 30px 74px rgba(0, 0, 0, .42), 0 1px 0 rgba(255,255,255,.22) inset, 0 0 42px rgba(117, 224, 191, .08);
+        transform-style: preserve-3d;
+        opacity: 0;
+      }
+      .visual-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; opacity: 1; }
+      .recreation-tag { position: absolute; z-index: 1; top: 18px; right: 22px; padding: 9px 13px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; color: #f3eee1; background: rgba(8, 25, 26, .72); box-shadow: 0 8px 22px rgba(0,0,0,.22), 0 1px 0 rgba(255,255,255,.14) inset; backdrop-filter: blur(14px); font-size: 12px; font-weight: 760; letter-spacing: .13em; text-transform: uppercase; }
+      .portal-packet { position: absolute; z-index: 2; left: 651px; top: 172px; width: 9px; height: 9px; border: 1px solid rgba(220,255,241,.85); border-radius: 50%; background: #8eeed0; box-shadow: 0 0 0 5px rgba(103,231,194,.12), 0 0 20px rgba(103,231,194,.84); opacity: 0; pointer-events: none; }
+      .portal-focus { position: absolute; z-index: 2; top: 76px; right: 36px; width: 390px; min-height: 176px; padding: 26px 28px 24px; overflow: hidden; border: 1px solid rgba(141, 231, 214, .68); border-radius: 24px; color: #eff8ee; background: radial-gradient(ellipse at 100% 0%, rgba(111, 229, 202, .2), transparent 58%), linear-gradient(145deg, rgba(15, 47, 48, .98), rgba(5, 24, 27, .96)); box-shadow: 0 24px 48px rgba(0,0,0,.37), 0 1px 0 rgba(255,255,255,.2) inset, 0 0 32px rgba(81, 213, 185, .1); opacity: 0; transform-origin: center; }
+      .portal-focus::before { content: ""; position: absolute; width: 148px; height: 148px; right: -58px; bottom: -78px; border: 1px solid rgba(141,231,214,.3); border-radius: 50%; box-shadow: 0 0 0 16px rgba(141,231,214,.035), 0 0 0 34px rgba(141,231,214,.025); pointer-events: none; }
+      .portal-focus span { position: relative; display: block; color: #8de7d6; font-size: 12px; font-weight: 780; letter-spacing: .15em; text-transform: uppercase; }
+      .portal-focus strong { position: relative; display: block; margin-top: 13px; font-size: 58px; font-weight: 760; line-height: .96; letter-spacing: -.065em; font-variant-numeric: tabular-nums; text-shadow: 0 8px 26px rgba(102,238,205,.15); }
+      .portal-focus small { position: relative; display: block; margin-top: 11px; color: #c2d6ca; font-size: 14px; font-weight: 620; letter-spacing: .035em; }
+      .portal-focus::after { content: ""; position: absolute; top: 26px; right: 27px; width: 10px; height: 10px; border-radius: 50%; background: #70e5ca; box-shadow: 0 0 0 5px rgba(112,229,202,.13), 0 0 18px rgba(112,229,202,.7); }
+      .record-card {
+        position: absolute;
+        z-index: 4;
+        top: 535px;
+        left: 78px;
+        width: 1320px;
+        min-height: 350px;
+        padding: 37px 40px 35px;
+        overflow: hidden;
+        border: 1px solid rgba(247, 241, 222, .76);
+        border-radius: 35px;
+        color: var(--ink);
+        background: linear-gradient(145deg, rgba(248, 246, 235, .985), rgba(226, 232, 217, .97));
+        box-shadow: 0 34px 90px rgba(0, 0, 0, .34), 0 2px 0 rgba(255,255,255,.75) inset;
+        transform-style: preserve-3d;
+        opacity: 0;
+      }
+      .record-top { display: flex; align-items: center; justify-content: flex-start; gap: 28px; }
+      .record-status { display: flex; align-items: center; gap: 10px; color: #744923; font-size: 15px; font-weight: 820; letter-spacing: .13em; text-transform: uppercase; }
+      .record-status::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--theme-secondary); box-shadow: 0 0 0 5px color-mix(in srgb, var(--theme-secondary) 15%, transparent); }
+      .record-code { color: #28527a; font-size: 15px; font-weight: 720; letter-spacing: .11em; }
+      .record-card h2 { max-width: 1000px; margin: 31px 0 0; color: #122e30; font-size: 52px; font-weight: 740; line-height: .99; letter-spacing: -.065em; }
+      .record-card p { margin: 18px 0 0; color: #526b60; font-size: 23px; line-height: 1.27; }
+      .record-source { display: flex; align-items: center; gap: 11px; margin-top: 25px; padding-top: 17px; border-top: 1px solid rgba(30, 70, 62, .19); color: #445e53; font-size: 15px; font-weight: 730; letter-spacing: .055em; text-transform: uppercase; }
+      .record-source b { color: #153936; }
+      .captions { position: absolute; z-index: 6; inset: 0; pointer-events: none; }
+      #karaoke-caption { position: absolute; left: 78px; bottom: 46px; width: 1120px; min-height: 86px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 0 .28em; padding: 18px 26px; border: 1px solid rgba(234, 239, 222, .2); border-radius: 22px; color: #fffdf2; background: rgba(5, 19, 20, .88); box-shadow: 0 16px 42px rgba(0,0,0,.3); backdrop-filter: blur(18px); text-align: center; font-size: 28px; font-weight: 620; line-height: 1.25; letter-spacing: -.025em; opacity: 0; }
+      .karaoke-word { white-space: pre; }
+      .karaoke-word.is-active { color: #87f0da; text-decoration: underline; text-decoration-color: rgba(135,240,218,.74); text-decoration-thickness: 2px; text-underline-offset: .16em; }
+      .source-line { position: absolute; z-index: 6; left: 80px; bottom: 17px; color: rgba(212, 223, 208, .62); font-size: 12px; font-weight: 680; letter-spacing: .12em; text-transform: uppercase; }
+      .progress-track { position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(232, 240, 224, .12); }
+      .progress-fill { width: 100%; height: 100%; transform-origin: left center; background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary)); transform: scaleX(0); }
+      .clip { position: absolute; }
+      html[data-resolution="portrait"] { width: 1080px; height: 1920px; }
+      html[data-resolution="portrait"] body { width: 1080px; height: 1920px; }
+      html[data-resolution="portrait"] #root { width: 1080px; height: 1920px; }
+      html[data-resolution="portrait"] #root::before { width: 720px; height: 820px; left: 250px; top: 920px; }
+      html[data-resolution="portrait"] .robot-reference-frame { z-index: 3; left: 408px; top: 890px; width: 560px; height: 740px; border-radius: 38px; }
+      html[data-resolution="portrait"] .robot-reference-image { width: 492px; height: 738px; }
+      html[data-resolution="portrait"] .floor-shadow { left: 420px; top: 1430px; width: 410px; height: 65px; }
+      html[data-resolution="portrait"] .brand { top: 40px; left: 64px; }
+      html[data-resolution="portrait"] .brand-mark { width: 40px; height: 40px; }
+      html[data-resolution="portrait"] .brand-name { font-size: 21px; }
+      html[data-resolution="portrait"] .edition { top: 46px; right: 64px; font-size: 12px; }
+      html[data-resolution="portrait"] .scene { z-index: 4; width: 1080px; height: 1920px; }
+      html[data-resolution="portrait"] .hero-copy { top: 150px; left: 64px; width: 952px; }
+      html[data-resolution="portrait"] .eyebrow { font-size: 14px; }
+      html[data-resolution="portrait"] .headline { max-width: 950px; font-size: 73px; }
+      html[data-resolution="portrait"] .subline { max-width: 880px; font-size: 24px; }
+      html[data-resolution="portrait"] .hf-transition-tilt-card { left: 64px; top: 520px; width: 952px; height: 270px; }
+      html[data-resolution="portrait"] .delay-copy { gap: 23px; padding: 25px 26px; }
+      html[data-resolution="portrait"] .delay-number { font-size: 104px; }
+      html[data-resolution="portrait"] .delay-unit { font-size: 16px; }
+      html[data-resolution="portrait"] .delay-caption strong { font-size: 27px; }
+      html[data-resolution="portrait"] .delay-labels { font-size: 12px; }
+      html[data-resolution="portrait"] .visual-card { left: 64px; top: 515px; width: 952px; height: 390px; }
+      html[data-resolution="portrait"] .portal-focus { top: 88px; right: 22px; width: 340px; min-height: 182px; padding: 23px 22px; }
+      html[data-resolution="portrait"] .portal-focus strong { font-size: 52px; }
+      html[data-resolution="portrait"] .recreation-tag { top: 18px; right: 18px; padding: 8px 10px; font-size: 10px; }
+      html[data-resolution="portrait"] .portal-packet { left: 538px; top: 190px; }
+      html[data-resolution="portrait"] .record-card { left: 64px; top: 520px; width: 952px; padding: 32px; }
+      html[data-resolution="portrait"] .record-card h2 { font-size: 45px; }
+      html[data-resolution="portrait"] .record-card p { font-size: 21px; }
+      html[data-resolution="portrait"] .source-line { left: 64px; bottom: 49px; max-width: 700px; font-size: 10px; }
+      html[data-resolution="portrait"] #karaoke-caption { left: 64px; bottom: 100px; width: 952px; min-height: 102px; padding: 19px 23px; font-size: 30px; }
+      html[data-resolution="portrait"] .progress-track { height: 8px; }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+    </style>
+  </head>
+  <body>
+    <main data-hf-id="hf-s67l" id="root" data-composition-id="main" data-start="0" data-duration="31.554" data-width="1920" data-height="1080" data-fps="24">
+      <div data-hf-id="hf-yqpu" class="floor-shadow" aria-hidden="true"></div>
+      <figure data-hf-id="hf-gtfb" id="robot-reference-frame" class="robot-reference-frame" aria-label="Nova referência visual aprovada do mascote Pulso">
+        <img data-hf-id="hf-robot-reference-image" id="robot-reference-image" class="robot-reference-image" src="assets/pulso-robot-approved-reference.png" alt="Robô humanoide branco com visor preto, olhos ciano, detalhes verde-petróleo e antena rosa." />
+      </figure>
+      <header data-hf-id="hf-in8v" class="brand">
+        <div data-hf-id="hf-lcei" class="brand-mark" aria-hidden="true"><svg data-hf-id="hf-tp8z" viewBox="0 0 32 32" fill="none"><path data-hf-id="hf-sb7x" d="M6 21.5 12.1 8l4.2 9.4 3-6.4L26 25" stroke="#9ed7c3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle data-hf-id="hf-ik7e" cx="24.8" cy="8.5" r="2.1" fill="#e7ad73"/></svg></div>
+        <div data-hf-id="hf-bilg" class="brand-name">PULSO <span data-hf-id="hf-5ukb">IA</span></div>
+      </header>
+      <div data-hf-id="hf-zzgl" class="edition">IA &amp; mundo real</div>
+
+      <section data-hf-id="hf-mvd5" id="scene-hook" class="scene" aria-label="Abertura">
+        <div data-hf-id="hf-jloi" class="hero-copy">
+          <div data-hf-id="hf-i4pl" id="hook-eyebrow" class="eyebrow">Um agente saiu da tela</div>
+          <h1 data-hf-id="hf-bi6d" id="hook-title" class="headline">Uma IA enviou uma <span data-hf-id="hf-wqtx" class="accent">pista falsa</span> à polícia.</h1>
+          <p data-hf-id="hf-1fm5" id="hook-subline" class="subline">E levou quase três meses para o caso ser descoberto.</p>
+        </div>
+        <!-- Adaptation of HyperFrames' tilt-card primitive: dimensional surface, corner glow and seekable tilt. -->
+        <div data-hf-id="hf-vpxz" id="delay-card" class="hf-transition-tilt-card">
+          <div data-hf-id="hf-a8m1" class="tilt-glow"></div>
+          <div data-hf-id="hf-h8bd" class="delay-copy">
+          <div data-hf-id="hf-0foc" class="delay-stat"><strong data-hf-id="hf-8goq" class="delay-number">72</strong><span data-hf-id="hf-hwny" class="delay-unit">DIAS</span><small data-hf-id="hf-1z2f">entre envio e identificação</small></div>
+          <div data-hf-id="hf-6pmn" class="delay-timeline">
+            <div data-hf-id="hf-shwg" class="delay-caption"><span data-hf-id="hf-lfd3">LINHA DO TEMPO · FILADÉLFIA</span><strong data-hf-id="hf-06mh">Quase três meses para identificar</strong></div>
+            <div data-hf-id="hf-eq0s" class="delay-track" aria-hidden="true"><div data-hf-id="hf-rtt2" id="delay-progress"></div><span data-hf-id="hf-hufa" id="delay-marker"></span></div>
+            <div data-hf-id="hf-8r47" class="delay-labels"><span data-hf-id="hf-98ux">18 JUL · envio</span><span data-hf-id="hf-pvj5">28 SET · identificação</span></div>
+          </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-hf-id="hf-96ep" id="scene-event" class="scene" aria-label="A pista recebida">
+        <div data-hf-id="hf-kaay" id="event-copy" class="hero-copy">
+          <div data-hf-id="hf-tge4" class="eyebrow">Filadélfia · 18 de julho de 2026</div>
+        <h2 data-hf-id="hf-gdx5" class="headline">Uma pista chega ao <span data-hf-id="hf-8gzi" class="accent">portal</span>.</h2>
+        <p data-hf-id="hf-d5zl" class="subline">O sistema registra a denúncia anônima recebida.</p>
+        </div>
+        <!-- Image supplied by the project, explicitly disclosed as an illustrative reconstruction. -->
+        <!-- Adaptation of HyperFrames' card-resize primitive: compact preview expands into an editorial evidence card. -->
+        <div data-hf-id="hf-ahxi" id="portal-card" class="visual-card">
+          <img data-hf-id="hf-4euw" src="assets/tip-portal-reconstruction.svg" alt="" />
+          <span data-hf-id="hf-dyai" class="recreation-tag">Reconstrução visual</span>
+          <span data-hf-id="hf-rp12" id="portal-packet" class="portal-packet" aria-hidden="true"></span>
+          <div data-hf-id="hf-7ixu" id="portal-focus" class="portal-focus"><span data-hf-id="hf-ahez">Horário registrado</span><strong data-hf-id="hf-1ble">23:27</strong><small data-hf-id="hf-2bet">18 de julho de 2026 · Filadélfia</small></div>
+        </div>
+      </section>
+
+      <section data-hf-id="hf-o2g4" id="scene-attribution" class="scene" aria-label="Origem da mensagem">
+        <div data-hf-id="hf-d8gf" id="attribution-copy" class="hero-copy">
+          <div data-hf-id="hf-s39l" class="eyebrow">O detalhe que muda tudo</div>
+          <h2 data-hf-id="hf-26an" class="headline">A pista veio de um <span data-hf-id="hf-s6um" class="accent">modelo de IA</span>.</h2>
+          <p data-hf-id="hf-cnam" class="subline">A mensagem alegava ter informações relevantes sobre o caso.</p>
+        </div>
+        <div data-hf-id="hf-gdwy" id="record-card" class="record-card">
+          <div data-hf-id="hf-ikrt" class="record-top"><span data-hf-id="hf-95qg" class="record-status">Denúncia falsa</span><span data-hf-id="hf-cbla" class="record-code">RETIDA COMO SPAM</span></div>
+          <h2 data-hf-id="hf-l7g2">O envio veio de um modelo de IA.</h2>
+          <p data-hf-id="hf-33fz">A mensagem alegava trazer informações sobre um caso de homicídio ainda sem solução.</p>
+          <div data-hf-id="hf-ux8f" class="record-source"><span data-hf-id="hf-ubll">Modelo citado no relato</span><b data-hf-id="hf-b5yl">Claude Haiku 4.5 · Anthropic</b></div>
+        </div>
+      </section>
+
+      <div data-hf-id="hf-cube" class="captions" aria-label="Legendas em português"><div data-hf-id="hf-z4i1" id="karaoke-caption" class="caption" role="text" aria-label="Narração"></div></div>
+      <div data-hf-id="hf-z4xh" class="source-line">Fonte: NBC10 Philadelphia · AP · cena do portal reconstruída</div>
+      <div data-hf-id="hf-lxwj" class="progress-track"><div data-hf-id="hf-cq24" id="progress-fill" class="progress-fill"></div></div>
+      <div data-hf-id="hf-ub7q" class="grain" aria-hidden="true"></div>
+      <audio data-hf-id="hf-ra9l" id="narration" src="assets/narration.m4a" data-start="0" data-duration="31.204"></audio>
+    </main>
+    <script src="assets/presenter-config.js"></script>
+    <script type="module">
+      import { timeline } from "./assets/pilot.bundle.js";
+      window.__timelines["main"] = timeline;
+    </script>
+  </body>
+</html>

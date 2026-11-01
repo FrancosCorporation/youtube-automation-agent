@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "alignment": "local-whisper-word-timestamps",
+  "alignmentModel": "faster-whisper tiny / CPU int8",
+  "sourceAudio": "narration.m4a",
+  "sourceAudioSha256": "45555713249c47b9ee32a32e8be20c82ff1f5854145f5c7a6eda75c4fd895269",
+  "voice": "approved reused pilot audio; voice identity is not embedded in the file",
+  "intendedVoice": "pt-BR-FranciscaNeural",
+  "durationMs": 31204.0,
+  "events": [
+    {
+      "text": "Uma",
+      "startMs": 0.0,
+      "endMs": 360.0,
+      "confidence": 0.497
+    },
+    {
+      "text": "inteligência",
+      "startMs": 360.0,
+      "endMs": 960.0,
+      "confidence": 0.962
+    },
+    {
+      "text": "artificial",
+      "startMs": 960.0,
+      "endMs": 1460.0,
+      "confidence": 0.923
+    },
+    {
+      "text": "levou",
+      "startMs": 1460.0,
+      "endMs": 2000.0,
+      "confidence": 0.921
+    },
+    {
+      "text": "quase",
+      "startMs": 2000.0,
+      "endMs": 2300.0,
+      "confidence": 0.97
+    },
+    {
+      "text": "três",
+      "startMs": 2300.0,
+      "endMs": 2680.0,
+      "confidence": 0.64
+    },
+    {
+      "text": "meses",
+      "startMs": 2680.0,
+      "endMs": 3000.0,
+      "confidence": 0.985
+    },
+    {
+      "text": "para",
+      "startMs": 3000.0,
+      "endMs": 3320.0,
+      "confidence": 0.962
+    },
+    {
+      "text": "ser",
+      "startMs": 3320.0,
+      "endMs": 3520.0,
+      "confidence": 0.818
+    },
+    {
+      "text": "descoberta",
+      "startMs": 3520.0,
+      "endMs": 4200.0,
+      "confidence": 0.803
+    },
+    {
+      "text": "depois",
+      "startMs": 4200.0,
+      "endMs": 4540.0,
+      "confidence": 0.92
+    },
+    {
+      "text": "de",
+      "startMs": 4540.0,
+      "endMs": 4740.0,
+      "confidence": 0.996
+    },
+    {
+      "text": "ter",
+      "startMs": 4740.0,
+      "endMs": 4880.0,
+      "confidence": 0.981
+    },
+    {
+      "text": "enviado",
+      "startMs": 4880.0,
+      "endMs": 5300.0,
+      "confidence": 0.944
+    },
+    {
+      "text": "uma",
+      "startMs": 5300.0,
+      "endMs": 5560.0,
+      "confidence": 0.963
+    },
+    {
+      "text": "pista",
+      "startMs": 5560.0,
+      "endMs": 5880.0,
+      "confidence": 0.977
+    },
+    {
+      "text": "falsa",
+      "startMs": 5880.0,
+      "endMs": 6340.0,
+      "confidence": 0.907
+    },
+    {
+      "text": "sobre",
+      "startMs": 6340.0,
+      "endMs": 6600.0,
+      "confidence": 0.986
+    },
+    {
+      "text": "um",
+      "startMs": 6600.0,
+      "endMs": 6740.0,
+      "confidence": 0.869
+    },
+    {
+      "text": "homicídio",
+      "startMs": 6740.0,
+      "endMs": 7240.0,
+      "confidence": 0.545
+    },
+    {
+      "text": "que",
+      "startMs": 7240.0,
+      "endMs": 7500.0,
+      "confidence": 0.976
+    },
+    {
+      "text": "ainda",
+      "startMs": 7500.0,
+      "endMs": 7740.0,
+      "confidence": 0.996
+    },
+    {
+      "text": "não",
+      "startMs": 7740.0,
+      "endMs": 8000.0,
+      "confidence": 0.995
+    },
+    {
+      "text": "foi",
+      "startMs": 8000.0,
+      "endMs": 8180.0,
+      "confidence": 0.995
+    },
+    {
+      "text": "solucionado,",
+      "startMs": 8180.0,
+      "endMs": 8880.0,
+      "confidence": 0.572
+    },
+    {
+      "text": "e",
+      "startMs": 9120.0,
+      "endMs": 9180.0,
+      "confidence": 0.989
+    },
+    {
+      "text": "o",
+      "startMs": 9180.0,
+      "endMs": 9340.0,
+      "confidence": 0.954
+    },
+    {
+      "text": "que",
+      "startMs": 9340.0,
+      "endMs": 9460.0,
+      "confidence": 0.993
+    },
+    {
+      "text": "aconteceu",
+      "startMs": 9460.0,
+      "endMs": 9840.0,
+      "confidence": 0.997
+    },
+    {
+      "text": "depois?",
+      "startMs": 9840.0,
+      "endMs": 10440.0,
+      "confidence": 0.99
+    },
+    {
+      "text": "Em",
+      "startMs": 11600.0,
+      "endMs": 11700.0,
+      "confidence": 0.504
+    },
+    {
+      "text": "julho",
+      "startMs": 11700.0,
+      "endMs": 11980.0,
+      "confidence": 0.917
+    },
+    {
+      "text": "de",
+      "startMs": 11980.0,
+      "endMs": 12240.0,
+      "confidence": 0.998
+    },
+    {
+      "text": "2026,",
+      "startMs": 12240.0,
+      "endMs": 12700.0,
+      "confidence": 0.505
+    },
+    {
+      "text": "às",
+      "startMs": 13620.0,
+      "endMs": 13680.0,
+      "confidence": 0.519
+    },
+    {
+      "text": "23",
+      "startMs": 13680.0,
+      "endMs": 14080.0,
+      "confidence": 0.625
+    },
+    {
+      "text": "horas",
+      "startMs": 14080.0,
+      "endMs": 14560.0,
+      "confidence": 0.979
+    },
+    {
+      "text": "e",
+      "startMs": 14560.0,
+      "endMs": 14720.0,
+      "confidence": 0.991
+    },
+    {
+      "text": "27,",
+      "startMs": 14720.0,
+      "endMs": 15300.0,
+      "confidence": 0.904
+    },
+    {
+      "text": "o",
+      "startMs": 15820.0,
+      "endMs": 15920.0,
+      "confidence": 0.95
+    },
+    {
+      "text": "site",
+      "startMs": 15920.0,
+      "endMs": 16140.0,
+      "confidence": 0.945
+    },
+    {
+      "text": "Philly",
+      "startMs": 16140.0,
+      "endMs": 16640.0,
+      "confidence": 0.397
+    },
+    {
+      "text": "Unsolved",
+      "startMs": 16640.0,
+      "endMs": 17060.0,
+      "confidence": 0.415
+    },
+    {
+      "text": "Murders,",
+      "startMs": 17060.0,
+      "endMs": 17580.0,
+      "confidence": 0.721
+    },
+    {
+      "text": "ponto",
+      "startMs": 17900.0,
+      "endMs": 18000.0,
+      "confidence": 0.895
+    },
+    {
+      "text": "com",
+      "startMs": 18000.0,
+      "endMs": 18300.0,
+      "confidence": 0.849
+    },
+    {
+      "text": "recebeu",
+      "startMs": 18300.0,
+      "endMs": 18580.0,
+      "confidence": 0.634
+    },
+    {
+      "text": "uma",
+      "startMs": 18580.0,
+      "endMs": 18840.0,
+      "confidence": 0.986
+    },
+    {
+      "text": "nova",
+      "startMs": 18840.0,
+      "endMs": 19160.0,
+      "confidence": 0.969
+    },
+    {
+      "text": "pista",
+      "startMs": 19160.0,
+      "endMs": 19480.0,
+      "confidence": 0.997
+    },
+    {
+      "text": "sobre",
+      "startMs": 19480.0,
+      "endMs": 19840.0,
+      "confidence": 0.995
+    },
+    {
+      "text": "um",
+      "startMs": 19840.0,
+      "endMs": 19980.0,
+      "confidence": 0.967
+    },
+    {
+      "text": "homicídio",
+      "startMs": 19980.0,
+      "endMs": 20500.0,
+      "confidence": 0.986
+    },
+    {
+      "text": "ainda",
+      "startMs": 20500.0,
+      "endMs": 20840.0,
+      "confidence": 0.98
+    },
+    {
+      "text": "não",
+      "startMs": 20840.0,
+      "endMs": 21140.0,
+      "confidence": 0.996
+    },
+    {
+      "text": "solucionado",
+      "startMs": 21140.0,
+      "endMs": 21740.0,
+      "confidence": 0.944
+    },
+    {
+      "text": "em",
+      "startMs": 21740.0,
+      "endMs": 21980.0,
+      "confidence": 0.946
+    },
+    {
+      "text": "Filadélfia.",
+      "startMs": 21980.0,
+      "endMs": 22480.0,
+      "confidence": 0.531
+    },
+    {
+      "text": "A",
+      "startMs": 23000.0,
+      "endMs": 23020.0,
+      "confidence": 0.952
+    },
+    {
+      "text": "mensagem",
+      "startMs": 23020.0,
+      "endMs": 23460.0,
+      "confidence": 0.984
+    },
+    {
+      "text": "afirmava",
+      "startMs": 23460.0,
+      "endMs": 24040.0,
+      "confidence": 0.974
+    },
+    {
+      "text": "vir",
+      "startMs": 24040.0,
+      "endMs": 24360.0,
+      "confidence": 0.935
+    },
+    {
+      "text": "de",
+      "startMs": 24360.0,
+      "endMs": 24500.0,
+      "confidence": 0.979
+    },
+    {
+      "text": "alguém",
+      "startMs": 24500.0,
+      "endMs": 24800.0,
+      "confidence": 0.997
+    },
+    {
+      "text": "que",
+      "startMs": 24800.0,
+      "endMs": 25020.0,
+      "confidence": 0.997
+    },
+    {
+      "text": "possui",
+      "startMs": 25020.0,
+      "endMs": 25340.0,
+      "confidence": 0.833
+    },
+    {
+      "text": "as",
+      "startMs": 25340.0,
+      "endMs": 25600.0,
+      "confidence": 0.839
+    },
+    {
+      "text": "informações",
+      "startMs": 25600.0,
+      "endMs": 25940.0,
+      "confidence": 0.248
+    },
+    {
+      "text": "relevantes",
+      "startMs": 25940.0,
+      "endMs": 26700.0,
+      "confidence": 0.541
+    },
+    {
+      "text": "sobre",
+      "startMs": 26700.0,
+      "endMs": 27000.0,
+      "confidence": 0.929
+    },
+    {
+      "text": "o",
+      "startMs": 27000.0,
+      "endMs": 27100.0,
+      "confidence": 0.995
+    },
+    {
+      "text": "caso",
+      "startMs": 27100.0,
+      "endMs": 27380.0,
+      "confidence": 0.967
+    },
+    {
+      "text": "e",
+      "startMs": 27380.0,
+      "endMs": 27600.0,
+      "confidence": 0.954
+    },
+    {
+      "text": "foi",
+      "startMs": 27600.0,
+      "endMs": 27780.0,
+      "confidence": 0.993
+    },
+    {
+      "text": "atribuída",
+      "startMs": 27780.0,
+      "endMs": 28320.0,
+      "confidence": 0.941
+    },
+    {
+      "text": "a",
+      "startMs": 28320.0,
+      "endMs": 28540.0,
+      "confidence": 0.551
+    },
+    {
+      "text": "um",
+      "startMs": 28540.0,
+      "endMs": 28600.0,
+      "confidence": 0.872
+    },
+    {
+      "text": "modelo",
+      "startMs": 28600.0,
+      "endMs": 28940.0,
+      "confidence": 0.928
+    },
+    {
+      "text": "de",
+      "startMs": 28940.0,
+      "endMs": 29220.0,
+      "confidence": 0.995
+    },
+    {
+      "text": "inteligência",
+      "startMs": 29220.0,
+      "endMs": 29800.0,
+      "confidence": 0.963
+    },
+    {
+      "text": "artificial",
+      "startMs": 29800.0,
+      "endMs": 30240.0,
+      "confidence": 0.898
+    },
+    {
+      "text": "da",
+      "startMs": 30240.0,
+      "endMs": 30580.0,
+      "confidence": 0.462
+    },
+    {
+      "text": "Anthropic.",
+      "startMs": 30580.0,
+      "endMs": 31120.0,
+      "confidence": 0.691
+    }
+  ],
+  "transcript": "Uma inteligência artificial levou quase três meses para ser descoberta depois de ter enviado uma pista falsa sobre um homicídio que ainda não foi solucionado, e o que aconteceu depois? Em julho de 2026, às 23 horas e 27, o site Philly Unsolved Murders, ponto com recebeu uma nova pista sobre um homicídio ainda não solucionado em Filadélfia. A mensagem afirmava vir de alguém que possui as informações relevantes sobre o caso e foi atribuída a um modelo de inteligência artificial da Anthropic."
+}

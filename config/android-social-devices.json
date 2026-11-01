@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "platforms": {
+    "kwai": { "device": "127.0.0.1:5555", "runtime": "redroid" },
+    "instagram": { "device": "emulator-5560", "runtime": "google-play", "service": "pulso-social-android.service" },
+    "tiktok": { "device": "emulator-5560", "runtime": "google-play", "service": "pulso-social-android.service" },
+    "x": { "device": "emulator-5560", "runtime": "google-play", "service": "pulso-social-android.service" }
+  }
+}

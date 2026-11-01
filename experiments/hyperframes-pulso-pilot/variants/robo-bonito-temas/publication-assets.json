@@ -1,0 +1,86 @@
+[
+  {
+    "source": "experiments/hyperframes-pulso-pilot/renders/pulso-robo-bonito-tema-ia-v2.mp4",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-bonito-tema-ia-v2.mp4",
+    "bytes": 14683862,
+    "sha256": "f93043399dc94895955b019ce83185b4297a483aa02a2e35e96565db03986f39"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/renders/pulso-robo-bonito-tema-ia-v2-vertical.mp4",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-bonito-tema-ia-v2-vertical.mp4",
+    "bytes": 18711443,
+    "sha256": "131e92d564c66a02bc93be30a5c99518355646da4b5805d45d4081de83c5824b"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/carreira.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/carreira.png",
+    "bytes": 883721,
+    "sha256": "f2ea8f4f539388e646339c1484db8995d5e4aaa4784dcb215f9920cd1bb18f9d"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/curiosidades.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/curiosidades.png",
+    "bytes": 884146,
+    "sha256": "73a1385420ed998e0341071416d49458f0cd19a4c7db379f8f38c62b4b271723"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/dinheiro.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/dinheiro.png",
+    "bytes": 882349,
+    "sha256": "e7e8bd044994f26d8b99235ac9c6a39e91289c34a82f2c082a5a3a9c14035ea8"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/economize.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/economize.png",
+    "bytes": 885459,
+    "sha256": "0ee0e333739f3894cddc4cdb8aecf180046b427cee10ea25b5b60b936b83acce"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/fitness.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/fitness.png",
+    "bytes": 882877,
+    "sha256": "e7be1055a5c42e6e1d82a78ce8403727a9ce59947183e28a58a8b29fc96be881"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/ia.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/ia.png",
+    "bytes": 898432,
+    "sha256": "a254410907b158013db6abbe52526682bfc0223ce8ad5555a43b4961378e374f"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/index.html",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/index.html",
+    "bytes": 4476,
+    "sha256": "8c940cc39815c764d3d55111bedff5fb97d7136c6c533c0cf281278d69b29744"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/manifest.json",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/manifest.json",
+    "bytes": 2049,
+    "sha256": "632a53e829fb3f0bf213b27844e01318d4742f95bc64f86f0da6a507233dfb7e"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/misterios.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/misterios.png",
+    "bytes": 883852,
+    "sha256": "4a6ba6b2fa160f548dfae567d72d1cebb0065fc196ef9212effbb42cde26c0e7"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/psicologia.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/psicologia.png",
+    "bytes": 880869,
+    "sha256": "4b67199b0272493d334595f27f1c87572bba940937fc9e213b471d7bf293af6f"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/relacionamentos.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/relacionamentos.png",
+    "bytes": 883583,
+    "sha256": "9b57459a8b0a9619e359fc5bde41694cc3a5f02a6faed281f55bc001056129d9"
+  },
+  {
+    "source": "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas/gallery/saude.png",
+    "published": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-temas-v2/saude.png",
+    "bytes": 881749,
+    "sha256": "a9cfcced80d77f6753a1fd460c7725c2c3ac5d5ee321dcedda7cbf58101f42a7"
+  }
+]

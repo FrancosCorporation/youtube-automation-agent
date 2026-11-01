@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pulso Motion Design"
+  short_description: "Motion design para os vídeos do Pulso"
+  default_prompt: "Use esta skill para planejar, implementar e validar motion graphics nos vídeos do Pulso."

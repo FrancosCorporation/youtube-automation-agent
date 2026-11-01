@@ -1,0 +1,11 @@
+[Unit]
+Description=Verificação periódica do produtor Pulso
+
+[Timer]
+OnActiveSec=2min
+OnUnitActiveSec=2min
+Unit=ai-video-scheduler-guard.service
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

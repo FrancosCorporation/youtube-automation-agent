@@ -1,0 +1,32 @@
+{
+  "decodedVideoSamples": [
+    22,
+    36,
+    52,
+    99,
+    126,
+    242,
+    427,
+    528
+  ],
+  "cutBoundaryFrames": [
+    89,
+    90,
+    237,
+    238,
+    350,
+    351,
+    470,
+    471,
+    584,
+    585
+  ],
+  "verticalDecodedSamples": [
+    22,
+    36,
+    126,
+    427
+  ],
+  "review": "Orchestrator inspected all contact sheets from encoded MP4s: mouth opening/closing, smile, blink, greeting, separate gestures, camera boundaries and complete open-shot framing.",
+  "status": "preview ready for user evaluation"
+}

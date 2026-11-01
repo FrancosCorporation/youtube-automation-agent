@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "reviewer": "",
+  "reviewedAt": "",
+  "placementTargets": {
+    "chin": [
+      575,
+      333
+    ],
+    "larm": [
+      688,
+      459
+    ],
+    "rarm": [
+      460,
+      459
+    ],
+    "lelbow": [
+      665,
+      410
+    ],
+    "relbow": [
+      484,
+      410
+    ],
+    "lknee": [
+      619,
+      535
+    ],
+    "rknee": [
+      530,
+      535
+    ],
+    "groin": [
+      575,
+      483
+    ]
+  },
+  "screenshot": {
+    "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/markers-review.png",
+    "sha256": "ea57b27eed6b8e11e1cfbedbf5f3ff308b93a3cb77743dab3b15998b9b530e5c"
+  },
+  "markers": {
+    "chin": {
+      "label": "queixo (ciano)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "larm": {
+      "label": "pulso anatômico esquerdo (verde)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "rarm": {
+      "label": "pulso anatômico direito (verde)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "lelbow": {
+      "label": "cotovelo anatômico esquerdo (amarelo)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "relbow": {
+      "label": "cotovelo anatômico direito (amarelo)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "lknee": {
+      "label": "centro do joelho anatômico esquerdo (laranja)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "rknee": {
+      "label": "centro do joelho anatômico direito (laranja)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    },
+    "groin": {
+      "label": "junção central da virilha (rosa)",
+      "anatomicalLandmarkMatched": false,
+      "notes": ""
+    }
+  }
+}

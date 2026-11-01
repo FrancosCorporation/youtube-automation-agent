@@ -1,0 +1,23 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
+const { execFileSync } = require('node:child_process');
+process.env.BGM_GAIN = '0.055';
+const { mixdownAudio } = require('../../../utils/audio-mix');
+const project = path.resolve(__dirname, '..');
+const source = path.join(project, 'public/gps-explainer/narration.mp3');
+const workDir = path.join(project, 'renders/gps-v2-review/audio');
+const duration = 892 / 24;
+const sfxEvents = [{ kind: 'tick', startMs: 9150 }, { kind: 'whoosh', startMs: 14420 }, { kind: 'tick', startMs: 27900 }, { kind: 'pop', startMs: 33100 }];
+const sha = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+(async () => {
+  fs.mkdirSync(workDir, { recursive: true });
+  const padded = path.join(workDir, 'narration-padded.wav');
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', source, '-af', 'apad', '-t', String(duration), '-c:a', 'pcm_s16le', padded]);
+  const mixed = await mixdownAudio({ narrationPath: padded, workDir, includeMusic: true, sfxEvents });
+  const output = path.join(project, 'public/gps-explainer/mix-v2.m4a');
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', mixed.path, '-af', `aformat=channel_layouts=stereo,afade=t=in:d=0.12,afade=t=out:st=35.35:d=${duration - 35.35},loudnorm=I=-14:TP=-2:LRA=11`, '-c:a', 'aac', '-b:a', '192k', output]);
+  const record = { ...mixed, output, outputSha256: sha(output), source, sourceSha256: sha(source), duration, musicGain: .055, originalSynthesizedMusic: true, sfxEvents, voiceTimingUnchanged: true, createdAt: new Date().toISOString() };
+  fs.writeFileSync(path.join(workDir, 'mix-record.json'), JSON.stringify(record, null, 2) + '\n');
+  console.log(JSON.stringify(record));
+})().catch((error) => { console.error(error); process.exitCode = 1; });

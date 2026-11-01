@@ -1,0 +1,92 @@
+{
+  "config": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/targets.json",
+  "overlay": {
+    "x": 230,
+    "y": 148,
+    "width": 690,
+    "height": 500
+  },
+  "targets": {
+    "chin": [
+      575,
+      333
+    ],
+    "larm": [
+      688,
+      459
+    ],
+    "rarm": [
+      460,
+      459
+    ],
+    "lelbow": [
+      665,
+      410
+    ],
+    "relbow": [
+      484,
+      410
+    ],
+    "lknee": [
+      619,
+      535
+    ],
+    "rknee": [
+      530,
+      535
+    ],
+    "groin": [
+      575,
+      483
+    ]
+  },
+  "reviewed": true,
+  "nextClicked": true,
+  "evidence": {
+    "finalScreenshot": {
+      "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/markers-review.png",
+      "sha256": "ea57b27eed6b8e11e1cfbedbf5f3ff308b93a3cb77743dab3b15998b9b530e5c"
+    },
+    "markerScreenshots": {
+      "chin": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/chin.png",
+        "sha256": "b6cae2e88e6e45bdb123e1a5b07e64190c333ee39a6095a9a535a831b25274a4"
+      },
+      "larm": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/larm.png",
+        "sha256": "a63883d8c5bb7326bc0818905aa12ae4745420ce88413bb562fbe8a34a475def"
+      },
+      "rarm": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/rarm.png",
+        "sha256": "004be6c074adaa2e72af03484e052c0db308e166d002004d75fc604952713366"
+      },
+      "lelbow": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/lelbow.png",
+        "sha256": "7430b8d36d735a4c256a11e868ccf11364ce287b508677add6d1a167dbf49428"
+      },
+      "relbow": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/relbow.png",
+        "sha256": "6ecaeabe046d39907859d6eb62b491ea83eefd720f9aec49ba8b6808f62087cf"
+      },
+      "lknee": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/lknee.png",
+        "sha256": "f721db03003aae0b0fc66e87fbdf6d7c46135b85df4540f92faed4e629f33b0c"
+      },
+      "rknee": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/rknee.png",
+        "sha256": "c03fd57232ac8351b444cfdd93040106517fec953e3b58ff53ae6fd9d9ee7b50"
+      },
+      "groin": {
+        "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/groin.png",
+        "sha256": "59b9dc175f087976e91fb18822f44b60d79b25cdbd3e25afef8d05b2a3580bb0"
+      }
+    }
+  },
+  "reviewedAt": "2026-10-22T15:58:07.917943+00:00",
+  "visualReview": {
+    "path": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/visual-review.json",
+    "sha256": "8e1ef288e73f9f1dec0aff39377142bbb4fffbe462e506e592d0ddbb8b2db620",
+    "screenshotPath": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/mixamo/markers/markers-review.png",
+    "screenshotSha256": "ea57b27eed6b8e11e1cfbedbf5f3ff308b93a3cb77743dab3b15998b9b530e5c"
+  }
+}

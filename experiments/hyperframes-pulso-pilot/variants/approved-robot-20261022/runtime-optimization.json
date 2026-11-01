@@ -1,0 +1,49 @@
+{
+  "status": "runtime_candidate_pending_motion_QA",
+  "source": "assets/approved-robot-rigged-source.glb",
+  "materialSource": "assets/approved-robot-hunyuan.glb",
+  "uvCompatibility": "source-rig-uv-compatibility.json",
+  "method": "attribute-aware index-only reduction; original retained vertex JOINTS/WEIGHTS; source PBR restored; textures2k lossless WebP; meshopt",
+  "textureReport": [
+    {
+      "original": [
+        4096,
+        4096
+      ],
+      "bytesBefore": 14788995,
+      "bytesAfter": 2714800,
+      "losslessAfterResize": true
+    },
+    {
+      "original": [
+        4096,
+        4096
+      ],
+      "bytesBefore": 7732816,
+      "bytesAfter": 2027500,
+      "losslessAfterResize": true
+    },
+    {
+      "original": [
+        4096,
+        4096
+      ],
+      "bytesBefore": 19648181,
+      "bytesAfter": 3873640,
+      "losslessAfterResize": true
+    }
+  ],
+  "primitives": [
+    {
+      "sourceTriangles": 499984,
+      "triangles": 122912,
+      "errorLimit": 0.001,
+      "error": 0.0009765433496795595,
+      "skinAttributesRetained": true
+    }
+  ],
+  "skins": 1,
+  "joints": 65,
+  "animations": 0,
+  "bytes": 9810184
+}

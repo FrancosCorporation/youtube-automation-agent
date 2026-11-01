@@ -1,0 +1,35 @@
+1
+00:00:00,050 --> 00:00:03,002
+Seu celular não recebe uma coordenada pronta.
+
+2
+00:00:03,002 --> 00:00:06,675
+Cada satélite transmite o horário do sinal e sua posição.
+
+3
+00:00:06,675 --> 00:00:09,664
+O telefone estima quanto a onda levou para chegar.
+
+4
+00:00:09,664 --> 00:00:14,420
+Como o rádio viaja quase à velocidade da luz, esse atraso vira distância.
+
+5
+00:00:14,420 --> 00:00:19,407
+Uma distância deixa vários lugares possíveis: uma esfera ao redor do satélite.
+
+6
+00:00:19,407 --> 00:00:22,963
+As medições de outros satélites cruzam essas esferas.
+
+7
+00:00:22,963 --> 00:00:24,858
+Por que são pelo menos quatro?
+
+8
+00:00:24,858 --> 00:00:31,365
+O relógio do celular não é atômico: a quarta medida corrige esse erro e ajuda a calcular a posição.
+
+9
+00:00:31,365 --> 00:00:35,244
+Assim, sinais invisíveis viram um ponto no mapa.

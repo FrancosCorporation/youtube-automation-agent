@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export function createPresenterRobot({ canvas, width = 710, height = 940, seed = 0, accents = [] }) {
+export function createPresenterRobot({ canvas, width = 710, height = 940, seed = 0 }) {
   if (!canvas) throw new Error('Canvas do mascote 3D não encontrado');
-  const palette = accents.length ? accents : ['#5EEAD4', '#60A5FA', '#A78BFA', '#FBBF24'];
-  const colorHex = (value, fallback) => new THREE.Color(value || fallback).getHex();
+  // Canonical character design: approved pearl-white shell, dark teal plates,
+  // black visor, cyan face/chest lights and the pink antenna tip. Keep the
+  // mascot identity fixed across editorial theme palettes.
   const look = {
-    eye: colorHex(palette[1], '#a9efcf'),
-    eyeGlow: colorHex(palette[0], '#4dbd9e'),
-    mouth: colorHex(palette[3], '#f3bc7d'),
-    mouthGlow: colorHex(palette[3], '#b75c24'),
-    accent: colorHex(palette[2], '#559d8c')
+    eye: 0x35f1e8,
+    eyeGlow: 0x00d9d2,
+    mouth: 0x35f1e8,
+    mouthGlow: 0x00d9d2,
+    accent: 0x24ded6,
+    pink: 0xff9dc5
   };
   const motionPhase = ((Number(seed) >>> 0) % 997) / 997 * Math.PI * 2;
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
@@ -37,17 +39,17 @@ export function createPresenterRobot({ canvas, width = 710, height = 940, seed =
   rimLight.position.set(0.5, 5.0, -4.0);
   scene.add(rimLight);
 
-  const ceramic = new THREE.MeshStandardMaterial({ color: 0xd8ded2, metalness: 0.22, roughness: 0.31 });
-  const ceramicLight = new THREE.MeshStandardMaterial({ color: 0xf0ecdd, metalness: 0.17, roughness: 0.26 });
-  const graphite = new THREE.MeshStandardMaterial({ color: 0x27393a, metalness: 0.75, roughness: 0.28 });
-  const teal = new THREE.MeshStandardMaterial({ color: 0x559d8c, metalness: 0.48, roughness: 0.25, emissive: 0x123f37, emissiveIntensity: 0.55 });
-  const accent = new THREE.MeshStandardMaterial({ color: look.accent, metalness: 0.46, roughness: 0.24, emissive: look.accent, emissiveIntensity: 0.22 });
-  const amber = new THREE.MeshStandardMaterial({ color: 0xd99258, metalness: 0.58, roughness: 0.25, emissive: 0x43200c, emissiveIntensity: 0.45 });
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0x102426, metalness: 0.45, roughness: 0.12, clearcoat: 0.95, clearcoatRoughness: 0.08, emissive: 0x0b2423, emissiveIntensity: 0.5 });
-  const eyeMaterial = new THREE.MeshStandardMaterial({ color: look.eye, metalness: 0.1, roughness: 0.2, emissive: look.eyeGlow, emissiveIntensity: 2.35 });
-  const eyeCore = new THREE.MeshStandardMaterial({ color: 0x13383b, metalness: 0.2, roughness: 0.16 });
+  const ceramic = new THREE.MeshStandardMaterial({ color: 0xe7e6df, metalness: 0.12, roughness: 0.27 });
+  const ceramicLight = new THREE.MeshStandardMaterial({ color: 0xf8f6ef, metalness: 0.12, roughness: 0.22 });
+  const graphite = new THREE.MeshStandardMaterial({ color: 0x101719, metalness: 0.58, roughness: 0.2 });
+  const teal = new THREE.MeshStandardMaterial({ color: 0x075548, metalness: 0.34, roughness: 0.24, emissive: 0x05251f, emissiveIntensity: 0.35 });
+  const accent = new THREE.MeshStandardMaterial({ color: look.accent, metalness: 0.15, roughness: 0.18, emissive: look.eyeGlow, emissiveIntensity: 1.65 });
+  const amber = new THREE.MeshStandardMaterial({ color: 0x18cfc8, metalness: 0.26, roughness: 0.22, emissive: 0x087d78, emissiveIntensity: 0.65 });
+  const pink = new THREE.MeshStandardMaterial({ color: look.pink, metalness: 0.12, roughness: 0.2, emissive: 0xff5ba9, emissiveIntensity: 1.05 });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0x050a0c, metalness: 0.24, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05, emissive: 0x03090b, emissiveIntensity: 0.18 });
+  const eyeMaterial = new THREE.MeshStandardMaterial({ color: look.eye, metalness: 0.08, roughness: 0.16, emissive: look.eyeGlow, emissiveIntensity: 2.8 });
+  const eyeCore = new THREE.MeshStandardMaterial({ color: 0x03171a, metalness: 0.2, roughness: 0.14 });
   const catchlight = new THREE.MeshBasicMaterial({ color: 0xfff8eb });
-  const cheekMaterial = new THREE.MeshStandardMaterial({ color: 0xe7a49a, metalness: 0.05, roughness: 0.32, emissive: 0xa74a49, emissiveIntensity: 0.25 });
   const mouthMaterial = new THREE.MeshStandardMaterial({ color: look.mouth, metalness: 0.15, roughness: 0.2, emissive: look.mouthGlow, emissiveIntensity: 1.55 });
 
   const robot = new THREE.Group();
@@ -115,15 +117,22 @@ export function createPresenterRobot({ canvas, width = 710, height = 940, seed =
   sphere(robot, [0.35, 0.19, 0.25], graphite, [0, 1.52, 0]);
   roundedBox(robot, [0.83, 0.49, 0.52], 0.18, ceramicLight, [0, 1.72, 0]);
   roundedBox(robot, [1.13, 1.17, 0.66], 0.27, ceramicLight, [0, 2.43, 0], [0.01, -0.04, 0], 7);
-  roundedBox(robot, [0.73, 0.71, 0.11], 0.12, glass, [0, 2.48, 0.354]);
-  roundedBox(robot, [0.08, 0.53, 0.035], 0.035, accent, [0, 2.46, 0.417]);
-  roundedBox(robot, [0.34, 0.065, 0.035], 0.03, amber, [0, 2.17, 0.416]);
-  roundedBox(robot, [0.36, 0.058, 0.035], 0.025, accent, [0, 2.78, 0.416]);
-  for (const x of [-0.105, 0, 0.105]) sphere(robot, [0.023, 0.023, 0.018], x === 0 ? amber : accent, [x, 2.91, 0.34], 18);
-  // Small mechanical seams and side vents add scale and material contrast.
+  roundedBox(robot, [0.76, 0.67, 0.105], 0.18, teal, [0, 2.48, 0.359]);
+  const chestRing = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.034, 14, 64), accent);
+  chestRing.position.set(0, 2.52, 0.43);
+  chestRing.castShadow = true;
+  robot.add(chestRing);
+  const chestCore = new THREE.Mesh(new THREE.CircleGeometry(0.145, 48), eyeCore);
+  chestCore.position.set(0, 2.52, 0.432);
+  robot.add(chestCore);
+  sphere(robot, [0.073, 0.073, 0.018], accent, [0, 2.52, 0.446], 28);
+  roundedBox(robot, [0.33, 0.075, 0.04], 0.035, teal, [0, 2.82, 0.345]);
+  for (const x of [-0.16, 0, 0.16]) sphere(robot, [0.018, 0.018, 0.014], accent, [x, 2.89, 0.35], 16);
+  // Dark teal side panels and cyan service lights match the approved shell.
   for (const side of [-1, 1]) {
     roundedBox(robot, [0.035, 0.29, 0.042], 0.017, graphite, [side * 0.54, 2.47, 0.29]);
-    sphere(robot, [0.055, 0.055, 0.035], amber, [side * 0.56, 2.63, 0.31], 18);
+    roundedBox(robot, [0.075, 0.39, 0.05], 0.028, teal, [side * 0.43, 2.46, 0.305]);
+    sphere(robot, [0.035, 0.075, 0.018], accent, [side * 0.46, 2.46, 0.344], 20);
   }
 
   // Neck and head: porcelain shell, deep curved visor, emissive eyes and a mouth that changes expression.
@@ -131,60 +140,67 @@ export function createPresenterRobot({ canvas, width = 710, height = 940, seed =
   const head = new THREE.Group();
   head.position.set(0, 3.65, 0);
   robot.add(head);
-  roundedBox(head, [0.92, 0.84, 0.73], 0.31, ceramicLight, [0, 0, 0], [0, -0.045, 0], 8);
-  roundedBox(head, [0.76, 0.49, 0.105], 0.2, graphite, [0, -0.015, 0.332], [0, 0, 0], 8);
-  roundedBox(head, [0.675, 0.405, 0.075], 0.17, glass, [0, -0.005, 0.39], [0, 0, 0], 8);
+  roundedBox(head, [1.12, 0.93, 0.77], 0.34, ceramicLight, [0, 0, 0], [0.005, -0.035, 0], 9);
+  roundedBox(head, [1.0, 0.65, 0.105], 0.24, graphite, [0, -0.012, 0.352], [0, 0, 0], 9);
+  roundedBox(head, [0.91, 0.56, 0.075], 0.205, glass, [0, -0.005, 0.411], [0, 0, 0], 9);
   const eyeGroups = [];
   for (const side of [-1, 1]) {
     const eye = new THREE.Group();
-    eye.position.set(side * 0.15, 0.015, 0.435);
+    eye.position.set(side * 0.215, 0.02, 0.454);
     head.add(eye);
-    roundedBox(eye, [0.12, 0.17, 0.034], 0.058, eyeMaterial, [0, 0, 0], [0, 0, 0], 7);
-    sphere(eye, [0.027, 0.045, 0.014], eyeCore, [0.003, 0.002, 0.025], 24);
-    sphere(eye, [0.012, 0.014, 0.006], catchlight, [-0.023, 0.039, 0.039], 16);
-    sphere(eye, [0.005, 0.006, 0.004], catchlight, [0.025, -0.026, 0.039], 12);
+    const outer = new THREE.Mesh(new THREE.TorusGeometry(0.112, 0.026, 14, 56), eyeMaterial);
+    outer.position.z = 0.012;
+    eye.add(outer);
+    const iris = new THREE.Mesh(new THREE.CircleGeometry(0.078, 48), eyeCore);
+    iris.position.z = 0.013;
+    eye.add(iris);
+    const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.048, 40), graphite);
+    pupil.position.z = 0.015;
+    eye.add(pupil);
+    sphere(eye, [0.025, 0.025, 0.012], accent, [-0.027, 0.035, 0.025], 20);
+    sphere(eye, [0.010, 0.010, 0.007], catchlight, [0.044, -0.045, 0.026], 14);
     eyeGroups.push(eye);
   }
   const [eyeL, eyeR] = eyeGroups;
-  // Curved brows, warm cheek lights and tiny catchlights give the digital face
-  // a readable, friendly expression without turning it into a flat cartoon.
+  // Cyan brows, round luminous eyes and the small smile are the defining face.
   for (const side of [-1, 1]) {
     tubeStroke(head, [
-      [side * 0.245, 0.145, 0.434],
-      [side * 0.185, 0.184, 0.448],
-      [side * 0.105, 0.154, 0.438]
-    ], 0.014, graphite);
-    sphere(head, [0.047, 0.029, 0.014], cheekMaterial, [side * 0.275, -0.13, 0.433], 24);
-    sphere(head, [0.006, 0.006, 0.004], catchlight, [side * 0.275 - side * 0.012, -0.125, 0.448], 12);
+      [side * 0.31, 0.17, 0.448],
+      [side * 0.24, 0.205, 0.458],
+      [side * 0.17, 0.17, 0.45]
+    ], 0.012, accent);
   }
   const mouth = new THREE.Group();
-  mouth.position.set(0, -0.135, 0.442);
+  mouth.position.set(0, -0.145, 0.457);
   head.add(mouth);
   const mouthLine = tubeStroke(mouth, [
-    [-0.105, 0.008, 0.008], [-0.055, -0.022, 0.014], [0, -0.030, 0.017],
-    [0.055, -0.022, 0.014], [0.105, 0.008, 0.008]
-  ], 0.013, mouthMaterial);
+    [-0.13, 0.018, 0.008], [-0.075, -0.018, 0.014], [0, -0.033, 0.017],
+    [0.075, -0.018, 0.014], [0.13, 0.018, 0.008]
+  ], 0.016, mouthMaterial);
   const mouthOpen = new THREE.Group();
   mouth.add(mouthOpen);
-  const mouthInterior = sphere(mouthOpen, [0.056, 0.071, 0.018], graphite, [0, 0, 0]);
-  const tongue = sphere(mouthOpen, [0.031, 0.015, 0.009], cheekMaterial, [0, -0.034, 0.015], 20);
+  sphere(mouthOpen, [0.063, 0.075, 0.018], graphite, [0, 0, 0]);
+  const lowerLip = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 32, Math.PI), mouthMaterial);
+  lowerLip.position.set(0, -0.015, 0.012);
+  lowerLip.rotation.z = Math.PI;
+  mouthOpen.add(lowerLip);
   mouthOpen.visible = false;
   // Side discs read as hinge covers and catch the warm rim light.
   for (const side of [-1, 1]) {
-    const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.075, 32), graphite);
+    const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.095, 40), teal);
     ear.rotation.z = Math.PI / 2;
-    ear.position.set(side * 0.46, -0.07, 0.0);
+    ear.position.set(side * 0.53, -0.055, 0.0);
     head.add(ear);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.082, 28), teal);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.105, 36), graphite);
     cap.rotation.z = Math.PI / 2;
-    cap.position.set(side * 0.51, -0.07, 0.0);
+    cap.position.set(side * 0.59, -0.055, 0.0);
     head.add(cap);
+    roundedBox(head, [0.025, 0.32, 0.045], 0.012, accent, [side * 0.64, -0.055, 0.005]);
   }
-  roundedBox(head, [0.35, 0.055, 0.055], 0.024, amber, [0, 0.398, 0.12]);
-  sphere(head, [0.045, 0.045, 0.027], accent, [0, 0.405, 0.16], 24);
-  capsule(head, 0.035, 0.16, graphite, [0, 0.48, 0.02]);
-  sphere(head, [0.07, 0.07, 0.06], accent, [0, 0.59, 0.02], 24);
-  sphere(head, [0.035, 0.035, 0.03], amber, [0, 0.62, 0.04], 20);
+  roundedBox(head, [0.34, 0.065, 0.06], 0.027, teal, [0, 0.43, 0.12]);
+  sphere(head, [0.045, 0.045, 0.027], graphite, [0, 0.44, 0.16], 24);
+  capsule(head, 0.034, 0.19, graphite, [0, 0.55, 0.02]);
+  sphere(head, [0.092, 0.092, 0.084], pink, [0, 0.69, 0.02], 32);
 
   // Arms use shoulder pivots, elbow housings, forearms and individual fingers.
   const arms = {};

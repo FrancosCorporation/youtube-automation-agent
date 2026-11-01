@@ -1,0 +1,130 @@
+{
+  "source": "variants/robo-bonito/assets/robo-bonito-hunyuan.glb",
+  "sourceHash": "f588d0449e71fb60cc649c400ff04b47c964248cadf9e015e74a36653c5554ff",
+  "output": "variants/robo-bonito-animado/assets/robo-bonito-rigged.glb",
+  "bytes": 70961600,
+  "bodyVertices": 315191,
+  "bodyTriangles": 500036,
+  "visorTriangles": 8362,
+  "bones": 17,
+  "rigHeight": 1.0751310586929321,
+  "pivots": {
+    "Root": [
+      0,
+      0,
+      0
+    ],
+    "Hips": [
+      0,
+      0.32,
+      0
+    ],
+    "Chest": [
+      0,
+      0.57,
+      0
+    ],
+    "Neck": [
+      0,
+      0.663,
+      -0.01
+    ],
+    "Head": [
+      0,
+      0.69,
+      -0.01
+    ],
+    "UpperArm_L": [
+      0.205,
+      0.615,
+      -0.012
+    ],
+    "Forearm_L": [
+      0.288,
+      0.515,
+      0.012
+    ],
+    "Hand_L": [
+      0.36,
+      0.385,
+      0.025
+    ],
+    "UpperArm_R": [
+      -0.205,
+      0.615,
+      -0.012
+    ],
+    "Forearm_R": [
+      -0.288,
+      0.515,
+      0.012
+    ],
+    "Hand_R": [
+      -0.36,
+      0.385,
+      0.025
+    ],
+    "Thigh_L": [
+      0.112,
+      0.31,
+      -0.01
+    ],
+    "Shin_L": [
+      0.127,
+      0.215,
+      -0.005
+    ],
+    "Foot_L": [
+      0.131,
+      0.067,
+      0.028
+    ],
+    "Thigh_R": [
+      -0.112,
+      0.31,
+      -0.01
+    ],
+    "Shin_R": [
+      -0.127,
+      0.215,
+      -0.005
+    ],
+    "Foot_R": [
+      -0.131,
+      0.067,
+      0.028
+    ]
+  },
+  "weightCoverage": {
+    "Root": 0,
+    "Hips": 0,
+    "Chest": 76006,
+    "Neck": 14306,
+    "Head": 64066,
+    "UpperArm_L": 7540,
+    "Forearm_L": 13190,
+    "Hand_L": 20412,
+    "UpperArm_R": 8129,
+    "Forearm_R": 13590,
+    "Hand_R": 19619,
+    "Thigh_L": 14422,
+    "Shin_L": 18489,
+    "Foot_L": 17059,
+    "Thigh_R": 14662,
+    "Shin_R": 18629,
+    "Foot_R": 16396
+  },
+  "weightsNormalized": true,
+  "maxInfluences": 2,
+  "armLegBridgeTriangles": 0,
+  "faceControls": [
+    "FaceEye_L",
+    "FaceEye_R",
+    "FaceSmile",
+    "FaceMouth"
+  ],
+  "limitations": [
+    "Finger joints not separately articulated.",
+    "Articulation requires visual amplitude QA."
+  ]
+}

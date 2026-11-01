@@ -1,0 +1,153 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const Module = require('node:module');
+const os = require('node:os');
+const path = require('node:path');
+const test = require('node:test');
+
+const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'social-android-routing-'));
+const profileDir = path.join(stateDir, 'old-browser-profile', 'tiktok', 'Default');
+fs.mkdirSync(profileDir, { recursive: true });
+fs.writeFileSync(path.join(profileDir, 'Cookies'), Buffer.alloc(12000));
+process.env.STATE_DIR = stateDir;
+
+const { allowUnknownAndroidSession, isLogged, isSocialHandlerAvailable, uploadX } = require('../scripts/upload-to-socials');
+const { recordAndroidSession } = require('../utils/android-session-state');
+const uploadModulePath = require.resolve('../scripts/upload-to-socials');
+
+test('social routes ignore legacy Chromium cookies and fail closed before login', async t => {
+  t.after(() => fs.rmSync(stateDir, { recursive: true, force: true }));
+  const previousHandle = process.env.ANDROID_SOCIAL_HANDLE_TIKTOK;
+  t.after(() => {
+    if (previousHandle === undefined) delete process.env.ANDROID_SOCIAL_HANDLE_TIKTOK;
+    else process.env.ANDROID_SOCIAL_HANDLE_TIKTOK = previousHandle;
+  });
+  delete process.env.ANDROID_SOCIAL_HANDLE_TIKTOK;
+
+  assert.equal(isLogged('tiktok'), false);
+  assert.equal(isSocialHandlerAvailable('tiktok'), true);
+  assert.equal(fs.existsSync(path.join(stateDir, 'android-social-upload.lock')), false);
+
+  recordAndroidSession('tiktok', { root: stateDir, device: 'emulator-5560', accountHandle: '@pulso_ai_news', identityVerified: false });
+  assert.equal(isLogged('tiktok'), false, 'a session marker without owner-approved identity is not publish-ready');
+  process.env.ANDROID_SOCIAL_HANDLE_TIKTOK = '@pulso_ai_news';
+  recordAndroidSession('tiktok', { root: stateDir, device: 'emulator-5560', accountHandle: '@pulso_ai_news', identityVerified: true });
+  assert.equal(isLogged('tiktok'), true);
+});
+
+test('TikTok retoma a tela For You somente com a sessão e o handle aprovados', async t => {
+  const isolatedState = fs.mkdtempSync(path.join(os.tmpdir(), 'social-android-tiktok-recovery-'));
+  const previousStateDir = process.env.STATE_DIR;
+  const previousHandle = process.env.ANDROID_SOCIAL_HANDLE_TIKTOK;
+  t.after(() => {
+    fs.rmSync(isolatedState, { recursive: true, force: true });
+    if (previousStateDir === undefined) delete process.env.STATE_DIR;
+    else process.env.STATE_DIR = previousStateDir;
+    if (previousHandle === undefined) delete process.env.ANDROID_SOCIAL_HANDLE_TIKTOK;
+    else process.env.ANDROID_SOCIAL_HANDLE_TIKTOK = previousHandle;
+  });
+  process.env.STATE_DIR = isolatedState;
+  process.env.ANDROID_SOCIAL_HANDLE_TIKTOK = '@approved';
+  recordAndroidSession('tiktok', {
+    root: isolatedState, device: 'emulator-5560', accountHandle: '@approved', identityVerified: true
+  });
+  assert.equal(await allowUnknownAndroidSession({
+    platform: 'tiktok',
+    session: { status: 'unknown', packageName: 'com.zhiliaoapp.musically' },
+    control: { dumpUi: async () => [] }
+  }), true);
+  assert.equal(await allowUnknownAndroidSession({
+    platform: 'tiktok',
+    session: { status: 'unknown', packageName: 'com.zhiliaoapp.musically' },
+    control: { dumpUi: async () => [
+      { visible: true, resourceId: 'com.zhiliaoapp.musically:id/h9x' },
+      { visible: true, resourceId: 'com.zhiliaoapp.musically:id/tjf', text: 'Post' }
+    ] }
+  }), false);
+  assert.equal(await allowUnknownAndroidSession({
+    platform: 'tiktok',
+    session: { status: 'unknown', packageName: 'com.zhiliaoapp.musically' },
+    control: { dumpUi: async () => [{ visible: true, resourceId: 'com.zhiliaoapp.musically:id/h9x' }] }
+  }), false, 'o editor continua ativo quando as sugestões escondem Post');
+  fs.rmSync(path.join(isolatedState, 'android-app-sessions', 'tiktok.json'));
+  assert.equal(await allowUnknownAndroidSession({
+    platform: 'tiktok',
+    session: { status: 'unknown', packageName: 'com.zhiliaoapp.musically' },
+    control: { dumpUi: async () => [] }
+  }), false);
+});
+
+test('an unconfigured X destination fails before acquiring Android state', async t => {
+  const isolatedState = fs.mkdtempSync(path.join(os.tmpdir(), 'social-android-unconfigured-'));
+  const videoPath = path.join(isolatedState, 'fixture.mp4');
+  const previousStateDir = process.env.STATE_DIR;
+  let acquireCalls = 0;
+  const originalLoad = Module._load;
+  fs.writeFileSync(videoPath, Buffer.from('synthetic mp4 fixture'));
+  process.env.STATE_DIR = isolatedState;
+  recordAndroidSession('x', { root: isolatedState });
+  Module._load = function (request, parent, isMain) {
+    if (request === './kwai-emulator' && parent?.filename === uploadModulePath) {
+      return {
+        acquire: async () => { acquireCalls += 1; },
+        release: () => {}
+      };
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  try {
+    await assert.rejects(
+      uploadX({ videoPath, caption: 'fixture' }),
+      /fluxo nativo Android ainda não configurado.*nenhum navegador será aberto/
+    );
+  } finally {
+    Module._load = originalLoad;
+    if (previousStateDir === undefined) delete process.env.STATE_DIR;
+    else process.env.STATE_DIR = previousStateDir;
+    t.after(() => fs.rmSync(isolatedState, { recursive: true, force: true }));
+  }
+
+  assert.equal(acquireCalls, 0);
+  assert.equal(fs.existsSync(path.join(stateDir, 'android-social-upload.lock')), false);
+});
+
+test('Instagram and TikTok have native handlers while X remains closed until its handler exists', async t => {
+  const isolatedState = fs.mkdtempSync(path.join(os.tmpdir(), 'social-android-routes-'));
+  const videoPath = path.join(isolatedState, 'fixture.mp4');
+  const previousStateDir = process.env.STATE_DIR;
+  let acquireCalls = 0;
+  const originalLoad = Module._load;
+  fs.writeFileSync(videoPath, Buffer.from('synthetic mp4 fixture'));
+  process.env.STATE_DIR = isolatedState;
+  Module._load = function (request, parent, isMain) {
+    if (request === './kwai-emulator' && parent?.filename === uploadModulePath) {
+      return {
+        acquire: async () => { acquireCalls += 1; },
+        release: () => {}
+      };
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  try {
+    assert.equal(isSocialHandlerAvailable('instagram'), true);
+    assert.equal(isSocialHandlerAvailable('tiktok'), true);
+    for (const [platform, upload] of [['x', uploadX]]) {
+      await assert.rejects(
+        upload({ videoPath, caption: 'fixture' }),
+        new RegExp(`${platform}: fluxo nativo Android ainda não configurado.*nenhum navegador será aberto`)
+      );
+    }
+  } finally {
+    Module._load = originalLoad;
+    if (previousStateDir === undefined) delete process.env.STATE_DIR;
+    else process.env.STATE_DIR = previousStateDir;
+    t.after(() => fs.rmSync(isolatedState, { recursive: true, force: true }));
+  }
+
+  assert.equal(acquireCalls, 0);
+  assert.equal(fs.existsSync(path.join(isolatedState, 'android-social-upload.lock')), false);
+});

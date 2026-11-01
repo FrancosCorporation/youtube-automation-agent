@@ -1,0 +1,6 @@
+[Unit]
+Description=Reativar o produtor Pulso se o scheduler estiver parado
+
+[Service]
+Type=oneshot
+ExecStart=%h/Git/youtube_ai/youtube-automation-agent/scripts/ensure-ai-video-scheduler.sh

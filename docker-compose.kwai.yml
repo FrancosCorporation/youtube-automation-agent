@@ -5,10 +5,11 @@ services:
     # o surfaceflinger/zygote com o kernel/GPU atual). Volume kwai-data14.
     image: redroid14-gapps:latest
     container_name: kwai-emulator
-    # On-demand: o scheduler sobe antes do upload e derruba depois (baseline 0 MB de RAM).
-    # Nunca sobe junto com o pipeline principal.
+    # Reinicia após crash/boot; a unidade kwai-emulator-boot também garante que
+    # Compose crie o container no boot. O uploader continua podendo removê-lo
+    # ao terminar para devolver RAM ao host.
     privileged: true
-    restart: "no"
+    restart: unless-stopped
     mem_limit: 3g
     memswap_limit: 3g
     ports:

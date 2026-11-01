@@ -1,0 +1,27 @@
+{
+  "schema": "pulso-improvement-fleet.v1",
+  "tasks": [
+    {
+      "id": "classificar-coleta",
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "inputs": [
+        "docs/pesquisa-virais/evidencias/youtube-search-ai.jsonl"
+      ],
+      "objective": "Leia todos os oito registros JSONL e produza triagem.json com videos: lista de {id,title,channel,url,duration_seconds,observed_views,qualified_by_views,editorial_fit,reason}, coverage e limitations. Copie contagens exatas; qualified_by_views true somente view_count >=1000000. editorial_fit: core para noticia/explicacao IA, adjacent para ficcao/comentario, exclude para promessa de renda/tutorial criar viral. Nao assista, nao pesquise e nao atribua abertura, ritmo, qualidade ou publicacao: upload_date esta ausente. Distinguir qualificacao metrica de observacao audiovisual. Grave exatamente triagem.json usando ferramenta; nao responda apenas com o JSON.",
+      "context": "Pulso: apresentador robo, explicacoes em portugues. Esta e triagem inicial de busca YouTube via yt-dlp, nao analise completa. Dados primarios coletados neste host, 12/10/2026. Nao inferir retencao/receita privadas nem causalidade.",
+      "outputs": [
+        {
+          "path": "triagem.json",
+          "kind": "json",
+          "required_keys": [
+            "videos",
+            "coverage",
+            "limitations"
+          ]
+        }
+      ]
+    }
+  ]
+}

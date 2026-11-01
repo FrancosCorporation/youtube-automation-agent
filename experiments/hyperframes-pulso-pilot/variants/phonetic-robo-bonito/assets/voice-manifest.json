@@ -1,0 +1,484 @@
+{
+  "text": "Oi! Eu sou o Pulso. Agora eu posso conversar com você, responder perguntas e ajudar a usar o site. Quer comparar preços? Abra o FranRadar. Eu vou destacar o botão certo e mostrar o caminho. Se o servidor atingir o limite, o assistente continua no seu dispositivo. Vamos experimentar?",
+  "sentences": [
+    [
+      "Olá!",
+      "Oi! Eu sou o Pulso."
+    ],
+    [
+      "Converse comigo",
+      "Agora eu posso conversar com você, responder perguntas e ajudar a usar o site."
+    ],
+    [
+      "Compare preços",
+      "Quer comparar preços?"
+    ],
+    [
+      "FranRadar",
+      "Abra o FranRadar."
+    ],
+    [
+      "Guia interativo",
+      "Eu vou destacar o botão certo e mostrar o caminho."
+    ],
+    [
+      "Ajuda no dispositivo",
+      "Se o servidor atingir o limite, o assistente continua no seu dispositivo."
+    ],
+    [
+      "Experimente",
+      "Vamos experimentar?"
+    ]
+  ],
+  "words": [
+    {
+      "word": "Oi!",
+      "start": 0.06965986394557823,
+      "end": 0.26702947845804986
+    },
+    {
+      "word": "Eu",
+      "start": 0.4992290249433107,
+      "end": 0.592108843537415
+    },
+    {
+      "word": "sou",
+      "start": 0.6385487528344671,
+      "end": 0.7430385487528345
+    },
+    {
+      "word": "o",
+      "start": 0.7894784580498866,
+      "end": 0.8126984126984127
+    },
+    {
+      "word": "Pulso.",
+      "start": 0.893968253968254,
+      "end": 1.3119274376417236
+    },
+    {
+      "word": "Agora",
+      "start": 1.497687074829932,
+      "end": 1.7879365079365084
+    },
+    {
+      "word": "eu",
+      "start": 1.8111564625850345,
+      "end": 1.8808163265306128
+    },
+    {
+      "word": "posso",
+      "start": 1.927256235827665,
+      "end": 2.1478458049886626
+    },
+    {
+      "word": "conversar",
+      "start": 2.217505668934241,
+      "end": 2.6470748299319724
+    },
+    {
+      "word": "com",
+      "start": 2.6819047619047613,
+      "end": 2.8212244897959176
+    },
+    {
+      "word": "você,",
+      "start": 2.8560544217687065,
+      "end": 3.227573696145124
+    },
+    {
+      "word": "responder",
+      "start": 3.4017233560090694,
+      "end": 3.8080725623582756
+    },
+    {
+      "word": "perguntas",
+      "start": 3.8661224489795907,
+      "end": 4.295691609977323
+    },
+    {
+      "word": "e",
+      "start": 4.353741496598638,
+      "end": 4.411791383219953
+    },
+    {
+      "word": "ajudar",
+      "start": 4.446621315192742,
+      "end": 4.760090702947843
+    },
+    {
+      "word": "a",
+      "start": 4.794920634920632,
+      "end": 4.829750566893421
+    },
+    {
+      "word": "usar",
+      "start": 4.8529705215419465,
+      "end": 5.061950113378681
+    },
+    {
+      "word": "o",
+      "start": 5.09678004535147,
+      "end": 5.131609977324259
+    },
+    {
+      "word": "site.",
+      "start": 5.178049886621311,
+      "end": 5.6076190476190435
+    },
+    {
+      "word": "Quer",
+      "start": 5.804988662131519,
+      "end": 5.897868480725622
+    },
+    {
+      "word": "comparar",
+      "start": 5.9210884353741475,
+      "end": 6.2461678004535095
+    },
+    {
+      "word": "preços?",
+      "start": 6.292607709750562,
+      "end": 6.7337868480725565
+    },
+    {
+      "word": "Abra",
+      "start": 6.907936507936507,
+      "end": 7.070476190476188
+    },
+    {
+      "word": "o",
+      "start": 7.093696145124714,
+      "end": 7.116916099773239
+    },
+    {
+      "word": "FranRadar.",
+      "start": 7.151746031746028,
+      "end": 7.6858049886621265
+    },
+    {
+      "word": "Eu",
+      "start": 7.883174603174603,
+      "end": 7.98766439909297
+    },
+    {
+      "word": "vou",
+      "start": 8.02249433106576,
+      "end": 8.115374149659864
+    },
+    {
+      "word": "destacar",
+      "start": 8.150204081632653,
+      "end": 8.544943310657596
+    },
+    {
+      "word": "o",
+      "start": 8.568163265306122,
+      "end": 8.602993197278911
+    },
+    {
+      "word": "botão",
+      "start": 8.626213151927438,
+      "end": 8.997732426303854
+    },
+    {
+      "word": "certo",
+      "start": 9.032562358276643,
+      "end": 9.29959183673469
+    },
+    {
+      "word": "e",
+      "start": 9.322811791383216,
+      "end": 9.357641723356005
+    },
+    {
+      "word": "mostrar",
+      "start": 9.392471655328794,
+      "end": 9.694331065759632
+    },
+    {
+      "word": "o",
+      "start": 9.717551020408159,
+      "end": 9.76399092970521
+    },
+    {
+      "word": "caminho.",
+      "start": 9.787210884353737,
+      "end": 10.158730158730151
+    },
+    {
+      "word": "Se",
+      "start": 10.298049886621316,
+      "end": 10.356099773242631
+    },
+    {
+      "word": "o",
+      "start": 10.39092970521542,
+      "end": 10.425759637188209
+    },
+    {
+      "word": "servidor",
+      "start": 10.460589569160998,
+      "end": 10.832108843537414
+    },
+    {
+      "word": "atingir",
+      "start": 10.866938775510203,
+      "end": 11.203628117913832
+    },
+    {
+      "word": "o",
+      "start": 11.226848072562358,
+      "end": 11.250068027210885
+    },
+    {
+      "word": "limite,",
+      "start": 11.273287981859411,
+      "end": 11.656417233560092
+    },
+    {
+      "word": "o",
+      "start": 11.784126984126985,
+      "end": 11.8421768707483
+    },
+    {
+      "word": "assistente",
+      "start": 11.900226757369616,
+      "end": 12.434285714285712
+    },
+    {
+      "word": "continua",
+      "start": 12.50394557823129,
+      "end": 13.0031746031746
+    },
+    {
+      "word": "no",
+      "start": 13.038004535147389,
+      "end": 13.107664399092966
+    },
+    {
+      "word": "seu",
+      "start": 13.165714285714282,
+      "end": 13.235374149659862
+    },
+    {
+      "word": "dispositivo.",
+      "start": 13.27020408163265,
+      "end": 14.164172335600904
+    },
+    {
+      "word": "Vamos",
+      "start": 14.326712018140588,
+      "end": 14.500861678004537
+    },
+    {
+      "word": "experimentar?",
+      "start": 14.524081632653063,
+      "end": 15.16263038548753
+    }
+  ],
+  "timings": [
+    {
+      "audioOffsetMs": 0,
+      "sentences": [
+        {
+          "text": "Oi! Eu sou o Pulso.",
+          "words": [
+            "Oi!",
+            "Eu",
+            "sou",
+            "o",
+            "Pulso."
+          ],
+          "startMs": 0,
+          "durationMs": 1498,
+          "wordTimes": [
+            70,
+            499,
+            639,
+            789,
+            894
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 1498,
+      "sentences": [
+        {
+          "text": "Agora eu posso conversar com você, responder perguntas e ajudar a usar o site.",
+          "words": [
+            "Agora",
+            "eu",
+            "posso",
+            "conversar",
+            "com",
+            "você,",
+            "responder",
+            "perguntas",
+            "e",
+            "ajudar",
+            "a",
+            "usar",
+            "o",
+            "site."
+          ],
+          "startMs": 0,
+          "durationMs": 4307,
+          "wordTimes": [
+            0,
+            313,
+            430,
+            720,
+            1184,
+            1358,
+            1904,
+            2368,
+            2856,
+            2949,
+            3297,
+            3355,
+            3599,
+            3680
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 5805,
+      "sentences": [
+        {
+          "text": "Quer comparar preços?",
+          "words": [
+            "Quer",
+            "comparar",
+            "preços?"
+          ],
+          "startMs": 0,
+          "durationMs": 1103,
+          "wordTimes": [
+            0,
+            116,
+            488
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 6908,
+      "sentences": [
+        {
+          "text": "Abra o FranRadar.",
+          "words": [
+            "Abra",
+            "o",
+            "FranRadar."
+          ],
+          "startMs": 0,
+          "durationMs": 975,
+          "wordTimes": [
+            0,
+            186,
+            244
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 7883,
+      "sentences": [
+        {
+          "text": "Eu vou destacar o botão certo e mostrar o caminho.",
+          "words": [
+            "Eu",
+            "vou",
+            "destacar",
+            "o",
+            "botão",
+            "certo",
+            "e",
+            "mostrar",
+            "o",
+            "caminho."
+          ],
+          "startMs": 0,
+          "durationMs": 2415,
+          "wordTimes": [
+            0,
+            139,
+            267,
+            685,
+            743,
+            1149,
+            1440,
+            1509,
+            1834,
+            1904
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 10298,
+      "sentences": [
+        {
+          "text": "Se o servidor atingir o limite, o assistente continua no seu dispositivo.",
+          "words": [
+            "Se",
+            "o",
+            "servidor",
+            "atingir",
+            "o",
+            "limite,",
+            "o",
+            "assistente",
+            "continua",
+            "no",
+            "seu",
+            "dispositivo."
+          ],
+          "startMs": 0,
+          "durationMs": 4029,
+          "wordTimes": [
+            0,
+            93,
+            163,
+            569,
+            929,
+            975,
+            1486,
+            1602,
+            2206,
+            2740,
+            2868,
+            2972
+          ]
+        }
+      ]
+    },
+    {
+      "audioOffsetMs": 14327,
+      "sentences": [
+        {
+          "text": "Vamos experimentar?",
+          "words": [
+            "Vamos",
+            "experimentar?"
+          ],
+          "startMs": 0,
+          "durationMs": 1022,
+          "wordTimes": [
+            0,
+            197
+          ]
+        }
+      ]
+    }
+  ],
+  "duration": 15.348390022675735,
+  "voice": "pt_BR-faber-medium",
+  "piperVersion": "1.8.0",
+  "lengthScale": 0.96,
+  "modelSha256": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7",
+  "audioSha256": "b779550ab898d5eede72e52107a61e1dc0acc32fbf3cb751c277ba1d2f1ad82d"
+}

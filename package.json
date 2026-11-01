@@ -10,9 +10,17 @@
     "walkthrough": "node walkthrough.js",
     "gemini-login": "node scripts/gemini-login.js",
     "growth:snapshot": "node scripts/growth/snapshot-github.js",
+    "project:backup": "node scripts/project-backup.js",
     "scheduler": "node schedules/daily-automation.js",
+    "review:video-qa": "node scripts/review-video-qa.js",
+  "review:video-auto": "node scripts/apply-publication-review-policy.js",
+  "qa:narrative-seek": "node scripts/qa-narrative-studio-seek.cjs",
+    "images:library": "node scripts/image-library.js",
     "test": "node test.js",
     "test:pipeline": "node tests/pipeline-smoke.js",
+    "test:ci": "bash scripts/run-ci-tests.sh",
+    "preflight": "node scripts/preflight-runtime.js",
+    "preflight:neural": "node scripts/preflight-runtime.js --neural",
     "agent:strategy": "node agents/content-strategy-agent.js",
     "agent:script": "node agents/script-writer-agent.js",
     "agent:thumbnail": "node agents/thumbnail-designer-agent.js",
@@ -20,6 +28,7 @@
     "agent:production": "node agents/production-management-agent.js",
     "agent:publishing": "node agents/publishing-scheduling-agent.js",
     "agent:analytics": "node agents/analytics-optimization-agent.js",
+    "analytics:daily": "node scripts/collect-daily-performance.js",
     "credentials:setup": "node utils/credential-manager.js setup",
     "lint": "eslint .",
     "social:login": "node scripts/social-login.js"
@@ -36,13 +45,18 @@
     "inquirer": "^8.2.6",
     "microsoft-cognitiveservices-speech-sdk": "^1.45.0",
     "moment": "^2.29.4",
-    "node-cron": "^3.0.2",
+    "node-cron": "^4.6.0",
     "openai": "^6.0.0",
     "playwright": "^1.63.0",
     "replicate": "^1.4.0",
     "sharp": "^0.35.5",
     "sqlite3": "^6.0.1",
     "winston": "^3.11.0"
+  },
+  "overrides": {
+    "@google-cloud/local-auth": {
+      "google-auth-library": "^10.9.0"
+    }
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.2.0"

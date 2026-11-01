@@ -1,0 +1,69 @@
+{
+  "vertices": 320435,
+  "edges": 804450,
+  "samples": [
+    {
+      "time": 0,
+      "maxRatio": 1.0001102298278486,
+      "countOver3": 0,
+      "maxExtraLength": 5.973023099303115e-8,
+      "worst": []
+    },
+    {
+      "time": 1,
+      "maxRatio": 1.0002034017989376,
+      "countOver3": 0,
+      "maxExtraLength": 1.106696113058539e-7,
+      "worst": []
+    },
+    {
+      "time": 1.5,
+      "maxRatio": 1.0002484932373605,
+      "countOver3": 0,
+      "maxExtraLength": 1.0656969267306988e-7,
+      "worst": []
+    },
+    {
+      "time": 2.4,
+      "maxRatio": 1.0002586124987165,
+      "countOver3": 0,
+      "maxExtraLength": 1.1114110854857848e-7,
+      "worst": []
+    },
+    {
+      "time": 3.65,
+      "maxRatio": 1.0002720637281801,
+      "countOver3": 0,
+      "maxExtraLength": 1.0920909394038572e-7,
+      "worst": []
+    },
+    {
+      "time": 15.5,
+      "maxRatio": 1.0001756262125008,
+      "countOver3": 0,
+      "maxExtraLength": 1.0618230876936058e-7,
+      "worst": []
+    },
+    {
+      "time": 17.8,
+      "maxRatio": 1.0001741613974922,
+      "countOver3": 0,
+      "maxExtraLength": 1.1420766073350422e-7,
+      "worst": []
+    },
+    {
+      "time": 19.9,
+      "maxRatio": 1.0001936746205862,
+      "countOver3": 0,
+      "maxExtraLength": 1.1521500978858672e-7,
+      "worst": []
+    },
+    {
+      "time": 22,
+      "maxRatio": 1.0001669648012248,
+      "countOver3": 0,
+      "maxExtraLength": 1.1110322386891861e-7,
+      "worst": []
+    }
+  ]
+}

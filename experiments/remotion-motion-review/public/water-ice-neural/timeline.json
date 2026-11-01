@@ -1,0 +1,41 @@
+{
+  "provider": "Microsoft Edge Neural TTS",
+  "voice": "pt-BR-FranciscaNeural",
+  "rate": "-3%",
+  "pitch": "-1Hz",
+  "language": "pt-BR",
+  "audioFile": "narration.mp3",
+  "audioDurationSeconds": 25.2,
+  "segments": [
+    {
+      "id": "question",
+      "text": "Por que o gelo flutua?",
+      "startSeconds": 0.05,
+      "durationSeconds": 1.483
+    },
+    {
+      "id": "liquid",
+      "text": "Na água líquida, as moléculas se movem e conseguem ficar mais próximas.",
+      "startSeconds": 1.533,
+      "durationSeconds": 4.575
+    },
+    {
+      "id": "crystal",
+      "text": "Ao congelar, elas formam uma estrutura cristalina mais aberta.",
+      "startSeconds": 6.108,
+      "durationSeconds": 4.085
+    },
+    {
+      "id": "density",
+      "text": "A mesma quantidade de água passa a ocupar mais espaço. Por isso, o gelo fica cerca de nove por cento menos denso.",
+      "startSeconds": 10.193,
+      "durationSeconds": 7.422
+    },
+    {
+      "id": "iceberg",
+      "text": "Então ele flutua. Num iceberg, aproximadamente noventa por cento do volume fica abaixo da superfície.",
+      "startSeconds": 17.615,
+      "durationSeconds": 7.5
+    }
+  ]
+}

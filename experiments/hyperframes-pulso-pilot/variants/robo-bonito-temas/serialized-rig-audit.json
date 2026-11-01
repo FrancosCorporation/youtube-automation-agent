@@ -1,0 +1,25 @@
+{
+  "skins": 1,
+  "joints": 17,
+  "weightsNormalized": true,
+  "jointIndicesValid": true,
+  "inverseBindRestMaxError": 2.503395080122317e-08,
+  "sourcePositionsPreservedAfterYUpRotation": true,
+  "sourceUVsPreserved": true,
+  "sourceTriangleWindingPreserved": true,
+  "embeddedTexturesByteIdentical": true,
+  "sourceVerticesCovered": 315191,
+  "sourceTrianglesCovered": 500036,
+  "everyBodyTriangleRigidToOneBone": true,
+  "armLegBridgeTriangles": 0,
+  "facialNodes": [
+    "FaceEye_L",
+    "FaceEye_R",
+    "FaceSmile",
+    "FaceMouth"
+  ],
+  "limits": [
+    "Finger phalanges not independently rigged.",
+    "Self-intersections require visual inspection."
+  ]
+}

@@ -1,0 +1,112 @@
+'use strict';
+
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { withProcessFileLock } = require('./process-file-lock');
+const { withAndroidDeviceLock } = require('./android-device-lock');
+const { socialAndroidTarget } = require('./android-social-target');
+const { recordPublicationResult } = require('./social-publication-state');
+const { socialClipCaption } = require('./platform-video-policy');
+const { resolveThemeHashtags } = require('./theme-metadata');
+const { instagramCaptionForInput } = require('./instagram-upload-flow');
+const { sha256StableRegularFile } = require('./video-qa-manifest');
+const { scanTikTokPublicPosts } = require('./tiktok-reconciliation');
+const { scanInstagramPosts } = require('./instagram-reconciliation');
+const { normalizeAccountHandle } = require('./android-session-state');
+
+function reconciliationCandidates(entries, platform, accountHandle, root) {
+  const expected = normalizeAccountHandle(accountHandle);
+  if (!expected) return [];
+  const candidates = [];
+  for (const entry of entries || []) for (const clip of entry.clips || []) {
+    const previous = Object.entries(entry.results?.clips || {})
+      .find(([file]) => path.resolve(root, file) === path.resolve(root, clip.path))?.[1]?.[platform];
+    if (!['unknown', 'submitted', 'processing'].includes(previous?.status)
+      || previous.platform !== platform || !/^[a-f0-9]{64}$/i.test(previous.artifact?.sha256 || '')
+      || !Number.isFinite(Date.parse(previous.submittedAt))
+      || path.resolve(root, previous.artifact.path) !== path.resolve(root, clip.path)
+      || previous.account && normalizeAccountHandle(previous.account) !== expected) continue;
+    const caption = socialClipCaption({ clip, title: clip.title || entry.seo?.youtubeTitle || entry.title,
+      hashtags: resolveThemeHashtags(entry.seo?.hashtags, entry.theme), sourceUrl: entry.url || '', platform });
+    candidates.push({ id: `${entry.jobId}:${clip.path}`, entry, clip, previous,
+      caption: instagramCaptionForInput(caption) });
+  }
+  return candidates;
+}
+
+// Read-only platform reconciliation. It never calls upload/Post and never
+// converts absence into permission to resend. State and evidence survive restarts.
+async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'), platform = 'tiktok',
+  force = false, maxPosts = 6, env = process.env, lockTimeoutMs = 10000 } = {}) {
+  const scan = { tiktok: scanTikTokPublicPosts, instagram: scanInstagramPosts }[platform];
+  if (!scan) throw new Error('reconciliador não implementado para esse destino');
+  const stateDir = path.resolve(root, env.STATE_DIR || 'data/state');
+  const ledgerPath = path.join(stateDir, 'topics.json');
+  const statePath = path.join(stateDir, `reconciliation-${platform}.json`);
+  return withProcessFileLock(async () => {
+    let state = {};
+    try { state = JSON.parse(await fs.readFile(statePath, 'utf8')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (!force && Date.parse(state.nextCheckAt || '') > Date.now()) return { status: 'waiting', nextCheckAt: state.nextCheckAt };
+    const entries = JSON.parse(await fs.readFile(ledgerPath, 'utf8')).entries;
+    const accountHandle = env[`ANDROID_SOCIAL_HANDLE_${platform.toUpperCase()}`];
+    const candidates = reconciliationCandidates(entries, platform, accountHandle, root);
+    const eligible = [];
+    for (const candidate of candidates) {
+      try {
+        const current = await sha256StableRegularFile(path.resolve(root, candidate.clip.path));
+        if (current.sha256 === candidate.previous.artifact.sha256) eligible.push(candidate);
+      } catch { /* Changed/missing media is never attributed to a public post. */ }
+    }
+    const report = { checkedAt: new Date().toISOString(), nextCheckAt: new Date(Date.now() + 15 * 60000).toISOString(),
+      platform, page: Number.isInteger(state.nextPage) ? state.nextPage : 0,
+      candidates: eligible.length, confirmed: [], status: 'no_candidates' };
+    try {
+      if (eligible.length) {
+        const target = socialAndroidTarget(platform, { env });
+        await target.emulator.acquire();
+        try {
+          await withAndroidDeviceLock(async () => {
+            const directory = path.join(root, 'data/reports/social-reconciliation', platform);
+            await fs.mkdir(directory, { recursive: true });
+            const capture = async label => {
+              const file = path.join(directory, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}-${label}.png`);
+              await fs.writeFile(file, target.control.screenshot());
+              return path.relative(root, file);
+            };
+            try { await scan({ control: target.control, accountHandle, candidates: eligible, maxPosts, capture, pageOffset: report.page,
+              onConfirmed: async proof => {
+                const candidate = eligible.find(item => item.id === proof.id);
+                const result = { ...candidate.previous, status: 'confirmed', account: proof.account,
+                  confirmedAt: new Date().toISOString(), reconciledAt: new Date().toISOString(),
+                  evidence: { kind: 'public_profile_post', observed: platform === 'tiktok'
+                    ? 'Perfil próprio conferido; legenda completa idêntica e privacidade Everyone selecionada.'
+                    : 'Conta própria conferida; publicação presente em Posts com insights e legenda completa idêntica.',
+                    captionSha256: crypto.createHash('sha256').update(proof.caption).digest('hex'),
+                    screenshotPath: proof.captionScreenshot, privacyScreenshotPath: proof.privacyScreenshot } };
+                delete result.failureCode; delete result.nextAttemptAt;
+                await recordPublicationResult(ledgerPath, candidate.entry.videoPath,
+                  { scope: 'clip', platform, artifactPath: candidate.clip.path, result }, { root });
+                report.confirmed.push({ jobId: candidate.entry.jobId, artifactPath: candidate.clip.path });
+              } }); } catch (error) {
+              report.screenshotPath = await capture('deferred').catch(() => null);
+              throw error;
+            }
+          }, { lockPath: target.lockPath, owner: `reconcile:${platform}`, timeoutMs: lockTimeoutMs });
+          report.status = 'checked';
+          report.nextPage = (report.page + 1) % 8;
+        } finally { target.emulator.release(); }
+      }
+    } catch (error) {
+      report.status = 'deferred';
+      report.nextPage = report.page;
+      report.reason = String(error.message).slice(0, 220);
+    }
+    const temporary = `${statePath}.${process.pid}.tmp`;
+    await fs.writeFile(temporary, JSON.stringify(report, null, 2), { mode: 0o600 });
+    await fs.rename(temporary, statePath);
+    return report;
+  }, { lockPath: `${statePath}.lock`, owner: `reconciliation:${platform}`, timeoutMs: 1000 });
+}
+
+module.exports = { reconciliationCandidates, reconcileSocialPublications };

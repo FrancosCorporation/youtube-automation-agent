@@ -1,0 +1,52 @@
+{
+  "tasks": [
+    {
+      "id": "rig-contract",
+      "inputs": [
+        "experiments/hyperframes-pulso-pilot/scripts/rig-bonito-robot.py",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-animado/rig-audit.json"
+      ],
+      "objective": "Extraia somente fatos de rig-bonito-robot.py/rig-audit.json e grave rig-contract.json com source_hash, joints (nome,parent,pivot), facial_controls, source_body_vertices, source_body_triangles, weights_normalized, max_influences e pending_checks. Os nomes Root/Hips possuem zero pesos diretos e sao parents: nao alegue defeito so por isso. Sem render/malha: todos encaixe, rigidez placas, ombros/cotovelos/maos/joelhos, poses e binds ficam pending. Nenhuma aprovacao visual. Grave o arquivo com ferramentas.",
+      "outputs": [
+        {
+          "path": "rig-contract.json",
+          "kind": "json",
+          "required_keys": [
+            "source_hash",
+            "joints",
+            "facial_controls",
+            "pending_checks"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "context": "Pulso 3D: rig candidato, mouth sync RMS por audio real, auditoria mecanica apenas. Orquestrador revisa contra dados e roda testes/revisa video."
+    },
+    {
+      "id": "audio-proof-times",
+      "inputs": [
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-animado/assets/speech.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-animado/assets/speech-envelope.json"
+      ],
+      "objective": "Leia speech-envelope.json e execute um calculo para audio-proof-times.json com speaking_times: 4 tempos em segundos de niveis altos reais (um de cada frase 1-4, escolhendo maximo dentro dos tempos de speech.json), silent_times: 4 tempos de nivel exatamente zero, limitados a pausa inicial, final e gaps explicitos entre frases, total_duration e method. Confirme que position=seconds*1000/stepMs. Nao use RNG, nao invente transcricao nem visemas. Nao assista/renderize. Grave o JSON.",
+      "outputs": [
+        {
+          "path": "audio-proof-times.json",
+          "kind": "json",
+          "required_keys": [
+            "speaking_times",
+            "silent_times",
+            "total_duration",
+            "method"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "context": "Pulso 3D: rig candidato, mouth sync RMS por audio real, auditoria mecanica apenas. Orquestrador revisa contra dados e roda testes/revisa video."
+    }
+  ]
+}

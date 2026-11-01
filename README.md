@@ -1,5 +1,7 @@
 # AgentTube - ECGHuNZSECqTXabaLjkVrTEnguiNZLkKF1qi8oBGpump
 
+> **Pulso neste checkout — 25/10/2026:** comece por [plan.md](plan.md) e pelo [workflow autônomo](docs/workflow-autonomo.md). O serviço de usuário está ativo e espera recursos/cota automaticamente; após a liberação do host, a execução encontrou reprovações factuais e esgotou a cota da API. Não há novo MP4 aprovado ou upload. Estado verificável em [activation-state.json](docs/evidencias/workflow-autonomo-2026-10-25/activation-state.json). As instruções AgentTube/Express abaixo descrevem outro orquestrador; sua aprovação humana/API não substitui a política automática e o Studio Android do Pulso.
+
 **The open-source AI agent that runs a YouTube channel end to end.**
 
 Research topics → write scripts → generate narration and visuals → assemble videos → optimize metadata → review → schedule → publish → learn from analytics and from what your audience says.
@@ -73,6 +75,14 @@ Already know what you are doing? `npm run setup` offers a shorter classic flow, 
 ### Verify production readiness
 
 Before activating autonomous production, open **Production readiness** in the dashboard and choose **Run verified check**. The gate makes small live text and narration requests, verifies access to the connected YouTube channel, creates and decodes a temporary MP4 containing audio and video, and validates every queued upload's metadata. It never creates or uploads a YouTube video, and temporary probe assets are deleted after the run.
+
+### Back up and restore local project state
+
+Use `npm run project:backup -- backup --destination /path/outside/the/checkout` to create a private snapshot. It captures the SQLite database through SQLite's online backup API, validates JSON state, stores source/configuration files and writes a SHA-256 manifest. Snapshot folders use mode `0700`; files use `0600`, including `.env` and credential files. Generated video/image media and browser login profiles are excluded.
+
+To test recovery without changing the active checkout, run `npm run project:backup -- restore --snapshot /path/to/pulso-backup-... --to /path/to/new-empty-directory`. The target must be new and outside the active workspace. The restore verifies file hashes, JSON and SQLite before atomically creating that directory. Retention is explicit: `npm run project:backup -- prune --destination /path/to/backups --days 30` removes only expired folders with a valid Pulso backup name and manifest.
+
+See [`docs/backup-restore-runbook.md`](docs/backup-restore-runbook.md) for the full file scope, secret-handling limits, recovery procedure, and widget rollback reference.
 
 AI image generation can incur a larger provider charge, so its live probe is a separate opt-in checkbox. Without that checkbox, image configuration is reported as verified, skipped, or using the built-in gradient fallback without making a paid image request.
 
@@ -151,6 +161,8 @@ By default, finished videos wait for factual review, media-rights confirmation, 
 After publication, Lumen captures comparable 24-hour and 7-day performance snapshots. It evaluates CTR, retention, engagement, watch time, format, length, hook style, and title style against the channel's own history—not a universal view-count target.
 
 Open **Analytics → What the agent learned** to review the evidence and confidence behind each recommendation. Pending or rejected recommendations never influence generation. Once you approve one, the next Autonomous Channel Operator run includes it as an explicit planning constraint. Simulated analytics fallbacks are stored as unverified and are never eligible for baselines or recommendations.
+
+For the animated Pulso scheduler, run **npm run analytics:daily** to collect read-only metrics for confirmed ledger publications. A dedicated user timer runs at 09:00 America/Sao_Paulo. Daily JSON/Markdown reports preserve missing data, OAuth failures and unsupported networks explicitly, without simulated analytics. See the [daily performance runbook](docs/daily-performance-runbook.md) for scheduling, refresh and evidence limits.
 
 When an approved learning calls for better packaging, Lumen prepares a control plus title and thumbnail variants for new videos. Review Studio shows those options before approval; the selected combination is the only one handed to the publishing queue. Lumen does not silently swap live YouTube metadata.
 
@@ -267,9 +279,9 @@ Additional integrations: Anthropic Claude (`claude-fable-5`), ElevenLabs (Eleven
 
 Local slideshow rendering remains the default, so upgrading does not start paid video requests. Choose a provider in **Channel setup**, set a paid-seconds cap, then run the separately opted-in paid video readiness probe.
 
-The local slideshow has two styles (`SLIDESHOW_STYLE` / dashboard `slideshow_style` setting):
+The production default is **`animated`** (`SLIDESHOW_STYLE` / dashboard `slideshow_style`): it uses HyperFrames, the shared scene kit, and the responsive visual tokens for portrait and landscape compositions. `dynamic` and `classic` remain explicit legacy slideshow styles:
 
-- **`dynamic` (default)** — generates one image every few seconds of narration (tune with `SLIDESHOW_SECONDS_PER_IMAGE`, default 3.5; use 1–2 for fast AI-video pacing) and assembles them with Ken Burns zoom/pan moves and quick crossfade/dissolve/wipe transitions, producing a motion video instead of static slides. Image sources, in order: OpenAI → Gemini API → **Gemini web** (free, automated Chromium profile on gemini.google.com — `npm run gemini-login` imports an existing Google session or opens a one-time login; `GEMINI_WEB=0` disables it) → **free stock photos** (keyword-matched, no key) so every shot always gets a unique frame. If literally everything fails, the text slides still get a subtle Ken Burns zoom instead of sitting static.
+- **`dynamic`** — generates one image every few seconds of narration (tune with `SLIDESHOW_SECONDS_PER_IMAGE`, default 3.5; use 1–2 for fast AI-video pacing) and assembles them with Ken Burns zoom/pan moves and quick crossfade/dissolve/wipe transitions. Image sources, in order: OpenAI → Gemini API → **Gemini web** (free, automated Chromium profile on gemini.google.com — `npm run gemini-login` imports an existing Google session or opens a one-time login; `GEMINI_WEB=0` disables it) → **free stock photos** (keyword-matched, no key).
 - **`classic`** — text slides rendered with Playwright and joined with crossfades (fully offline).
 
 | Provider | Default model | Best fit | Clip limits |
@@ -354,7 +366,11 @@ MAX_CONCURRENT_JOBS=1
 GENERATION_STAGE_MAX_ATTEMPTS=2
 GENERATION_RETRY_BASE_MS=1000
 
-# Optional: protect mutating API routes (POST /generate, /publish)
+# The server binds to loopback by default. To expose it on the network, set an
+# interface IP and a strong API key first. With a key configured, private API
+# reads and writes require the x-api-key header; /health and static dashboard
+# assets stay public. Do not expose this service directly to the internet.
+API_BIND_HOST=127.0.0.1
 # API_KEY=some-long-random-string
 
 # Optional anonymous activation milestones (off by default; HTTPS endpoint required)
@@ -367,6 +383,21 @@ GENERATION_RETRY_BASE_MS=1000
 The dashboard calculates setup, first-real-MP4, approval, publication, and repeat-generation milestones locally from SQLite and files on disk. A video counts only when a non-simulated `.mp4` with an MP4 container signature still exists.
 
 Anonymous milestone reporting is disabled by default and has no built-in collector. It activates only when you explicitly set both telemetry variables. The allowlisted payload contains the milestone name and time, Lumen version, OS family, Node major version, and a random installation ID. It never includes credentials, channel data, prompts, topics, titles, filenames, or video contents.
+
+## Automation paths in this checkout
+
+This checkout contains two separate orchestrators. They do not share a database or publishing queue.
+
+| Flow | Entry point | State and role |
+|---|---|---|
+| AgentTube / Express | `npm start` → `index.js`; `npm run scheduler` → `schedules/daily-automation.js` | SQLite-backed dashboard, agents, review workflow and its own scheduled queue. |
+| Pulso animated production | User systemd unit `ai-video-scheduler.service` runs `scripts/channel-scheduler.js` | Service active/enabled; resource and API quota backoffs persist automatically. Repeated factual QA failures mean recurring generation, render and upload are still not proven. See [current state](docs/evidencias/workflow-autonomo-2026-10-25/activation-state.json). |
+
+Do not start another publishing scheduler to troubleshoot the other flow. The accepted production boundary and requirements for any future adapter are documented in [`docs/adr/0001-fronteira-entre-pipelines.md`](docs/adr/0001-fronteira-entre-pipelines.md). The paths remain separate; integration requires an explicit versioned adapter, idempotency and tested rollback.
+
+For Pulso operation, use [`docs/workflow-autonomo.md`](docs/workflow-autonomo.md): current evidence, user-service diagnostics, source-to-scene context, resource waits, recovery, destination constraints and rollout acceptance. The schedule below belongs to the AgentTube flow; Pulso's configured cadence is recorded separately and is not proof of production throughput.
+
+For focused tests, `npm test` exercises the AgentTube application and `npm run test:pipeline` checks the animated Pulso renderer. `npm run test:ci` runs both under temporary `STATE_DIR` and SQLite paths and suppresses dotenv credentials; use it when you need the combined offline suite.
 
 ## Automation Schedule
 
@@ -387,7 +418,7 @@ gantt
     Run optimizations     :22:00, 1h
 ```
 
-The scheduler runs automatically after `npm start`. Content generation at 06:00, publishing queue processed every 15 minutes, analytics at 09:00, optimization at 22:00. Weekly strategy reviews run on Sundays.
+In the AgentTube/SQLite flow, its scheduler runs after `npm start`. Content generation at 06:00, publishing queue processed every 15 minutes, analytics at 09:00, optimization at 22:00. Weekly strategy reviews run on Sundays. This is separate from the Pulso animated production process described above.
 
 When an active channel strategy exists, the 06:00 generation check uses its cadence and launches an autonomous research-and-production run when the content buffer needs work. Without an active strategy, the original topic-selection flow remains in place.
 

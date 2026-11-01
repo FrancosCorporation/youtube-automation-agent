@@ -1,0 +1,1034 @@
+[
+  {
+    "text": "A inteligência artificial pode escrever bonito e ainda errar",
+    "startMs": 51.166,
+    "endMs": 3776.333,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Para entender por quê acompanhe a viagem de uma pergunta até a",
+    "startMs": 3827.333,
+    "endMs": 7164.958,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "resposta que aparece na tela",
+    "startMs": 7164.958,
+    "endMs": 9163.333,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Quando um modelo de linguagem gera texto ele estima quais",
+    "startMs": 9213.916,
+    "endMs": 12448.458,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "pedaços podem continuar a sequência que recebeu",
+    "startMs": 12448.458,
+    "endMs": 15477.75,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "O novo pedaço entra no texto vira parte do contexto e ajuda a",
+    "startMs": 15528.333,
+    "endMs": 19510.291,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "orientar o próximo passo",
+    "startMs": 19510.291,
+    "endMs": 21276.708,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Esse processo se repete até a resposta terminar respeitando",
+    "startMs": 21327.333,
+    "endMs": 25257.75,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "também as instruções e os limites do sistema",
+    "startMs": 25257.75,
+    "endMs": 28132.374,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Pense na frase o gato dorme no sofá Ela aparece aqui apenas",
+    "startMs": 28183.0,
+    "endMs": 32384.0,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "como um exemplo simplificado",
+    "startMs": 32384.0,
+    "endMs": 34292.166,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Na geração existem diferentes continuações possíveis a escolha",
+    "startMs": 34342.791,
+    "endMs": 38595.375,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "depende do modelo do contexto e das configurações",
+    "startMs": 38595.375,
+    "endMs": 42075.666,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Isso é diferente de abrir uma gaveta e retirar uma resposta",
+    "startMs": 42126.291,
+    "endMs": 45567.0,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "pronta para aquela pergunta",
+    "startMs": 45567.0,
+    "endMs": 47346.291,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Um aplicativo pode conectar o modelo à busca a documentos ou a",
+    "startMs": 47396.916,
+    "endMs": 51262.875,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "outras ferramentas mas isso é uma etapa adicional",
+    "startMs": 51262.875,
+    "endMs": 54472.582,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Por isso uma resposta fluente não prova que houve pesquisa na",
+    "startMs": 54523.208,
+    "endMs": 57835.041,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "internet nem que cada afirmação foi conferida",
+    "startMs": 57835.041,
+    "endMs": 61006.083,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 0
+  },
+  {
+    "text": "Uma palavra pode virar vários pedaços dentro de uma",
+    "startMs": 62343.20766666666,
+    "endMs": 65358.666666666664,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "inteligência artificial",
+    "startMs": 65358.666666666664,
+    "endMs": 66983.33266666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Antes de chegar ao modelo a pergunta passa por um tokenizador",
+    "startMs": 67033.91666666666,
+    "endMs": 70874.12466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "o componente que transforma o texto em uma sequência de",
+    "startMs": 70874.12466666667,
+    "endMs": 73799.41666666666,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "unidades chamadas tokens",
+    "startMs": 73799.41666666666,
+    "endMs": 75694.66566666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Um token pode corresponder a uma palavra inteira a parte dela",
+    "startMs": 75745.29166666666,
+    "endMs": 79521.04166666666,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "ou a um sinal de pontuação",
+    "startMs": 79521.04166666666,
+    "endMs": 81235.91566666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Os espaços também podem participar dessa representação",
+    "startMs": 81286.49966666667,
+    "endMs": 84881.87466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "dependendo do tokenizador usado",
+    "startMs": 84881.87466666667,
+    "endMs": 87099.29066666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Na tela separamos uma frase em peças para visualizar a ideia a",
+    "startMs": 87149.91666666666,
+    "endMs": 91183.41666666666,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "divisão é ilustrativa e varia entre modelos",
+    "startMs": 91183.41666666666,
+    "endMs": 94186.91566666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Cada peça é associada a uma identificação numérica porque a",
+    "startMs": 94237.54166666666,
+    "endMs": 97665.37466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "rede trabalha com números",
+    "startMs": 97665.37466666667,
+    "endMs": 99380.20766666665,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "A tokenização procura uma representação adequada para aquele",
+    "startMs": 99430.83266666665,
+    "endMs": 102819.99966666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "modelo combinando unidades de seu vocabulário",
+    "startMs": 102819.99966666667,
+    "endMs": 105965.29066666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Por isso contar palavras não é a mesma coisa que contar tokens",
+    "startMs": 106015.87466666667,
+    "endMs": 110063.20766666665,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "A escolha do tokenizador também importa ele precisa ser",
+    "startMs": 110113.83266666665,
+    "endMs": 113593.20766666665,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "compatível com o modelo que receberá a sequência",
+    "startMs": 113593.20766666665,
+    "endMs": 116545.16566666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "Na saída as unidades geradas voltam a ser texto legível A",
+    "startMs": 116595.79166666666,
+    "endMs": 120758.16666666666,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "frase que você lê passou por essa transformação nos dois",
+    "startMs": 120758.16666666666,
+    "endMs": 123747.83266666665,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "sentidos",
+    "startMs": 123747.83266666665,
+    "endMs": 124676.58266666665,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 1
+  },
+  {
+    "text": "A mesma palavra pode levar uma inteligência artificial a",
+    "startMs": 126051.541,
+    "endMs": 129311.875,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "caminhos diferentes",
+    "startMs": 129311.875,
+    "endMs": 130743.208,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Imagine duas frases sentei no banco da praça depositei",
+    "startMs": 130793.833,
+    "endMs": 134608.25,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "dinheiro no banco",
+    "startMs": 134608.25,
+    "endMs": 135807.624,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "A palavra banco é igual mas as palavras ao redor ajudam a",
+    "startMs": 135857.875,
+    "endMs": 139440.333,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "distinguir os sentidos",
+    "startMs": 139440.333,
+    "endMs": 141039.207,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Nos modelos baseados em Transformer mecanismos de atenção",
+    "startMs": 141090.208,
+    "endMs": 144762.875,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "relacionam partes da sequência para construir representações",
+    "startMs": 144762.875,
+    "endMs": 148229.375,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "dependentes do contexto",
+    "startMs": 148229.375,
+    "endMs": 149892.70799999998,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Em nossa animação as conexões destacadas mostram essa relação",
+    "startMs": 149943.291,
+    "endMs": 153951.041,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "de forma esquemática sem representar pesos reais de um modelo",
+    "startMs": 153951.041,
+    "endMs": 157946.791,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Não existe aqui um olhar humano lendo a frase existem",
+    "startMs": 157997.416,
+    "endMs": 161257.70799999998,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "operações matemáticas sobre representações numéricas",
+    "startMs": 161257.70799999998,
+    "endMs": 164841.124,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "O contexto disponível pode incluir a pergunta instruções e",
+    "startMs": 164891.75,
+    "endMs": 168512.875,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "trechos anteriores que o aplicativo envia ao modelo",
+    "startMs": 168512.875,
+    "endMs": 171748.375,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Essa informação ajuda a orientar a continuação mas a",
+    "startMs": 171798.95799999998,
+    "endMs": 175123.70799999998,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "quantidade de texto que cabe em uma entrada tem limite",
+    "startMs": 175123.70799999998,
+    "endMs": 178359.166,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Por isso uma conversa mostrada na tela não deve ser confundida",
+    "startMs": 178409.791,
+    "endMs": 181979.375,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "automaticamente com todo o material recebido naquela chamada",
+    "startMs": 181979.375,
+    "endMs": 185794.749,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "O ponto central é este o modelo gera a partir do contexto",
+    "startMs": 185845.375,
+    "endMs": 189466.5,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "disponível e mudar esse contexto pode mudar a resposta",
+    "startMs": 189466.5,
+    "endMs": 193191.624,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 2
+  },
+  {
+    "text": "Treinar uma inteligência artificial e conversar com ela são",
+    "startMs": 194509.87433333334,
+    "endMs": 197783.08333333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "etapas diferentes",
+    "startMs": 197783.08333333334,
+    "endMs": 199214.41533333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Durante o treinamento a rede ajusta parâmetros numéricos a",
+    "startMs": 199265.04133333336,
+    "endMs": 202615.54133333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "partir dos exemplos e do objetivo de aprendizado",
+    "startMs": 202615.54133333336,
+    "endMs": 205889.66633333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "No caso de modelos que geram texto prevendo a próxima unidade",
+    "startMs": 205940.29133333336,
+    "endMs": 209806.24933333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "aprender padrões de sequência é uma parte central desse",
+    "startMs": 209806.24933333334,
+    "endMs": 212834.62433333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "processo",
+    "startMs": 212834.62433333334,
+    "endMs": 213698.95733333335,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Esses parâmetros aprendidos participam dos cálculos usados",
+    "startMs": 213749.58333333334,
+    "endMs": 217151.62433333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "depois para produzir respostas",
+    "startMs": 217151.62433333334,
+    "endMs": 219381.95833333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Na conversa comum enviar uma nova mensagem fornece contexto",
+    "startMs": 219432.54133333336,
+    "endMs": 223350.08333333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "para a execução do modelo isso não equivale a refazer seu",
+    "startMs": 223350.08333333334,
+    "endMs": 226674.83333333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "treinamento a cada pergunta",
+    "startMs": 226674.83333333334,
+    "endMs": 228531.45733333335,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Um aplicativo pode guardar histórico recuperar documentos ou",
+    "startMs": 228582.04133333336,
+    "endMs": 232332.04133333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "manter informações entre sessões conforme sua implementação",
+    "startMs": 232332.04133333336,
+    "endMs": 236263.37433333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Essas funções precisam ser distinguidas da atualização dos",
+    "startMs": 236313.99933333334,
+    "endMs": 239767.62433333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "parâmetros da rede",
+    "startMs": 239767.62433333334,
+    "endMs": 241134.49933333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Na animação mostramos primeiro o ajuste durante o treino e",
+    "startMs": 241185.12433333334,
+    "endMs": 244690.29133333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "depois a passagem de uma pergunta pelo modelo já preparado",
+    "startMs": 244690.29133333336,
+    "endMs": 248299.45833333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "O desenho é uma simplificação os blocos não representam a",
+    "startMs": 248350.08333333334,
+    "endMs": 251971.20833333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "quantidade real de camadas ou parâmetros de um produto",
+    "startMs": 251971.20833333334,
+    "endMs": 255180.91633333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Assim lembrar algo na conversa consultar um arquivo e treinar",
+    "startMs": 255231.54133333336,
+    "endMs": 258826.87433333334,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "um modelo são mecanismos diferentes mesmo quando parecem",
+    "startMs": 258826.87433333334,
+    "endMs": 262332.04133333336,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "iguais para quem está usando",
+    "startMs": 262332.04133333336,
+    "endMs": 264137.0823333333,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 3
+  },
+  {
+    "text": "Uma resposta pode parecer segura e trazer uma informação sem",
+    "startMs": 265468.2076666667,
+    "endMs": 269115.12466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "apoio",
+    "startMs": 269115.12466666667,
+    "endMs": 269837.7076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Modelos de linguagem podem gerar conteúdo incorreto ou",
+    "startMs": 269888.3326666667,
+    "endMs": 273367.7076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "incompatível com o contexto recebido esse tipo de falha",
+    "startMs": 273367.7076666667,
+    "endMs": 276859.9576666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "costuma ser chamado de alucinação",
+    "startMs": 276859.9576666667,
+    "endMs": 279154.7076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Não é necessário imaginar uma intenção de enganar estamos",
+    "startMs": 279205.3326666667,
+    "endMs": 282736.24966666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "falando de um problema na confiabilidade do texto produzido",
+    "startMs": 282736.24966666667,
+    "endMs": 286293.87466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Uma forma de dar mais apoio à resposta é recuperar informação",
+    "startMs": 286344.49966666667,
+    "endMs": 289914.0826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "de documentos e acrescentar os trechos relevantes à entrada do",
+    "startMs": 289914.0826666667,
+    "endMs": 293225.9576666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "modelo",
+    "startMs": 293225.9576666667,
+    "endMs": 293987.2076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Esse processo é conhecido como geração aumentada por",
+    "startMs": 294037.7916666667,
+    "endMs": 297066.1666666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "recuperação ou RAG",
+    "startMs": 297066.1666666667,
+    "endMs": 298768.1236666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "A pergunta orienta uma busca a busca seleciona trechos e esses",
+    "startMs": 298831.62466666667,
+    "endMs": 302749.12466666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "trechos acompanham a solicitação enviada ao modelo",
+    "startMs": 302749.12466666667,
+    "endMs": 305997.49966666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Aqui mostramos uma biblioteca de documentos ilustrativa e não",
+    "startMs": 306048.12466666667,
+    "endMs": 309862.5416666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "resultados de uma pesquisa real.",
+    "startMs": 309862.5416666667,
+    "endMs": 311886.6656666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "A recuperação pode falhar o trecho necessário pode não",
+    "startMs": 311937.2916666667,
+    "endMs": 315429.5416666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "aparecer ou perder contexto quando o documento é dividido",
+    "startMs": 315429.5416666667,
+    "endMs": 318884.0826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Por isso encontrar algum texto parecido não basta para",
+    "startMs": 318934.7076666667,
+    "endMs": 322014.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "garantir que ele sustenta a conclusão",
+    "startMs": 322014.5826666667,
+    "endMs": 324167.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "A fonte precisa ser pertinente e a resposta ainda precisa",
+    "startMs": 324218.2076666667,
+    "endMs": 327697.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "respeitar o que ela realmente diz incluindo limites e",
+    "startMs": 327697.5826666667,
+    "endMs": 330957.9166666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "incertezas",
+    "startMs": 330957.9166666667,
+    "endMs": 332041.3326666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 4
+  },
+  {
+    "text": "Antes de confiar numa resposta de inteligência artificial siga",
+    "startMs": 333343.2076666667,
+    "endMs": 337234.9576666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "o caminho da evidência",
+    "startMs": 337234.9576666667,
+    "endMs": 338679.2076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Comece deixando claro o que você quer saber e oferecendo o",
+    "startMs": 338729.7916666667,
+    "endMs": 341938.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "material necessário para aquela tarefa",
+    "startMs": 341938.5826666667,
+    "endMs": 344465.24966666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Se a informação não estiver disponível peça ao sistema para",
+    "startMs": 344515.87466666667,
+    "endMs": 348149.9166666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "reconhecer a incerteza em vez de preencher a lacuna",
+    "startMs": 348149.9166666667,
+    "endMs": 351385.4156666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Quando a resposta citar uma fonte abra o documento e confira o",
+    "startMs": 351435.99966666667,
+    "endMs": 355147.3326666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "trecho que sustentaria a afirmação",
+    "startMs": 355147.3326666667,
+    "endMs": 357313.2076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Veja se ele fala do mesmo assunto se mantém as ressalvas e se",
+    "startMs": 357363.8326666667,
+    "endMs": 360920.5416666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "a conclusão não foi além do que está escrito",
+    "startMs": 360920.5416666667,
+    "endMs": 363601.8736666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Uma referência exibida na tela é um ponto de partida para essa",
+    "startMs": 363652.49966666667,
+    "endMs": 367041.6666666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "checagem não uma garantia automática",
+    "startMs": 367041.6666666667,
+    "endMs": 369761.6656666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Na animação a afirmação só se conecta ao documento depois que",
+    "startMs": 369812.2916666667,
+    "endMs": 373613.8326666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "encontramos apoio no trecho mostrado",
+    "startMs": 373613.8326666667,
+    "endMs": 375972.99966666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Se esse apoio faltar a saída adequada pode ser corrigir o",
+    "startMs": 376023.62466666667,
+    "endMs": 379541.6666666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "texto buscar outra fonte ou admitir que a resposta permanece",
+    "startMs": 379541.6666666667,
+    "endMs": 383613.8326666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "incerta",
+    "startMs": 383613.8326666667,
+    "endMs": 384413.7486666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "Esses cuidados ajudam a reduzir erros mas não transformam o",
+    "startMs": 384464.3326666667,
+    "endMs": 388162.7916666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "modelo em uma fonte infalível",
+    "startMs": 388162.7916666667,
+    "endMs": 390225.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "A ideia final é simples a inteligência artificial monta uma",
+    "startMs": 390276.2076666667,
+    "endMs": 393910.2076666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "resposta a confiabilidade depende também do contexto das",
+    "startMs": 393910.2076666667,
+    "endMs": 397724.6666666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  },
+  {
+    "text": "fontes e da verificação",
+    "startMs": 397724.6666666667,
+    "endMs": 399426.5826666667,
+    "timestampMs": null,
+    "confidence": null,
+    "chapter": 5
+  }
+]

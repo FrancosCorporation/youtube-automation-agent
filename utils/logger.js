@@ -1,16 +1,23 @@
 const winston = require('winston');
 const path = require('path');
 const chalk = require('chalk');
+const { sanitizeLogData, sanitizeLogText } = require('./log-sanitizer');
+
+const LOG_ROTATION = Object.freeze({
+  combined: Object.freeze({ maxsize: 5 * 1024 * 1024, maxFiles: 5 }),
+  error: Object.freeze({ maxsize: 5 * 1024 * 1024, maxFiles: 3 }),
+  component: Object.freeze({ maxsize: 2 * 1024 * 1024, maxFiles: 3 })
+});
 
 class Logger {
-  constructor(component = 'System') {
-    this.component = component;
+  constructor(component = 'System', options = {}) {
+    this.component = String(component || 'System').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64) || 'System';
+    this.logDir = options.logDir || path.join(__dirname, '..', 'logs');
+    this.rotation = options.rotation || LOG_ROTATION;
     this.winston = this.createWinstonLogger();
   }
 
   createWinstonLogger() {
-    const logDir = path.join(__dirname, '..', 'logs');
-    
     return winston.createLogger({
       level: process.env.LOG_LEVEL || 'info',
       format: winston.format.combine(
@@ -22,60 +29,66 @@ class Logger {
       transports: [
         // Write all logs to combined.log
         new winston.transports.File({ 
-          filename: path.join(logDir, 'combined.log'),
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
+          filename: path.join(this.logDir, 'combined.log'),
+          ...this.rotation.combined
         }),
         
         // Write error logs to error.log
         new winston.transports.File({ 
-          filename: path.join(logDir, 'error.log'), 
+          filename: path.join(this.logDir, 'error.log'),
           level: 'error',
-          maxsize: 5242880, // 5MB
-          maxFiles: 3,
+          ...this.rotation.error
         }),
         
         // Write agent-specific logs
         new winston.transports.File({
-          filename: path.join(logDir, `${this.component.toLowerCase()}.log`),
-          maxsize: 2097152, // 2MB
-          maxFiles: 3,
+          filename: path.join(this.logDir, `${this.component.toLowerCase()}.log`),
+          ...this.rotation.component
         })
       ]
     });
   }
 
   info(message, ...args) {
-    this.winston.info(message, ...args);
-    console.log(this.formatConsoleMessage('INFO', message, chalk.blue));
+    const safeMessage = sanitizeLogText(message);
+    this.winston.info(safeMessage, ...sanitizeLogData(args));
+    console.log(this.formatConsoleMessage('INFO', safeMessage, chalk.blue));
   }
 
   success(message, ...args) {
-    this.winston.info(message, ...args);
-    console.log(this.formatConsoleMessage('SUCCESS', message, chalk.green));
+    const safeMessage = sanitizeLogText(message);
+    this.winston.info(safeMessage, ...sanitizeLogData(args));
+    console.log(this.formatConsoleMessage('SUCCESS', safeMessage, chalk.green));
   }
 
   warn(message, ...args) {
-    this.winston.warn(message, ...args);
-    console.log(this.formatConsoleMessage('WARN', message, chalk.yellow));
+    const safeMessage = sanitizeLogText(message);
+    this.winston.warn(safeMessage, ...sanitizeLogData(args));
+    console.log(this.formatConsoleMessage('WARN', safeMessage, chalk.yellow));
   }
 
   error(message, error = null, ...args) {
+    const safeMessage = sanitizeLogText(message);
+    const safeArgs = sanitizeLogData(args);
     if (error) {
-      this.winston.error(message, { error: error.message, stack: error.stack, ...args });
+      const safeError = sanitizeLogData(error);
+      const additional = Object.assign({}, ...safeArgs.filter(item => item && typeof item === 'object' && !Array.isArray(item)));
+      this.winston.error(safeMessage, { error: safeError, ...additional });
     } else {
-      this.winston.error(message, ...args);
+      this.winston.error(safeMessage, ...safeArgs);
     }
-    console.log(this.formatConsoleMessage('ERROR', message, chalk.red));
+    console.log(this.formatConsoleMessage('ERROR', safeMessage, chalk.red));
     if (error && process.env.NODE_ENV !== 'production') {
-      console.error(chalk.red(error.stack));
+      const safeError = sanitizeLogData(error);
+      if (safeError?.stack) console.error(chalk.red(safeError.stack));
     }
   }
 
   debug(message, ...args) {
-    this.winston.debug(message, ...args);
+    const safeMessage = sanitizeLogText(message);
+    this.winston.debug(safeMessage, ...sanitizeLogData(args));
     if (process.env.NODE_ENV !== 'production') {
-      console.log(this.formatConsoleMessage('DEBUG', message, chalk.gray));
+      console.log(this.formatConsoleMessage('DEBUG', safeMessage, chalk.gray));
     }
   }
 
@@ -84,7 +97,7 @@ class Logger {
     const componentTag = chalk.cyan(`[${this.component}]`);
     const levelTag = colorFunc(`[${level}]`);
     
-    return `${chalk.gray(timestamp)} ${componentTag} ${levelTag} ${message}`;
+    return `${chalk.gray(timestamp)} ${componentTag} ${levelTag} ${sanitizeLogText(message)}`;
   }
 
   // Method to create specialized loggers for different purposes
@@ -101,12 +114,18 @@ class Logger {
   }
 
   // Performance logging
-  startTimer(label) {
+  startTimer(label, context = {}) {
     const startTime = Date.now();
     return {
       end: () => {
         const duration = Date.now() - startTime;
-        this.info(`${label} completed in ${duration}ms`);
+        const operation = sanitizeLogText(label);
+        this.winston.info('Operation timing', sanitizeLogData({
+          ...context,
+          operation,
+          durationMs: duration
+        }));
+        console.log(this.formatConsoleMessage('INFO', `${operation} completed in ${duration}ms`, chalk.blue));
         return duration;
       }
     };
@@ -114,41 +133,50 @@ class Logger {
 
   // Structured logging for important events
   logEvent(eventType, data = {}) {
+    const safeData = sanitizeLogData(data);
     this.winston.info('System Event', {
-      eventType,
-      timestamp: new Date().toISOString(),
-      ...data
+      ...safeData,
+      eventType: sanitizeLogText(eventType),
+      timestamp: new Date().toISOString()
     });
   }
 
   // Log content generation pipeline
   logContentPipeline(stage, contentId, status, data = {}) {
+    const safeData = sanitizeLogData(data);
     this.winston.info('Content Pipeline', {
-      stage,
-      contentId,
-      status,
+      ...safeData,
+      stage: sanitizeLogText(stage),
+      contentId: sanitizeLogText(contentId),
+      videoId: sanitizeLogText(safeData.videoId || contentId),
+      jobId: safeData.jobId || null,
+      destination: safeData.destination || safeData.platform || 'unknown',
+      status: sanitizeLogText(status),
       timestamp: new Date().toISOString(),
-      ...data
     });
   }
 
   // Log publishing events
   logPublishing(action, videoId, status, data = {}) {
+    const safeData = sanitizeLogData(data);
     this.winston.info('Publishing Event', {
-      action,
-      videoId,
-      status,
+      ...safeData,
+      action: sanitizeLogText(action),
+      videoId: sanitizeLogText(videoId),
+      jobId: safeData.jobId || null,
+      destination: safeData.destination || safeData.platform || 'unknown',
+      status: sanitizeLogText(status),
       timestamp: new Date().toISOString(),
-      ...data
     });
   }
 
   // Log analytics events
   logAnalytics(videoId, metrics, insights = []) {
+    const insightCount = Array.isArray(insights) ? insights.length : 0;
     this.winston.info('Analytics Update', {
-      videoId,
-      metrics,
-      insights,
+      videoId: sanitizeLogText(videoId),
+      metrics: sanitizeLogData(metrics),
+      insightsCount: insightCount,
       timestamp: new Date().toISOString()
     });
   }
@@ -156,15 +184,11 @@ class Logger {
   // Log errors with context
   logErrorWithContext(error, context = {}) {
     this.winston.error('System Error', {
-      error: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      },
-      context,
+      error: sanitizeLogData(error),
+      context: sanitizeLogData(context),
       timestamp: new Date().toISOString()
     });
   }
 }
 
-module.exports = { Logger };
+module.exports = { LOG_ROTATION, Logger };

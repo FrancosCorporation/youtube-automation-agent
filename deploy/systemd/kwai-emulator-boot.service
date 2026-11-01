@@ -1,0 +1,21 @@
+[Unit]
+Description=Iniciar e validar Android Kwai após boot para uploads sociais
+StartLimitIntervalSec=30min
+StartLimitBurst=20
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/Git/youtube_ai/youtube-automation-agent
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=KWAI_CONTAINER_START_LOCK_TIMEOUT_MS=600000
+ExecStartPre=%h/Git/youtube_ai/youtube-automation-agent/scripts/wait-for-docker.sh
+ExecStart=/usr/bin/node scripts/kwai-emulator.js up
+TimeoutStartSec=25min
+Restart=on-failure
+RestartSec=60s
+RemainAfterExit=yes
+StandardOutput=append:%h/Git/youtube_ai/youtube-automation-agent/logs/kwai-emulator-boot.log
+StandardError=append:%h/Git/youtube_ai/youtube-automation-agent/logs/kwai-emulator-boot.log
+
+[Install]
+WantedBy=default.target

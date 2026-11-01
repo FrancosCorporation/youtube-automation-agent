@@ -19,18 +19,33 @@ const { Logger } = require('./logger');
 class GeminiWebImageGenerator {
   constructor(options = {}) {
     this.logger = options.logger || new Logger('GeminiWebImage');
-    this.profileDir = options.profileDir || path.join(__dirname, '..', 'data', 'browser-profiles', 'gemini');
+    this.profileDir = options.profileDir || process.env.GEMINI_WEB_PROFILE
+      || path.join(__dirname, '..', 'data', 'browser-profiles', 'gemini');
+    this.cdpUrl = Object.hasOwn(options, 'cdpUrl') ? (options.cdpUrl || '') : (process.env.GEMINI_WEB_CDP_URL || '');
     this.headless = options.headless ?? (process.env.GEMINI_WEB_HEADLESS !== '0');
     this.timeoutMs = Math.max(15000, Number(options.timeoutMs || process.env.GEMINI_WEB_TIMEOUT_MS || 120000));
     this.enabled = process.env.GEMINI_WEB !== '0';
     this._flashForced = false;
     this._context = null;
+    this._browser = null;
+    this._ownsContext = true;
+    this._ownsPage = false;
     this._available = null;
   }
 
   async _ensureContext() {
     if (this._context) return this._context;
     const { chromium } = require('playwright');
+    if (this.cdpUrl) {
+      this._browser = await chromium.connectOverCDP(this.cdpUrl);
+      this._context = this._browser.contexts()[0] || null;
+      if (!this._context) {
+        this._browser = null;
+        throw new Error('Gemini CDP não expôs um contexto de navegador autenticado');
+      }
+      this._ownsContext = false;
+      return this._context;
+    }
     this._context = await chromium.launchPersistentContext(this.profileDir, {
       headless: this.headless,
       viewport: { width: 1600, height: 1000 },
@@ -45,11 +60,20 @@ class GeminiWebImageGenerator {
     if (this._page && !this._page.isClosed()) return this._page;
     let context = await this._ensureContext();
     try {
-      this._page = await context.newPage();
+      if (!this._ownsContext) {
+        this._page = context.pages().find(page => /^https:\/\/gemini\.google\.com\//i.test(page.url())) || null;
+      }
+      if (!this._page) {
+        this._page = await context.newPage();
+        this._ownsPage = true;
+      }
     } catch (_error) {
       // The persistent context died (crash under memory pressure) — relaunch
       // it once with the same logged-in profile and try again.
       this._context = null;
+      this._browser = null;
+      this._ownsContext = true;
+      this._ownsPage = false;
       await this.close();
       context = await this._ensureContext();
       this._page = await context.newPage();
@@ -143,7 +167,7 @@ class GeminiWebImageGenerator {
     return this._available;
   }
 
-  async generateImage(prompt, outputPath) {
+  async generateImage(prompt, outputPath, options = {}) {
     if (!await this.isAvailable()) throw new Error('Gemini web provider is not available');
 
     const page = await this._conversationPage();
@@ -171,7 +195,8 @@ class GeminiWebImageGenerator {
 
       // Insert the prompt as text — the React/Quill editor re-renders on every
       // keystroke, so typing char-by-char would detach the element mid-typing.
-      const fullPrompt = `Create one high-quality 16:9 photorealistic cinematic documentary still, premium editorial photography, believable natural lighting, lifelike faces and materials, crisp subject focus, rich environmental detail. Match the topic and color direction in the prompt; do not add generic technology motifs unless requested. Absolutely NO text, NO letters, NO numbers, NO watermarks inside the image: ${prompt}`;
+      const aspectRatio = String(options.aspectRatio || '16:9') === '9:16' ? 'vertical 9:16 portrait' : 'horizontal 16:9 landscape';
+      const fullPrompt = `Create one high-quality ${aspectRatio} photorealistic cinematic editorial still, premium photography, believable natural lighting and materials, crisp subject focus, rich environmental detail. Match the topic and color direction in the prompt; do not add generic technology motifs unless requested. Absolutely NO text, NO letters, NO numbers, NO watermarks inside the image: ${prompt}`;
       let typed = await page.evaluate(text => {
         const editorEl = document.querySelector('div.ql-editor[contenteditable="true"], rich-textarea div[contenteditable="true"], div[contenteditable="true"][role="textbox"], div[contenteditable="true"]');
         if (!editorEl) return false;
@@ -277,13 +302,21 @@ class GeminiWebImageGenerator {
 
   async close() {
     if (this._context) {
-      await Promise.race([
-        this._context.close().catch(() => {}),
-        new Promise(resolve => setTimeout(resolve, 10000))
-      ]);
+      if (this._ownsContext) {
+        await Promise.race([
+          this._context.close().catch(() => {}),
+          new Promise(resolve => setTimeout(resolve, 10000))
+        ]);
+      } else if (this._ownsPage && this._page && !this._page.isClosed()) {
+        await this._page.close().catch(() => {});
+      }
     }
+    if (!this._ownsContext && this._browser) await this._browser.close().catch(() => {});
     this._context = null;
     this._page = null;
+    this._browser = null;
+    this._ownsContext = true;
+    this._ownsPage = false;
   }
 }
 

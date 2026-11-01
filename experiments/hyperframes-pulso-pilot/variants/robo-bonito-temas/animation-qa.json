@@ -1,0 +1,1726 @@
+{
+  "variant": "robo-bonito-temas",
+  "metrics": {
+    "bones": [
+      "Root",
+      "Hips",
+      "Chest",
+      "Neck",
+      "Head",
+      "UpperArm_L",
+      "Forearm_L",
+      "Hand_L",
+      "UpperArm_R",
+      "Forearm_R",
+      "Hand_R",
+      "Thigh_L",
+      "Shin_L",
+      "Foot_L",
+      "Thigh_R",
+      "Shin_R",
+      "Foot_R"
+    ],
+    "faceControls": [
+      "FaceEye_L",
+      "FaceEye_R",
+      "FaceSmile",
+      "FaceMouth"
+    ],
+    "sourceHeight": 1.0751310639381408,
+    "normalizedHeight": 3.85,
+    "duration": 27.616,
+    "portrait": false,
+    "theme": {
+      "id": "ia",
+      "brand": "Pulso IA",
+      "paletteIndex": 1,
+      "accents": [
+        "#22D3EE",
+        "#818CF8",
+        "#4ADE80",
+        "#F8C172"
+      ]
+    }
+  },
+  "errors": [],
+  "poseChecks": [
+    {
+      "time": 0,
+      "state": {
+        "time": 0,
+        "voice": 0,
+        "speaking": false,
+        "blink": 0,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0,
+        "head": [
+          0,
+          0,
+          0
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.17
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.1513487416366124
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 0.8,
+        "mouthY": 0.1,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "01 · OLÁ, PULSO",
+        "shot": 0,
+        "close": false,
+        "caption": ""
+      },
+      "pairs": {
+        "Head": 1.5492382081800498,
+        "UpperArm_L": 0.5093679385056992,
+        "Forearm_L": 0.7518811208077879,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248471,
+        "Forearm_R": 0.8086148734551148,
+        "Hand_R": 0.4878062364426124
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3748109555798615,
+          1.3244220859257108
+        ],
+        [
+          0.000182628893375274,
+          3.8473930221630965
+        ],
+        [
+          -0.6981876270315951,
+          0.6674324845183678
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.17
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.1513487416366124
+      ],
+      "mouthVisible": false,
+      "smileVisible": true,
+      "eyeScale": 1
+    },
+    {
+      "time": 0.92,
+      "state": {
+        "time": 0.92,
+        "voice": 0.9561399999999999,
+        "speaking": true,
+        "blink": 1.5565251678803738e-117,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.009005985574216308,
+        "head": [
+          0.01810028292653358,
+          0.06755888087773115,
+          0.010056865315567577
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          0.7954853009352543
+        ],
+        "leftElbow": [
+          0.29831978152025496,
+          0.03833139736003642,
+          0.8145421939007739
+        ],
+        "leftHand": [
+          0.09582849340009104,
+          0.09603024023223711,
+          -0.04427037438193293
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.14412781398813534
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 1.039035,
+        "mouthY": 0.9414031999999999,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "01 · OLÁ, PULSO",
+        "shot": 0,
+        "close": false,
+        "caption": "Oi! Eu sou o Pulso."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.5093679385056995,
+        "Forearm_L": 0.7518811208077879,
+        "Hand_L": 0.6749268484710976,
+        "UpperArm_R": 0.6051396489248475,
+        "Forearm_R": 0.8086148734551141,
+        "Hand_R": 0.48780623644261256
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3738865989662856,
+          2.222169439903089
+        ],
+        [
+          0.000182628893375274,
+          3.8499766438144807
+        ],
+        [
+          -0.6932505986230596,
+          0.6787468769459896
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        0.7954853009352543
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.14412781398813534
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 1
+    },
+    {
+      "time": 1.5,
+      "state": {
+        "time": 1.5,
+        "voice": 0,
+        "speaking": false,
+        "blink": 2.396949668898086e-33,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.013011348383910252,
+        "head": [
+          0.024217877502956633,
+          0.09932422658007091,
+          0.015622432918192498
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          0.8433009771491806
+        ],
+        "leftElbow": [
+          0.31000000000000005,
+          0.04,
+          0.85
+        ],
+        "leftHand": [
+          0.1,
+          -0.1989105176407978,
+          -0.020919213746757766
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.14535447779843771
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 0.8,
+        "mouthY": 0.1,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "01 · OLÁ, PULSO",
+        "shot": 0,
+        "close": false,
+        "caption": "Oi! Eu sou o Pulso."
+      },
+      "pairs": {
+        "Head": 1.5492382081800495,
+        "UpperArm_L": 0.5093679385056994,
+        "Forearm_L": 0.7518811208077875,
+        "Hand_L": 0.6749268484710975,
+        "UpperArm_R": 0.6051396489248476,
+        "Forearm_R": 0.8086148734551145,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.367752193549719,
+          2.1992282530999177
+        ],
+        [
+          0.000182628893375274,
+          3.850798413272128
+        ],
+        [
+          -0.6972480834012578,
+          0.6826842508990153
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        0.8433009771491806
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.14535447779843771
+      ],
+      "mouthVisible": false,
+      "smileVisible": true,
+      "eyeScale": 1
+    },
+    {
+      "time": 2.15,
+      "state": {
+        "time": 2.15,
+        "voice": 0.9846600000000001,
+        "speaking": true,
+        "blink": 1,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.014967543037160204,
+        "head": [
+          0.023721402379843253,
+          0.11820260796540359,
+          0.020586747205404283
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          0.8447222441501175
+        ],
+        "leftElbow": [
+          0.31000000000000005,
+          0.04,
+          0.85
+        ],
+        "leftHand": [
+          0.1,
+          -0.04013301007172051,
+          0.11156540962270045
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.15186146265803777
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.030000000000000027,
+        "mouthX": 1.046165,
+        "mouthY": 0.9665008,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "01 · OLÁ, PULSO",
+        "shot": 0,
+        "close": false,
+        "caption": "Oi! Eu sou o Pulso."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.5093679385056996,
+        "Forearm_L": 0.7518811208077877,
+        "Hand_L": 0.6749268484710975,
+        "UpperArm_R": 0.605139648924847,
+        "Forearm_R": 0.8086148734551143,
+        "Hand_R": 0.4878062364426126
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3571207637885523,
+          2.1709041496786217
+        ],
+        [
+          0.000182628893375274,
+          3.851029931218379
+        ],
+        [
+          -0.7015808325338719,
+          0.6829618430001037
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        0.8447222441501175
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.15186146265803777
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.030000000000000027
+    },
+    {
+      "time": 2.4,
+      "state": {
+        "time": 2.4,
+        "voice": 0,
+        "speaking": false,
+        "blink": 0.000014945338524781425,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.014910648032971138,
+        "head": [
+          0.021427230211492933,
+          0.11999300642759596,
+          0.02204894517212369
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          0.8434911368421331
+        ],
+        "leftElbow": [
+          0.31000000000000005,
+          0.04,
+          0.85
+        ],
+        "leftHand": [
+          0.1,
+          -0.17728428944844768,
+          0.04091806164584834
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.15554341510242387
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.9999855030216309,
+        "mouthX": 0.8,
+        "mouthY": 0.1,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "01 · OLÁ, PULSO",
+        "shot": 0,
+        "close": false,
+        "caption": "Oi! Eu sou o Pulso."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.5093679385056996,
+        "Forearm_L": 0.7518811208077877,
+        "Hand_L": 0.6749268484710971,
+        "UpperArm_R": 0.6051396489248472,
+        "Forearm_R": 0.8086148734551142,
+        "Hand_R": 0.48780623644261195
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.352422581800436,
+          2.1830900311787973
+        ],
+        [
+          0.000182628893375274,
+          3.850948664678488
+        ],
+        [
+          -0.7032890920730454,
+          0.6819882417637003
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        0.8434911368421331
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.15554341510242387
+      ],
+      "mouthVisible": false,
+      "smileVisible": true,
+      "eyeScale": 0.9999855030216309
+    },
+    {
+      "time": 4.11,
+      "state": {
+        "time": 4.11,
+        "voice": 0.89336,
+        "speaking": true,
+        "blink": 4.577231742705136e-101,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.003922741791977982,
+        "head": [
+          -0.011438070725000422,
+          0.054356266852494374,
+          0.024035321948339322
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.17364712159356954
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.18591447399669736
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 1.0233400000000001,
+        "mouthY": 0.8861568,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "02 · OLHAR E EXPRESSÕES",
+        "shot": 3.744,
+        "close": true,
+        "caption": "Agora, eu posso olhar para você, piscar e sorrir."
+      },
+      "pairs": {
+        "Head": 1.54923820818005,
+        "UpperArm_L": 0.5093679385056988,
+        "Forearm_L": 0.7518811208077876,
+        "Hand_L": 0.6749268484710975,
+        "UpperArm_R": 0.6051396489248472,
+        "Forearm_R": 0.8086148734551145,
+        "Hand_R": 0.4878062364426123
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3255715088802047,
+          1.3241268626136462
+        ],
+        [
+          0.000182628893375274,
+          3.848195810134126
+        ],
+        [
+          -0.7077101939312455,
+          0.6644352693669906
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.17364712159356954
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.18591447399669736
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 1
+    },
+    {
+      "time": 5.25,
+      "state": {
+        "time": 5.25,
+        "voice": 1,
+        "speaking": true,
+        "blink": 1,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.007627054252049542,
+        "head": [
+          -0.024893379326556136,
+          -0.03211269610019192,
+          0.01756585212362979
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.19178939431033973
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.19591707487871363
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.030000000000000027,
+        "mouthX": 1.05,
+        "mouthY": 0.98,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "02 · OLHAR E EXPRESSÕES",
+        "shot": 3.744,
+        "close": true,
+        "caption": "Agora, eu posso olhar para você, piscar e sorrir."
+      },
+      "pairs": {
+        "Head": 1.549238208180049,
+        "UpperArm_L": 0.5093679385056998,
+        "Forearm_L": 0.7518811208077878,
+        "Hand_L": 0.6749268484710971,
+        "UpperArm_R": 0.6051396489248467,
+        "Forearm_R": 0.8086148734551144,
+        "Hand_R": 0.4878062364426121
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3257929431177238,
+          1.287101520650969
+        ],
+        [
+          0.000182628893375274,
+          3.8458498466816575
+        ],
+        [
+          -0.7157979641093271,
+          0.6625946098899773
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.19178939431033973
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.19591707487871363
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.030000000000000027
+    },
+    {
+      "time": 10.07,
+      "state": {
+        "time": 10.07,
+        "voice": 0.9946999999999999,
+        "speaking": true,
+        "blink": 2.0421840693287366e-106,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.010396867105483931,
+        "head": [
+          0.01334690136388145,
+          0.031118010857476733,
+          -0.02459210375677614
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.14550841014029295
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.14513921333372545
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 1.048675,
+        "mouthY": 0.9753359999999999,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "03 · VOZ E BOCA",
+        "shot": 9.904,
+        "close": true,
+        "caption": "Enquanto falo, minha boca acompanha a voz."
+      },
+      "pairs": {
+        "Head": 1.5492382081800495,
+        "UpperArm_L": 0.5093679385056991,
+        "Forearm_L": 0.7518811208077878,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248468,
+        "Forearm_R": 0.8086148734551144,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3710076387356263,
+          1.367683271489147
+        ],
+        [
+          0.000182628893375274,
+          3.8470418141115394
+        ],
+        [
+          -0.6925362140088482,
+          0.6743012800462242
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.14550841014029295
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.14513921333372545
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 1
+    },
+    {
+      "time": 12.1,
+      "state": {
+        "time": 12.1,
+        "voice": 0.9741,
+        "speaking": true,
+        "blink": 1,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.01224278202779744,
+        "head": [
+          -0.023505042995906947,
+          0.11999271581030249,
+          -0.018585766363554374
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.17631150654070646
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.17537473743764848
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.030000000000000027,
+        "mouthX": 1.043525,
+        "mouthY": 0.957208,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "03 · VOZ E BOCA",
+        "shot": 9.904,
+        "close": true,
+        "caption": "Enquanto falo, minha boca acompanha a voz."
+      },
+      "pairs": {
+        "Head": 1.5492382081800498,
+        "UpperArm_L": 0.5093679385056994,
+        "Forearm_L": 0.7518811208077877,
+        "Hand_L": 0.6749268484710973,
+        "UpperArm_R": 0.6051396489248475,
+        "Forearm_R": 0.8086148734551144,
+        "Hand_R": 0.48780623644261245
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3297125424735285,
+          1.3300559026808751
+        ],
+        [
+          0.000182628893375274,
+          3.8456733744916
+        ],
+        [
+          -0.733002659445156,
+          0.6625946098899773
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.17631150654070646
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.17537473743764848
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.030000000000000027
+    },
+    {
+      "time": 15.16,
+      "state": {
+        "time": 15.16,
+        "voice": 0.96904,
+        "speaking": true,
+        "blink": 1.9280612323100906e-119,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.013909993948385801,
+        "head": [
+          0.01748270756385407,
+          -0.049939624398804054,
+          0.012827974561617956
+        ],
+        "leftArm": [
+          -0.12796817558299045,
+          0.031561810699588536,
+          0.17282289525812441
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0.23109179698216756
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.1867411196057873
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 1,
+        "mouthX": 1.04226,
+        "mouthY": 0.9527552,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "04 · GESTOS INDEPENDENTES",
+        "shot": 14.608,
+        "close": false,
+        "caption": "E meus braços ajudam a explicar cada ideia."
+      },
+      "pairs": {
+        "Head": 1.549238208180049,
+        "UpperArm_L": 0.5093679385056995,
+        "Forearm_L": 0.7518811208077878,
+        "Hand_L": 0.6749268484710972,
+        "UpperArm_R": 0.605139648924847,
+        "Forearm_R": 0.8086148734551147,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.344894938417163,
+          1.877723687666565
+        ],
+        [
+          0.000182628893375274,
+          3.848331643211772
+        ],
+        [
+          -0.6947823232732648,
+          0.6768707755868972
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.12796817558299045,
+        0.031561810699588536,
+        0.17282289525812441
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.1867411196057873
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 1
+    },
+    {
+      "time": 16.4,
+      "state": {
+        "time": 16.4,
+        "voice": 0.42012,
+        "speaking": true,
+        "blink": 1,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.01327413811307047,
+        "head": [
+          0.023921266635854407,
+          -0.11330656150332706,
+          0.02224394995875899
+        ],
+        "leftArm": [
+          -0.16,
+          0.06999999999999999,
+          0.36314444799668116
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0.34
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.1646912335117775
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.030000000000000027,
+        "mouthX": 0.90503,
+        "mouthY": 0.46970560000000006,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "04 · GESTOS INDEPENDENTES",
+        "shot": 14.608,
+        "close": false,
+        "caption": "E meus braços ajudam a explicar cada ideia."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.5093679385056993,
+        "Forearm_L": 0.7518811208077879,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248472,
+        "Forearm_R": 0.8086148734551142,
+        "Hand_R": 0.4878062364426121
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3726091415781598,
+          2.1170433294731303
+        ],
+        [
+          0.000182628893375274,
+          3.849296191135881
+        ],
+        [
+          -0.7041360568218245,
+          0.6830561860439572
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.16,
+        0.06999999999999999,
+        0.36314444799668116
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.1646912335117775
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.030000000000000027
+    },
+    {
+      "time": 17.8,
+      "state": {
+        "time": 17.8,
+        "voice": 0.8815,
+        "speaking": true,
+        "blink": 4.704359775927359e-152,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.0015925520361629974,
+        "head": [
+          0.0010987276877773419,
+          -0.1007405377890463,
+          0.024696345075877004
+        ],
+        "leftArm": [
+          -0.16,
+          0.06999999999999999,
+          0.37486793346631303
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0.34
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.16,
+          -0.065,
+          -0.47448403894598046
+        ],
+        "rightElbow": [
+          0.18,
+          -0.025,
+          -0.42
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          -0.08
+        ],
+        "eyeY": 1,
+        "mouthX": 1.020375,
+        "mouthY": 0.8757199999999999,
+        "smileY": 1,
+        "expression": "sorridente",
+        "label": "04 · GESTOS INDEPENDENTES",
+        "shot": 14.608,
+        "close": false,
+        "caption": "E meus braços ajudam a explicar cada ideia."
+      },
+      "pairs": {
+        "Head": 1.5492382081800498,
+        "UpperArm_L": 0.5093679385056993,
+        "Forearm_L": 0.7518811208077877,
+        "Hand_L": 0.6749268484710973,
+        "UpperArm_R": 0.6051396489248478,
+        "Forearm_R": 0.8086148734551143,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -2.235113379903951,
+          2.13158671706865
+        ],
+        [
+          0.000182628893375274,
+          3.849037112334197
+        ],
+        [
+          -0.7119610687474062,
+          0.6721346248123186
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.16,
+        0.06999999999999999,
+        0.37486793346631303
+      ],
+      "rightArm": [
+        -0.16,
+        -0.065,
+        -0.47448403894598046
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 1
+    },
+    {
+      "time": 19.9,
+      "state": {
+        "time": 19.9,
+        "voice": 0.3533,
+        "speaking": true,
+        "blink": 2.2271824286886944e-198,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.014679263522298064,
+        "head": [
+          -0.024323063621960437,
+          0.043240467774640745,
+          0.011317207776999252
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.17526128632513002
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.16,
+          -0.065,
+          -0.45966718610175883
+        ],
+        "rightElbow": [
+          0.18,
+          -0.025,
+          -0.42
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          -0.08
+        ],
+        "eyeY": 0.914985422740525,
+        "mouthX": 0.888325,
+        "mouthY": 0.41090400000000005,
+        "smileY": 1,
+        "expression": "atento",
+        "label": "04 · GESTOS INDEPENDENTES",
+        "shot": 19.584,
+        "close": false,
+        "caption": "Esse é o primeiro teste do meu novo corpo em movimento."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.5093679385056997,
+        "Forearm_L": 0.7518811208077877,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248471,
+        "Forearm_R": 0.8086148734551145,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -2.222630278076829,
+          1.3341520507665452
+        ],
+        [
+          0.000182628893375274,
+          3.8466971244262425
+        ],
+        [
+          -0.7139817285135378,
+          0.6625946098899773
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.17526128632513002
+      ],
+      "rightArm": [
+        -0.16,
+        -0.065,
+        -0.45966718610175883
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.914985422740525
+    },
+    {
+      "time": 22,
+      "state": {
+        "time": 22,
+        "voice": 0.95372,
+        "speaking": true,
+        "blink": 4.989109392794983e-20,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.004546775351185559,
+        "head": [
+          0.01221411914431295,
+          0.1184126357129536,
+          -0.011438397344383034
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.19372111244795312
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.19375344467470576
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.91,
+        "mouthX": 1.03843,
+        "mouthY": 0.9392736,
+        "smileY": 1,
+        "expression": "atento",
+        "label": "05 · O QUE VOCÊ ACHOU?",
+        "shot": 19.584,
+        "close": false,
+        "caption": "Esse é o primeiro teste do meu novo corpo em movimento."
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.509367938505699,
+        "Forearm_L": 0.7518811208077879,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248471,
+        "Forearm_R": 0.8086148734551142,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.314577907876954,
+          1.2985885483836017
+        ],
+        [
+          0.000182628893375274,
+          3.847747889695085
+        ],
+        [
+          -0.7111236516572486,
+          0.6757676054898352
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.19372111244795312
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.19375344467470576
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.91
+    },
+    {
+      "time": 25.4,
+      "state": {
+        "time": 25.4,
+        "voice": 0.054680000000000006,
+        "speaking": true,
+        "blink": 1,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.013154808074375997,
+        "head": [
+          -0.00882677378313831,
+          -0.08625283282896189,
+          0.047322202412667116
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.14512577656513523
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.15770769475104143
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.02160000000000002,
+        "mouthX": 0.93367,
+        "mouthY": 0.1481184,
+        "smileY": 1.16,
+        "expression": "curioso",
+        "label": "05 · O QUE VOCÊ ACHOU?",
+        "shot": 24.336,
+        "close": true,
+        "caption": "O que você achou?"
+      },
+      "pairs": {
+        "Head": 1.5492382081800495,
+        "UpperArm_L": 0.5093679385056994,
+        "Forearm_L": 0.7518811208077878,
+        "Hand_L": 0.6749268484710972,
+        "UpperArm_R": 0.6051396489248478,
+        "Forearm_R": 0.8086148734551147,
+        "Hand_R": 0.48780623644261206
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3814129837309923,
+          1.341750806741498
+        ],
+        [
+          0.000182628893375274,
+          3.8486583911342915
+        ],
+        [
+          -0.7159701290837183,
+          0.6660666870939786
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.14512577656513523
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.15770769475104143
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.02160000000000002
+    },
+    {
+      "time": 26.2,
+      "state": {
+        "time": 26.2,
+        "voice": 0.03908,
+        "speaking": true,
+        "blink": 3.863126663048183e-50,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": -0.007316844475829586,
+        "head": [
+          -0.02186792333045208,
+          -0.11630622688999791,
+          0.052482634661742966
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.14855275670763396
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.14711281807853235
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.72,
+        "mouthX": 0.92977,
+        "mouthY": 0.1343904,
+        "smileY": 1.16,
+        "expression": "curioso",
+        "label": "05 · O QUE VOCÊ ACHOU?",
+        "shot": 24.336,
+        "close": true,
+        "caption": "O que você achou?"
+      },
+      "pairs": {
+        "Head": 1.5492382081800493,
+        "UpperArm_L": 0.509367938505699,
+        "Forearm_L": 0.7518811208077878,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248475,
+        "Forearm_R": 0.8086148734551145,
+        "Hand_R": 0.4878062364426124
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3884257142327054,
+          1.3439440158531195
+        ],
+        [
+          0.000182628893375274,
+          3.8478697701587885
+        ],
+        [
+          -0.727927610801889,
+          0.6625946098899773
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.14855275670763396
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.14711281807853235
+      ],
+      "mouthVisible": true,
+      "smileVisible": false,
+      "eyeScale": 0.72
+    },
+    {
+      "time": 27.1,
+      "state": {
+        "time": 27.1,
+        "voice": 0,
+        "speaking": false,
+        "blink": 7.398542733312915e-224,
+        "rootY": 0,
+        "rootYaw": 0,
+        "chestZ": 0.0018022962060267047,
+        "head": [
+          -0.02398411174658533,
+          -0.11328021314323648,
+          0.013076113671254152
+        ],
+        "leftArm": [
+          -0.06,
+          -0.05,
+          -0.16234619345912613
+        ],
+        "leftElbow": [
+          0.03,
+          0,
+          0
+        ],
+        "leftHand": [
+          0,
+          0,
+          0
+        ],
+        "rightArm": [
+          -0.04,
+          0.035,
+          0.1443431483041693
+        ],
+        "rightElbow": [
+          0.02,
+          -0.025,
+          0
+        ],
+        "rightHand": [
+          0.01,
+          0.03,
+          0
+        ],
+        "eyeY": 0.9114062500000009,
+        "mouthX": 0.8379687499999997,
+        "mouthY": 0.1,
+        "smileY": 1.0506249999999995,
+        "expression": "sorridente",
+        "label": "05 · O QUE VOCÊ ACHOU?",
+        "shot": 24.336,
+        "close": true,
+        "caption": ""
+      },
+      "pairs": {
+        "Head": 1.549238208180049,
+        "UpperArm_L": 0.5093679385056991,
+        "Forearm_L": 0.7518811208077876,
+        "Hand_L": 0.6749268484710974,
+        "UpperArm_R": 0.6051396489248471,
+        "Forearm_R": 0.8086148734551145,
+        "Hand_R": 0.48780623644261234
+      },
+      "finite": true,
+      "bounds": [
+        [
+          -1.3817503206185875,
+          1.3364033762911556
+        ],
+        [
+          0.000182628893375274,
+          3.8464689597686172
+        ],
+        [
+          -0.7262967809404918,
+          0.6625946098899773
+        ]
+      ],
+      "sampledClippedVertices": 0,
+      "leftArm": [
+        -0.06,
+        -0.05,
+        -0.16234619345912613
+      ],
+      "rightArm": [
+        -0.04,
+        0.035,
+        0.1443431483041693
+      ],
+      "mouthVisible": false,
+      "smileVisible": true,
+      "eyeScale": 0.9114062500000009
+    }
+  ],
+  "audioChecks": [
+    {
+      "kind": "speaking",
+      "time": 0.92,
+      "voice": 0.9561399999999999,
+      "mouth": true,
+      "smile": false
+    },
+    {
+      "kind": "speaking",
+      "time": 4.11,
+      "voice": 0.89336,
+      "mouth": true,
+      "smile": false
+    },
+    {
+      "kind": "speaking",
+      "time": 10.07,
+      "voice": 0.9946999999999999,
+      "mouth": true,
+      "smile": false
+    },
+    {
+      "kind": "speaking",
+      "time": 15.16,
+      "voice": 0.96904,
+      "mouth": true,
+      "smile": false
+    },
+    {
+      "kind": "silent",
+      "time": 0.3,
+      "voice": 0,
+      "mouth": false,
+      "smile": true
+    },
+    {
+      "kind": "silent",
+      "time": 3.544,
+      "voice": 0,
+      "mouth": false,
+      "smile": true
+    },
+    {
+      "kind": "silent",
+      "time": 9.704,
+      "voice": 0,
+      "mouth": false,
+      "smile": true
+    },
+    {
+      "kind": "silent",
+      "time": 27.116,
+      "voice": 0,
+      "mouth": false,
+      "smile": true
+    }
+  ],
+  "rigidDistanceMaxError": 7.771561172376096e-16,
+  "deterministicSeek": {
+    "times": [
+      22,
+      2.4,
+      22
+    ],
+    "before": "5629a397261f5ce5eecddcc03f0472466b14bb4d597aa4d5951812db4b278569",
+    "after": "5629a397261f5ce5eecddcc03f0472466b14bb4d597aa4d5951812db4b278569",
+    "identical": true
+  },
+  "historyIndependentPose": {
+    "time": 1.5,
+    "warmPose": "076effa44fb05cb7be56763bd086c153c7470000be298802412f4b0e77929ebd",
+    "revisitedPose": "076effa44fb05cb7be56763bd086c153c7470000be298802412f4b0e77929ebd",
+    "freshPose": "076effa44fb05cb7be56763bd086c153c7470000be298802412f4b0e77929ebd",
+    "identical": true
+  },
+  "limitations": [
+    "Bounds sampled at every 101st source vertex; not an exhaustive self-intersection audit.",
+    "Audio-envelope opening, not phoneme-aligned visemes."
+  ]
+}

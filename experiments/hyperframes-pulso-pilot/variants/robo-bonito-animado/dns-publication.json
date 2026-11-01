@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-12T15:09:56.667673+00:00",
+  "videos": [
+    {
+      "url": "https://francoscorporation.ddns.net/games/play/pulso-ia/robo-bonito-fala-gestos.mp4",
+      "source": "renders/pulso-robo-bonito-fala-gestos-preview.mp4",
+      "publicPath": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-bonito-fala-gestos.mp4",
+      "bytes": 23363537,
+      "sha256": "841584b0e2e8d67a754688750311b9ee49b0fe6305e22714916a58c748ffb871",
+      "httpStatus": 200,
+      "contentType": "video/mp4",
+      "remoteHashMatches": true,
+      "rangeStatus": 206,
+      "rangeBytes": 1024,
+      "browser": {
+        "duration": 27.625,
+        "width": 1920,
+        "height": 1080,
+        "time": 0.159648,
+        "error": null
+      }
+    },
+    {
+      "url": "https://francoscorporation.ddns.net/games/play/pulso-ia/robo-bonito-fala-gestos-vertical.mp4",
+      "source": "renders/pulso-robo-bonito-fala-gestos-vertical.mp4",
+      "publicPath": "/home/servidor/Git/site_corp/games_public/pulso-ia/robo-bonito-fala-gestos-vertical.mp4",
+      "bytes": 30940289,
+      "sha256": "9eaee18f4dd2f650bf6a01a33c311076a8c3841455c8d23810f23623183a8bdb",
+      "httpStatus": 200,
+      "contentType": "video/mp4",
+      "remoteHashMatches": true,
+      "rangeStatus": 206,
+      "rangeBytes": 1024,
+      "browser": {
+        "duration": 27.625,
+        "width": 1080,
+        "height": 1920,
+        "time": 0.172129,
+        "error": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema": "pulso-improvement-fleet.v1",
+  "tasks": [
+    {
+      "id": "review-seek",
+      "inputs": [
+        "experiments/hyperframes-pulso-pilot/src/bonito-robot-preview.js",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito/brief-avaliacao.md"
+      ],
+      "objective": "Extraia apenas fatos verificaveis de bonito-robot-preview.js para seek-review.json: duration_seconds, time_source, absolute_transforms (objetos/propriedades que renderAt escreve), shot_boundaries, backward_seek_test [6.5,0.5,6.5], issues e pending_checks. Cite nomes existentes; issues vazia se nao houver causa concreta. Sem navegador/render: nao alegue tests passaram e nao aprove visual. pending_checks deve cobrir frames antes/depois em 2/4/6, PNG identico no seek, carregamento GLB. Grave o arquivo.",
+      "outputs": [
+        {
+          "path": "seek-review.json",
+          "kind": "json",
+          "required_keys": [
+            "duration_seconds",
+            "time_source",
+            "absolute_transforms",
+            "shot_boundaries",
+            "issues",
+            "pending_checks"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 150,
+      "corrections": 1,
+      "context": "Trabalho mecanico; aprovacao visual e conclusoes de malha pertencem ao orquestrador. Fonte anterior preservada; candidato isolado. Nenhuma rede, nova delegacao, edicao de fonte, commit ou deploy."
+    },
+    {
+      "id": "baseline-compare",
+      "inputs": [
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito/revalidacao-anterior.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-gerado/mesh-audit.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-gerado/qa-metrics.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito/brief-avaliacao.md"
+      ],
+      "objective": "Extraia os numeros do candidato anterior para baseline.json: bytes, triangles, vertices, skins, animations, source_dimensions, embedded_assets, comparison_checks e limitations. Copie valores; animations como contagem inteira, skins do revalidacao-anterior. comparison_checks: criterios pendentes para silhueta compacta/cabeca grande/maos/pes/visor de olhos em arco/sorriso e quatro vistas. Nao voce nao viu imagem nem novo GLB: mantenha cada criterio pending, nao invente medidas nem topologia. Grave arquivo.",
+      "outputs": [
+        {
+          "path": "baseline.json",
+          "kind": "json",
+          "required_keys": [
+            "bytes",
+            "triangles",
+            "vertices",
+            "skins",
+            "animations",
+            "comparison_checks",
+            "limitations"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 150,
+      "corrections": 1,
+      "context": "Trabalho mecanico; aprovacao visual e conclusoes de malha pertencem ao orquestrador. Fonte anterior preservada; candidato isolado. Nenhuma rede, nova delegacao, edicao de fonte, commit ou deploy."
+    }
+  ]
+}

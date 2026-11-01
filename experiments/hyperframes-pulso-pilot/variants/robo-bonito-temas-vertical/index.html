@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=1080,height=1920,initial-scale=1"><title>Pulso — voz e movimento</title>
+<style>
+@font-face{font-family:Inter;src:url('assets/inter-regular.woff2');font-weight:400}@font-face{font-family:Inter;src:url('assets/inter-bold.woff2');font-weight:700}
+*{box-sizing:border-box}html,body{margin:0;width:1080px;height:1920px;overflow:hidden}body{font-family:Inter,sans-serif;color:#f3f7fc;background:#0c1420}
+#root{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 73% 43%,#253b50 0%,#142131 38%,#0c1420 77%)}
+.clip{position:absolute;inset:0}.brand{position:absolute;left:100px;top:64px;font-size:28px;font-weight:700;letter-spacing:.15em;z-index:3}.brand span{color:#86e3f7}
+.copy{position:absolute;left:100px;top:295px;width:720px}.eyebrow{color:#8de7fa;font-size:18px;letter-spacing:.14em;margin:0}h1{font-size:90px;line-height:1.06;letter-spacing:-.045em;margin:25px 0}.description{font-size:28px;line-height:1.5;color:#c8d6e4;max-width:660px}
+.details{display:flex;gap:24px;font-size:21px;color:#c8d6e4;margin-top:38px;border-top:1px solid #536579;padding-top:22px}
+#three-layer{position:absolute;width:1040px;height:1040px;left:860px;top:20px}
+.caption{position:absolute;left:100px;bottom:120px;width:720px;font-size:32px;line-height:1.35;color:#fff;font-weight:700;z-index:3}
+.footnote{position:absolute;left:100px;bottom:55px;font-size:18px;color:#a5b9cc;letter-spacing:.02em;z-index:3}
+#root[data-presenter-side="left"] #three-layer{left:0}#root[data-presenter-side="left"] .copy,#root[data-presenter-side="left"] .caption{left:1050px}
+#root[data-presenter-side="center"] #three-layer{left:440px}#root[data-presenter-side="center"] .copy{visibility:hidden}
+#root[data-presenter-side="center"] .caption{left:330px;width:1260px;bottom:100px;text-align:center;border-radius:20px}
+#root[data-presenter-side="center"] .caption.has-text{background:#0c1420;padding:18px 30px}
+
+html,body{width:1080px;height:1920px}
+#root[data-resolution="portrait"] .brand{left:70px;top:64px;font-size:40px}
+#root[data-resolution="portrait"] #three-layer{left:0;top:110px;width:1080px;height:1450px}
+#root[data-resolution="portrait"] .copy{visibility:hidden}
+#root[data-resolution="portrait"] .caption{left:70px;width:940px;bottom:160px;font-size:44px;line-height:1.38;text-align:left}
+#root[data-resolution="portrait"] .caption.has-text{padding:22px 28px;background:#0c1420}
+#root[data-resolution="portrait"] .footnote{left:70px;bottom:62px;font-size:24px}
+.brand,.eyebrow{color:var(--theme-accent)}
+</style></head><body>
+<main data-hf-id="hf-n5bi" id="root" data-composition-id="pulso-speaking" data-resolution="portrait" data-theme="ia" data-palette-seed="1" data-width="1080" data-height="1920" data-duration="27.616" data-fps="24">
+<div data-hf-id="hf-j4r2" class="brand">PULSO <span data-hf-id="hf-5ukb">IA</span></div>
+<div data-hf-id="hf-bdx3" class="copy"><p data-hf-id="hf-a6lx" class="eyebrow">O PERSONAGEM GANHOU VOZ</p><h1 data-hf-id="hf-8lqp">Oi, eu sou<br data-hf-id="hf-x5px">o Pulso.</h1><p data-hf-id="hf-b9i3" class="description">Um sorriso, um olhar e gestos para acompanhar cada ideia.</p><div data-hf-id="hf-osyq" class="details"><span data-hf-id="hf-m6bh">Olhar</span><span data-hf-id="hf-pjsy">Expressões</span><span data-hf-id="hf-r38c">Gestos</span></div></div>
+<canvas data-hf-id="hf-eqvz" id="three-layer" class="clip" data-start="0" data-duration="27.616" data-track-index="0" width="1080" height="1450" aria-label="Robô Pulso articulado com expressão facial"></canvas>
+<div data-hf-id="hf-j84d" class="caption" role="presentation"></div><div data-hf-id="hf-nuzf" class="footnote">01 · OLÁ, PULSO</div>
+<audio data-hf-id="hf-v3k9" id="pulso-narration" src="assets/narracao.wav" data-start="0" data-duration="27.616" data-track-index="1"></audio>
+</main><script src="assets/speaking.bundle.js"></script><script>window.__hf.buildReady['pulso-speaking-rig'].then(()=>{window.__timelines=window.__timelines||{};window.__timelines['pulso-speaking']=window.pulsoTimeline;});</script></body></html>

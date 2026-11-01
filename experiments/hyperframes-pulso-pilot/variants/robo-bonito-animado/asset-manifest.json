@@ -1,0 +1,55 @@
+{
+  "source": "../robo-bonito/assets/robo-bonito-hunyuan.glb",
+  "sourceSHA256": "f588d0449e71fb60cc649c400ff04b47c964248cadf9e015e74a36653c5554ff",
+  "riggedSHA256": "ba74e8d5754c589aa02b1b7446ad9c4285aca543d8fdbfdfe550473ceae1ee44",
+  "riggedBytes": 70961600,
+  "strategy": "Native glTF mechanical skeleton, 17 joints; source UV/textures/winding retained; dark visor material and four native facial meshes.",
+  "animation": "Absolute-time HyperFrames/GSAP pose; authored controls in src/bonito-motion.js, no baked GLB clip yet.",
+  "speech": {
+    "provider": "gTTS",
+    "lang": "pt",
+    "tld": "com.br",
+    "duration": 27.616,
+    "cues": [
+      {
+        "start": 0.8,
+        "end": 3.344,
+        "text": "Oi! Eu sou o Pulso."
+      },
+      {
+        "start": 3.744,
+        "end": 9.504,
+        "text": "Agora, eu posso olhar para você, piscar e sorrir."
+      },
+      {
+        "start": 9.904,
+        "end": 14.608,
+        "text": "Enquanto falo, minha boca acompanha a voz."
+      },
+      {
+        "start": 15.008,
+        "end": 19.184,
+        "text": "E meus braços ajudam a explicar cada ideia."
+      },
+      {
+        "start": 19.584,
+        "end": 24.336,
+        "text": "Esse é o primeiro teste do meu novo corpo em movimento."
+      },
+      {
+        "start": 24.736,
+        "end": 26.416,
+        "text": "O que você achou?"
+      }
+    ],
+    "timing": "Phrase durations measured by ffprobe; silence inserted explicitly.",
+    "fallbackReason": "Installed Edge-TTS 7.2.8 returned HTTP 403; no paid API used."
+  },
+  "renderer": "HyperFrames 0.8.149 / Three.js 0.186.1",
+  "integration": "candidate preview; production presenter unchanged",
+  "limits": [
+    "Mouth driven by actual 10ms audio envelope, not phoneme-aligned visemes.",
+    "Hand/wrist articulated; individual finger phalanges not independently controlled.",
+    "Single-view Hunyuan topology not certified for arbitrary extreme motions."
+  ]
+}

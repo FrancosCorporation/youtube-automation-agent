@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "enabledPlatforms": ["kwai", "instagram", "tiktok", "x"],
+  "excludedPlatforms": ["telegram"],
+  "decision": "Proprietário excluiu Telegram em 18/10/2026; resolver logins e publicação nas quatro redes restantes."
+}

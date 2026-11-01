@@ -1,0 +1,59 @@
+{
+  "provider": "Microsoft Edge Neural TTS",
+  "voice": "pt-BR-FranciscaNeural",
+  "rate": "-3%",
+  "pitch": "-1Hz",
+  "language": "pt-BR",
+  "audioFile": "narration.mp3",
+  "audioDurationSeconds": 35.352,
+  "segments": [
+    {
+      "id": "question",
+      "text": "Seu celular não recebe uma coordenada pronta.",
+      "startSeconds": 0.05,
+      "durationSeconds": 2.952
+    },
+    {
+      "id": "satellites",
+      "text": "Cada satélite transmite o horário do sinal e sua posição.",
+      "startSeconds": 3.002,
+      "durationSeconds": 3.673
+    },
+    {
+      "id": "travel_time",
+      "text": "O telefone estima quanto a onda levou para chegar.",
+      "startSeconds": 6.675,
+      "durationSeconds": 2.989
+    },
+    {
+      "id": "distance",
+      "text": "Como o rádio viaja quase à velocidade da luz, esse atraso vira distância.",
+      "startSeconds": 9.664,
+      "durationSeconds": 4.756
+    },
+    {
+      "id": "one_range",
+      "text": "Uma distância deixa vários lugares possíveis: uma esfera ao redor do satélite.",
+      "startSeconds": 14.42,
+      "durationSeconds": 4.987
+    },
+    {
+      "id": "intersection",
+      "text": "As medições de outros satélites cruzam essas esferas.",
+      "startSeconds": 19.407,
+      "durationSeconds": 3.556
+    },
+    {
+      "id": "fourth_signal",
+      "text": "Por que são pelo menos quatro? O relógio do celular não é atômico: a quarta medida corrige esse erro e ajuda a calcular a posição.",
+      "startSeconds": 22.963,
+      "durationSeconds": 8.402
+    },
+    {
+      "id": "resolution",
+      "text": "Assim, sinais invisíveis viram um ponto no mapa.",
+      "startSeconds": 31.365,
+      "durationSeconds": 3.879
+    }
+  ]
+}

@@ -12,7 +12,7 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const MINI_LABELS = {
-    overview: 'Home', operator: 'Operator', pipeline: 'Pipeline',
+    overview: 'Home', operator: 'Operator', knowledge: 'Knowledge', pipeline: 'Pipeline',
     calendar: 'Calendar', analytics: 'Stats', readiness: 'Checks', settings: 'Setup'
   };
   function ensureMiniLabels() {
@@ -32,21 +32,23 @@
   const VIEW_META = {
     overview: ['OPERATOR OVERVIEW', 'Know what happens next.', 'Overview'],
     operator: ['AUTONOMOUS OPERATOR', 'Give Lumen the strategy.', 'Operator'],
+    knowledge: ['AGENT KNOWLEDGE', 'Give every agent your reference material.', 'Knowledge'],
     pipeline: ['CONTENT OPERATIONS', 'From idea to published.', 'Pipeline'],
     calendar: ['EDITORIAL PLANNING', 'Plan before you generate.', 'Calendar'],
     analytics: ['PERFORMANCE', 'Turn results into the next move.', 'Analytics'],
+    engagement: ['AUDIENCE ENGAGEMENT', 'Talk with the people watching.', 'Engagement'],
     readiness: ['PRODUCTION READINESS', 'Verify before autonomy runs.', 'Readiness'],
     settings: ['CHANNEL GUARDRAILS', 'Make every agent sound like you.', 'Setup']
   };
   let currentView = 'overview';
   const baseSwitchView = window.switchView;
   if (typeof baseSwitchView === 'function') {
-    window.switchView = function (view) {
+    window.switchView = function (view, options) {
       if (!VIEW_META[view]) return baseSwitchView(view);
       const changed = view !== currentView;
       const previous = currentView;
       currentView = view;
-      baseSwitchView(view);
+      baseSwitchView(view, options);
       document.title = `${VIEW_META[view][2]} · Lumen`;
       const section = $(`#${view}-view`);
       if (section) {
@@ -64,6 +66,8 @@
       }
     };
   }
+  const initialView = location.hash.slice(1);
+  if (VIEW_META[initialView]) document.title = `${VIEW_META[initialView][2]} · Lumen`;
 
   /* ---------- 2. Count-up instrumentation ---------- */
   const easeOut = t => 1 - Math.pow(1 - t, 3);
@@ -109,18 +113,23 @@
   const palette = document.createElement('div');
   palette.className = 'cmdk-backdrop hidden';
   palette.innerHTML = `
-    <div class="cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="cmdk" role="dialog" aria-modal="true" aria-labelledby="cmdk-dialog-title" tabindex="-1">
       <div class="cmdk-head">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input class="cmdk-input" type="text" placeholder="Jump to a view, run a command…" aria-label="Command input" autocomplete="off" spellcheck="false">
+        <h2 id="cmdk-dialog-title" class="sr-only">Command palette</h2>
+        <input class="cmdk-input" type="text" role="combobox" placeholder="Jump to a view, run a command…" aria-label="Command input" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="cmdk-list" aria-expanded="true" autocomplete="off" spellcheck="false">
         <kbd>esc</kbd>
       </div>
-      <div class="cmdk-list" role="listbox" aria-label="Commands"></div>
+      <div class="cmdk-list" id="cmdk-list" role="listbox" aria-label="Commands"></div>
+      <div class="cmdk-empty hidden" role="status" aria-live="polite"></div>
       <div class="cmdk-foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> run</span><span class="cmdk-brand">Lumen console</span></div>
     </div>`;
   document.body.appendChild(palette);
   const listEl = palette.querySelector('.cmdk-list');
+  const emptyEl = palette.querySelector('.cmdk-empty');
   const inputEl = palette.querySelector('.cmdk-input');
+  let previousFocus = null;
+  let shellWasInert = false;
 
   function buildCommands() {
     const cmds = Object.entries(VIEW_META).map(([id, meta]) => ({
@@ -159,23 +168,37 @@
     filtered = q ? cmds.filter(c => `${c.label} ${c.hint} ${c.keywords}`.toLowerCase().includes(q)) : cmds;
     selected = Math.min(selected, Math.max(0, filtered.length - 1));
     if (!filtered.length) {
-      listEl.innerHTML = '<div class="cmdk-empty">No matching commands.</div>';
+      listEl.innerHTML = '';
+      listEl.classList.add('hidden');
+      inputEl.setAttribute('aria-expanded', 'false');
+      emptyEl.textContent = 'No matching commands.';
+      emptyEl.classList.remove('hidden');
+      inputEl.removeAttribute('aria-activedescendant');
       return;
     }
+    listEl.classList.remove('hidden');
+    inputEl.setAttribute('aria-expanded', 'true');
+    emptyEl.classList.add('hidden');
     let lastGroup = '';
     listEl.innerHTML = filtered.map((c, i) => {
       const head = c.group !== lastGroup ? `<p class="cmdk-group">${c.group}</p>` : '';
       lastGroup = c.group;
-      return `${head}<div class="cmdk-row ${i === selected ? 'selected' : ''}" role="option" aria-selected="${i === selected}" data-cmd="${i}">
-        <span class="cmdk-icon">${icon(c.icon)}</span>
+      return `${head}<div id="cmd-option-${i}" class="cmdk-row ${i === selected ? 'selected' : ''}" role="option" aria-selected="${i === selected}" data-cmd="${i}">
+        <span class="cmdk-icon" aria-hidden="true">${icon(c.icon)}</span>
         <span class="cmdk-label">${c.label}</span>
         <span class="cmdk-hint">${c.hint}</span>
       </div>`;
     }).join('');
+    inputEl.setAttribute('aria-activedescendant', `cmd-option-${selected}`);
     listEl.querySelector('.cmdk-row.selected')?.scrollIntoView({ block: 'nearest' });
   }
 
   function openPalette() {
+    if (!palette.classList.contains('hidden')) return;
+    previousFocus = document.activeElement;
+    const shell = $('.app-shell');
+    shellWasInert = Boolean(shell?.inert);
+    if (shell) shell.inert = true;
     palette.classList.remove('hidden');
     document.body.classList.add('cmdk-open');
     inputEl.value = '';
@@ -184,8 +207,13 @@
     requestAnimationFrame(() => inputEl.focus());
   }
   function closePalette() {
+    if (palette.classList.contains('hidden')) return;
     palette.classList.add('hidden');
     document.body.classList.remove('cmdk-open');
+    const shell = $('.app-shell');
+    if (shell) shell.inert = shellWasInert;
+    if (previousFocus?.isConnected && typeof previousFocus.focus === 'function') previousFocus.focus();
+    previousFocus = null;
   }
   function runCommand(index) {
     const cmd = filtered[index];
@@ -208,6 +236,7 @@
     }
     if (!palette.classList.contains('hidden')) {
       if (event.key === 'Escape') { event.preventDefault(); return closePalette(); }
+      if (event.key === 'Tab') { event.preventDefault(); return inputEl.focus(); }
       if (event.key === 'ArrowDown') { event.preventDefault(); selected = Math.min(filtered.length - 1, selected + 1); return renderList(); }
       if (event.key === 'ArrowUp') { event.preventDefault(); selected = Math.max(0, selected - 1); return renderList(); }
       if (event.key === 'Enter') { event.preventDefault(); return runCommand(selected); }
@@ -333,14 +362,18 @@
   if (typeof origShowToast === 'function') {
     window.showToast = function (message, type = 'success') {
       const toast = $('#toast');
-      const iconPath = type === 'error'
+      const toastType = ['error', 'warning', 'success'].includes(type) ? type : 'success';
+      const iconPath = toastType === 'error'
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.5"/></svg>'
-        : type === 'warning'
+        : toastType === 'warning'
           ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17v.5"/></svg>'
           : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m8 12.5 2.8 2.8L16.5 9"/></svg>';
-      toast.innerHTML = `<span class="toast-icon ${type}">${iconPath}</span><span class="toast-msg"></span>`;
+      toast.innerHTML = `<span class="toast-icon ${toastType}" aria-hidden="true">${iconPath}</span><span class="toast-msg"></span>`;
       toast.querySelector('.toast-msg').textContent = message;
-      toast.className = `toast ${type}`;
+      toast.className = `toast ${toastType}`;
+      toast.setAttribute('role', toastType === 'error' ? 'alert' : 'status');
+      toast.setAttribute('aria-live', toastType === 'error' ? 'assertive' : 'polite');
+      toast.setAttribute('aria-atomic', 'true');
       void toast.offsetWidth;
       toast.classList.add('armed');
       clearTimeout(ui.toastTimer);

@@ -1,0 +1,45 @@
+{
+  "schema": "pulso-improvement-fleet.v1",
+  "tasks": [
+    {
+      "id": "geometry",
+      "model": "nvidia/openai/gpt-oss-20b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "inputs": ["experiments/hyperframes-pulso-pilot/src/presenter-robot-modern.js"],
+      "objective": "Leia o modelo procedural e extraia as medidas reais da primeira roundedBox do grupo head (casco), roundedBox que usa glass dentro de head (visor), e as duas roundedBox do grupo leg nas posicoes Y -1.32 (sola) e -1.23 (casco do pe). Grave geometry.json com parts: lista de {name,size,position,source,parent}, e risks: lista vazia quando nao houver evidencia. A caixa em Y -0.68 e do joelho e nao e pe. Copie numeros do codigo; nao altere o modelo nem deduza anatomia.",
+      "context": "Three.js, coordenadas Y para cima; posicoes sao locais ao parent. Preserve a API createPresenterRobot e pivots head/arms/legs. Este arquivo e uma variante para avaliacao; a integracao nao e tarefa do trabalhador.",
+      "outputs": [{"path": "geometry.json", "kind": "json", "required_keys": ["parts", "risks"]}]
+    },
+    {
+      "id": "materials",
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 240,
+      "corrections": 1,
+      "inputs": ["experiments/hyperframes-pulso-pilot/src/presenter-robot-modern.js"],
+      "objective": "Extraia os materiais ceramicLight (shell), titanium (metal), glass (visor) e eyeMaterial (led) do codigo para materials.json. Cada entrada deve ter color em #rrggbb, metalness e roughness; inclua clearcoat onde houver, emissiveIntensity no led. Resolva valores de look pela paleta padrao. Acrescente lights com cor/intensidade dos tres DirectionalLight. Nao sugira valores novos.",
+      "outputs": [{"path": "materials.json", "kind": "json", "required_keys": ["shell", "metal", "visor", "led", "lights"], "numeric_ranges": {"shell.metalness": [0,1], "shell.roughness": [0,1], "shell.clearcoat": [0,1], "metal.metalness": [0,1], "metal.roughness": [0,1], "visor.roughness": [0,1], "led.emissiveIntensity": [0,2]}}]
+    },
+    {
+      "id": "motion-audit",
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "inputs": ["experiments/hyperframes-pulso-pilot/src/modern-preview.js", "experiments/hyperframes-pulso-pilot/src/presenter-robot-modern.js", "utils/presenter-framing.js"],
+      "objective": "Extraia fatos da animacao para motion.json com duration_seconds (numero no tween principal), time_source (como renderAt recebe tempo), transforms (objetos e propriedades escritos), shots (start,side,framing da tabela) e issues: lista vazia. Esta tarefa e extracao mecanica; nao e diagnostico ou aprovacao. Nao alegue renderizacao ou testes que voce nao executou.",
+      "context": "arms e um objeto com chaves -1 e 1, definido em presenter-robot-modern.js; arms[-1] e acesso valido a propriedade e nao indexacao de array. Gestos podem usar a mesma funcao temporal e ainda aplicar rotacoes distintas em cada braco. Decisoes de qualidade e QA ficam com o orquestrador.",
+      "outputs": [{"path": "motion.json", "kind": "json", "required_keys": ["duration_seconds", "time_source", "transforms", "issues"], "numeric_ranges": {"duration_seconds": [12,12]}}]
+    },
+    {
+      "id": "acceptance-matrix",
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 0,
+      "depends_on": ["geometry", "materials", "motion-audit"],
+      "dependency_artifacts": {"geometry": ["geometry.json"], "materials": ["materials.json"], "motion-audit": ["motion.json"]},
+      "inputs": [],
+      "objective": "Use os tres relatorios de dependencia para criar acceptance.json com checks e blockers. Cada check deve ter id, criterion, evidence_source, verification e status: pending. Inclua verificacoes visuais do corpo inteiro, face e juntas, consistencia de materiais, seeks 0/1.5/3/5/6/8/9/11.9 e retorno 8/1.5/8, MP4 1920x1080 30fps 12s. Voce nao tem navegador nem o render: todas as verificacoes visuais ficam pending. Nao transforme relatorios em aprovacoes.",
+      "outputs": [{"path": "acceptance.json", "kind": "json", "required_keys": ["checks", "blockers"]}]
+    }
+  ]
+}

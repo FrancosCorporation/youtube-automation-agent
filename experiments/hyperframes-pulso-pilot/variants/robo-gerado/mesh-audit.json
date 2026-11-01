@@ -1,0 +1,18 @@
+{
+  "valid_glb_header": true,
+  "primitives": [
+    {
+      "positions": 294213,
+      "triangles": 500000,
+      "nonfinite_positions": 0,
+      "invalid_indices": 0,
+      "repeated_index_triangles": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TEXCOORD_0"
+      ]
+    }
+  ],
+  "embedded_assets": true
+}

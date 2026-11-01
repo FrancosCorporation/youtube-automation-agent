@@ -1,0 +1,31 @@
+{
+  "tasks": [
+    {
+      "id": "distinct-palette-facts",
+      "inputs": [
+        "config/themes.json",
+        "experiments/hyperframes-pulso-pilot/variants/robo-bonito-temas-v3/palette-audit.json"
+      ],
+      "objective": "Leia as entradas com ferramentas e grave palette-review.json com theme_count, distinct_primary_count, primaries_stable_in_variants, minimum_contrast, nearest_pair_before e nearest_pair_after (copie os registros de menor distance dos respectivos arrays), public_color_names. So fatos; nao aprove a estetica ou acessibilidade por distancia. Nao altere entradas nem use outro provider.",
+      "outputs": [
+        {
+          "path": "palette-review.json",
+          "kind": "json",
+          "required_keys": [
+            "theme_count",
+            "distinct_primary_count",
+            "primaries_stable_in_variants",
+            "minimum_contrast",
+            "nearest_pair_before",
+            "nearest_pair_after",
+            "public_color_names"
+          ]
+        }
+      ],
+      "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+      "timeout_seconds": 180,
+      "corrections": 1,
+      "context": "Usuario autorizou workers NVIDIA gratuitos. Pedido ativo: diferenciar dez temas por cores divergentes. Orquestrador renderiza e julga comparacao visual; worker extrai dados verificaveis."
+    }
+  ]
+}

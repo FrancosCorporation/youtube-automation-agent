@@ -1,0 +1,8 @@
+{
+  "status": "skin-only-not-motion-QA-approved",
+  "source": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-mixamo-rigged.fbx",
+  "output": "/home/servidor/Git/youtube_ai/youtube-automation-agent/experiments/hyperframes-pulso-pilot/variants/approved-robot-20261022/assets/approved-robot-rigged-source.glb",
+  "bones": 65,
+  "meshes": 1,
+  "faces": 499984
+}

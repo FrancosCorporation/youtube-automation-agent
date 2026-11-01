@@ -1,0 +1,9 @@
+# Cursor preservado de 24/10/2026 às 22:08 BRT
+
+Movido para o checkpoint de 22:23 BRT. Snapshot em `docs/evidencias/workflow-autonomo-2026-10-24/state.json`.
+
+**Cursor — 24/10/2026, 22:08 BRT:** automação recorrente ainda não operando. A unidade **de usuário** `ai-video-scheduler.service` existe e está enabled, mas inactive/ConditionResult=no pelo marcador/drop-in de migração; guard timer ativo e Linger=yes. Isso corrige o diagnóstico anterior de unit ausente. A rota narrativa Remotion já está integrada em código. O último job automático (`8fecff66-4c67-4282-bddd-f8e2f14b6011`) foi reprovado por evidências incompletas, sem MP4/upload. Sonda de 22:08: load1 30,77, ~5,61 GiB disponíveis, GPU 83%; gate bloqueado por carga e RAM. Não encerrar o treino alheio.
+
+**Próxima execução autorizada:** catálogo de evidências por IDs e compilação local → recuperação do scheduler com espera por recursos, identidade estável e timeout → melhorias Remotion → filtro de publicação que preserve o backlog legado → validação e rollout do serviço existente. O serviço deve retomar sozinho quando houver recursos; não depender de nova sessão de LLM nem de confirmação por vídeo. Arquivos, estados atuais/propostos, pesquisa e critérios em [docs/workflow-autonomo.md](docs/workflow-autonomo.md); [snapshot verificável](docs/evidencias/workflow-autonomo-2026-10-24/state.json). YAI-063 permanece PARCIAL. Primeiro episódio YouTube e Kwai parte 1 estão confirmados; Shorts/partes restantes pendentes, Instagram sem espaço, TikTok/X com dependências de conta/handler, Telegram excluído. Esta entrega atualiza documentação; não comprova novo render, upload ou ativação.
+
+Os checkpoints anteriores foram preservados em [arquivo histórico](docs/archive/checkpoints-plano-ate-2026-10-24-2155.md), sem manter vários cursores concorrentes no topo do plano.

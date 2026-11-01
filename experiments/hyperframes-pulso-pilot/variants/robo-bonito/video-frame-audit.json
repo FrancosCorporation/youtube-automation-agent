@@ -1,0 +1,37 @@
+{
+  "video": "../../renders/pulso-robo-bonito-preview.mp4",
+  "observedShots": [
+    {
+      "name": "frente",
+      "time": 0.5
+    },
+    {
+      "name": "perfil",
+      "time": 2.5
+    },
+    {
+      "name": "costas",
+      "time": 4.5
+    },
+    {
+      "name": "rosto",
+      "time": 6.5
+    }
+  ],
+  "boundaryFrames": [
+    47,
+    48,
+    95,
+    96,
+    143,
+    144
+  ],
+  "boundaryContact": "../../renders/pulso-robo-bonito-video-cortes.png",
+  "inspection": "orchestrator inspected decoded front, close and all six sides of camera-cut boundaries",
+  "findings": [
+    "Full body, hands and feet visible in open shots; camera/side changes occur at cuts.",
+    "Compact silhouette and smiling visor preserved.",
+    "Visor is more reflective than reference; single-view backside inferred."
+  ],
+  "approval": "candidate for user visual evaluation; not approved for production or articulation"
+}

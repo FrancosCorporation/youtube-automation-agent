@@ -110,7 +110,8 @@ Content type: ${strategy.contentType}
 Target audience: ${strategy.targetAudience}
 Keywords: ${(strategy.keywords || []).join(', ')}
 Content language: ${process.env.CONTENT_LANGUAGE || 'en'} — write title, description, and tags in this language (translate keyword ideas, keep them natural).
-Keep tags under YouTube's 500 character total guidance. Avoid fabricated statistics and unsupported claims.`;
+Keep tags under YouTube's 500 character total guidance. Avoid fabricated statistics and unsupported claims.
+${strategy.knowledgeBaseContext || ''}`;
 
     try {
       const response = await this.aiTextService.generateText(prompt, {

@@ -1,0 +1,65 @@
+[
+  {
+    "text": "Seu celular não recebe uma coordenada pronta.",
+    "startMs": 50,
+    "endMs": 3002,
+    "confidence": 1,
+    "timestampMs": 1526
+  },
+  {
+    "text": "Cada satélite transmite o horário do sinal e sua posição.",
+    "startMs": 3002,
+    "endMs": 6675,
+    "confidence": 1,
+    "timestampMs": 4838.5
+  },
+  {
+    "text": "O telefone estima quanto a onda levou para chegar.",
+    "startMs": 6675,
+    "endMs": 9664,
+    "confidence": 1,
+    "timestampMs": 8169.5
+  },
+  {
+    "text": "Como o rádio viaja quase à velocidade da luz, esse atraso vira distância.",
+    "startMs": 9664,
+    "endMs": 14420,
+    "confidence": 1,
+    "timestampMs": 12042
+  },
+  {
+    "text": "Uma distância deixa vários lugares possíveis: uma esfera ao redor do satélite.",
+    "startMs": 14420,
+    "endMs": 19407,
+    "confidence": 1,
+    "timestampMs": 16913.5
+  },
+  {
+    "text": "As medições de outros satélites cruzam essas esferas.",
+    "startMs": 19407,
+    "endMs": 22963,
+    "confidence": 1,
+    "timestampMs": 21185
+  },
+  {
+    "text": "Por que são pelo menos quatro?",
+    "startMs": 22963,
+    "endMs": 24858,
+    "confidence": 1,
+    "timestampMs": 23910.5
+  },
+  {
+    "text": "O relógio do celular não é atômico: a quarta medida corrige esse erro e ajuda a calcular a posição.",
+    "startMs": 24858,
+    "endMs": 31365,
+    "confidence": 1,
+    "timestampMs": 28111.5
+  },
+  {
+    "text": "Assim, sinais invisíveis viram um ponto no mapa.",
+    "startMs": 31365,
+    "endMs": 35244,
+    "confidence": 1,
+    "timestampMs": 33304.5
+  }
+]
