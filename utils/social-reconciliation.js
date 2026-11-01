@@ -35,6 +35,13 @@ function reconciliationCandidates(entries, platform, accountHandle, root) {
   return candidates;
 }
 
+function reconciliationPage(state, candidates) {
+  // A new submission deserves a head scan rather than waiting for the full
+  // backlog rotation. In quiet periods keep advancing through older pages.
+  const newlySubmitted = candidates.some(c => Date.parse(c.previous.submittedAt) > Date.parse(state.checkedAt || ''));
+  return newlySubmitted ? 0 : Number.isInteger(state.nextPage) ? state.nextPage : 0;
+}
+
 // Read-only platform reconciliation. It never calls upload/Post and never
 // converts absence into permission to resend. State and evidence survive restarts.
 async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'), platform = 'tiktok',
@@ -59,7 +66,7 @@ async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'
       } catch { /* Changed/missing media is never attributed to a public post. */ }
     }
     const report = { checkedAt: new Date().toISOString(), nextCheckAt: new Date(Date.now() + 15 * 60000).toISOString(),
-      platform, page: Number.isInteger(state.nextPage) ? state.nextPage : 0,
+      platform, page: reconciliationPage(state, eligible),
       candidates: eligible.length, confirmed: [], status: 'no_candidates' };
     try {
       if (eligible.length) {
@@ -109,4 +116,4 @@ async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'
   }, { lockPath: `${statePath}.lock`, owner: `reconciliation:${platform}`, timeoutMs: 1000 });
 }
 
-module.exports = { reconciliationCandidates, reconcileSocialPublications };
+module.exports = { reconciliationCandidates, reconciliationPage, reconcileSocialPublications };

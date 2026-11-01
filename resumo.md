@@ -1,3 +1,19 @@
+## 01/11/2026 — envio novo TikTok confirmado (12:25 BRT)
+
+O serviço enviou abf818cc às 15:22:55Z; o reconciliador confirmou legenda integral e Everyone no perfil, sem repetir Post. Também confirmou 2ac25079, totalizando 12 confirmações nesta execução (7 TikTok e 5 Instagram). Relatório /tmp/pulso-tiktok-new-upload-confirmation.log e data/state/reconciliation-tiktok.json. A geração atual passou para o segundo modelo NVIDIA após timeout do primeiro, comprovando que o fallback corrigido não desabilita mais todo o provedor. Ainda sem MP4 novo deste job e sem X validado.
+
+## 01/11/2026 — recuperação implementada, CI aprovada, release 2.12.0 em preparação (12:25 BRT)
+
+Avanços reais: cinco TikTok + cinco Instagram reconciliados por código (conta, legenda integral e provas); ledger atualizado sob lock, sem reenvio. Novo TikTok abf818cc teve Post acionado pelo serviço às 15:22:55Z, ainda incerto; reconciliação ativa, não reenviar. Recuperação automática de cache Android adicionada antes do upload, usando apenas pm trim-caches. Limpeza real liberou cerca de 70 MiB, mas Play Store continuou com erro ao atualizar X; não removemos o app/dados. Handle X ainda não informado e handler continua indisponível.
+
+Falha concreta do writer corrigida: timeout de openai/gpt-oss-20b desabilitava todos os outros modelos NVIDIA. Agora timeout/5xx permite próximo modelo dentro do orçamento existente; 401/402/403/429/cota continuam bloqueando o provedor. 33 testes focados passaram. Serviço recarregado ocioso às 15:21:53Z, PID 259862, pausa própria arquivada. Nova geração de Curiosidades começou às 15:23:16Z; não reiniciar em andamento. Último ajuste do scanner Instagram (aba Grid view/retorno entre posts) e prioridade de reconciliação para submissões novas foram feitos após o reload; módulo é carregado no worker de reconciliação quando necessário, verificar antes de afirmar atualização de processo já carregado.
+
+Colisão: encurtamento dos trilhos passou preflight. Ambos MP4s corrigidos renderizados, decodificados e inspecionados; seek 7×2 passou. Landscape SHA 562c3f1fc5af182f9e3759f8c08d6392facbf9c4c0308cdd8afc69a892283c43; portrait SHA 1f420d2178c460b13121652b2924dfdfa88bdcb1f09fb26f2665c71364de4422. Evidências em docs/evidencias/fruit-sorting-collision-fix-20261101/verification.json. São fixtures, não notícias publicáveis.
+
+CI /tmp/pulso-recovery-ci.log concluída exit 0: 1105 Node, 40 Python e checks de UI/framing. ESLint geral e Remotion/TypeScript exit 0. Regressões finais: 50 testes de recuperação, 33 writer, 15 integração passaram. Segurança: Gitleaks em seleção de 903 fontes encontrou apenas falso positivo no literal de ID de modelo do teste review-response.test.js (linha 156); nenhum segredo real identificado. Dados, perfis, .env, SHA256SUMS e histórico .planning não selecionados para publicação.
+
+Git: checkpoint de código criado; merge de fork/master concluído em cbb652f, união dos overrides uuid/undici/google-auth-library preservada, package/lock 2.12.0. Push/tag/release ainda pendentes neste registro. ZIP criativo /tmp/pulso-creative-assets-v2.12.0.zip: 269 arquivos/222 blobs, 647 MiB; restauração integral em /tmp/pulso-asset-restore-check passou. Robô aprovado, referência PNG e fontes essenciais estão no commit. Ferramenta scripts/release-assets.py permite restauração sem LLM. Concluir docs/commit/push/tag/release, confirmar SHA remoto, manter serviço sem pausa. Não anunciar cinco redes operantes ou ciclo recorrente completo sem comprovação.
+
 ## 01/11/2026 — execução social autorizada em andamento (12:10 BRT)
 
 O proprietário confirmou a aprovação da nova direção e ordenou geração/distribuição contínua para YouTube, Kwai, Instagram, TikTok e X, com recuperação em código, sem precisar de assistente LLM operacional. Sem nova aprovação por vídeo. A referência aprovada continua ação/contato/consequência adaptada à narrativa.

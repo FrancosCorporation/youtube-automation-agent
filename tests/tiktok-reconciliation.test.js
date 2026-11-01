@@ -2,11 +2,17 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { publicTikTokPrivacy, uniqueCaptionCandidate, scanTikTokPublicPosts } = require('../utils/tiktok-reconciliation');
-const { reconciliationCandidates } = require('../utils/social-reconciliation');
+const { reconciliationCandidates, reconciliationPage } = require('../utils/social-reconciliation');
 const prefix = 'com.zhiliaoapp.musically:id/';
 const node = (id, text, x, y = 1, extra = {}) => ({ resourceId: prefix + id, text, x, y, clickable: true, ...extra });
 const privacy = checked => [node('jpv', 'Who can watch this video', 0), node('zhu', 'Everyone', 2, 602),
   node('tss', '', 3, checked ? 602 : 694, { checked: true }), node('', '', 8, 1, { description: 'Close' })];
+
+test('new submissions return to the head; quiet scans advance through the backlog', () => {
+  const state = { checkedAt: '2026-11-01T12:00:00Z', nextPage: 4 };
+  assert.equal(reconciliationPage(state, [{ previous: { submittedAt: '2026-11-01T12:01:00Z' } }]), 0);
+  assert.equal(reconciliationPage(state, [{ previous: { submittedAt: '2026-11-01T11:59:00Z' } }]), 4);
+});
 
 test('TikTok public proof requires the selected Everyone radio, not its label alone', () => {
   assert.equal(publicTikTokPrivacy(privacy(true)), true);
