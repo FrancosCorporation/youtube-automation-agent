@@ -1,3 +1,11 @@
+## 01/11/2026 — observação final do serviço, 12:33 BRT
+
+O worker do próprio scheduler confirmou **mais 9 Instagram automaticamente** às 15:33:07Z, sem chamada manual e sem LLM, provando a integração carregada da reconciliação. Total desta execução: **7 TikTok + 14 Instagram = 21 confirmações**, incluindo o novo envio TikTok abf818cc; a maioria reconcilia posts já existentes. Evidência no scheduler.log e data/state/reconciliation-instagram.json.
+
+A geração de Curiosidades terminou às 15:31:22Z sem vídeo: script_call_budget_exhausted após percorrer alternativas e reparos. O scheduler preservou operação e agendou retry para 15:36:22Z (12:36 BRT), não ficou parado nem foi reiniciado. Não afirmar geração contínua resolvida; cotas/disponibilidade e respostas válidas dos writers continuam pendentes. Serviço e guard ativos, nenhuma pausa.
+
+Release v2.12.0 publicada e verificada conforme registro abaixo. Código da tag SHA 5dc401d; documentação de fechamento foi enviada depois (master 1973efb já conferido remotamente antes deste último registro). Assets e evidências disponíveis na release. Próxima ação continua sendo prover sessão/conta X e acompanhar a geração automaticamente, mantendo QA e proteção contra reenvio incerto.
+
 ## 01/11/2026 — ENTREGA PRESERVADA: v2.12.0 publicada e serviço ativo (12:31 BRT)
 
 Código commitado e enviado ao fork do proprietário; tag/release pública **v2.12.0** aponta para **5dc401d23b879a1f480e70b54eebe29e00d3fafc**, confirmado com git ls-remote. Link: https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.12.0 . Release não é draft; os três assets tiveram tamanho/hash remoto conferidos: bundle criativo (678078404 bytes), evidência dos vídeos (21267297 bytes) e SHA256SUMS-v2.12.0.txt. Restauração dos 269 assets em diretório vazio passou. Atualização documental posterior não muda o código da tag.
