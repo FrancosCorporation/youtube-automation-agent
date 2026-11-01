@@ -8,8 +8,8 @@ test('both author routes retain multitheme direction in initial and repair reque
   const chapterInputs=[{id:'scene-01',sentenceIds:['s1'],narration:[{id:'s1',text:'O livro volta para a estante.',startFrame:0,endFrame:150}]}];
   for(const build of [buildPrompt,buildAdaptivePrompt])for(const retryErrors of [[],['porta fechada no percurso']]){
     const prompt=build({plan,chapterInputs,sourceContext:'Fonte.',retryErrors});
-    for(const rule of [/DIRETRIZES MULTITEMA/,/CONTINUIDADE DE PORTAS E ROUPAS/,/DECUPAGEM MULTITEMA/,/não os deixe quinze segundos inertes/,/halo/,/não copie frutas/])assert.match(prompt,rule);
+    for(const rule of [/DIRETRIZES MULTITEMA/,/CONTINUIDADE DE PORTAS E ROUPAS/,/DECUPAGEM MULTITEMA/,/não os deixe quinze segundos inertes/,/halo/,/não copie frutas/,/humanos detalhados com malha, texturas, rig e animações locais/,/sem Mixamo ou outro site por vídeo/,/não importar o elenco rejeitado do Game Farma/])assert.match(prompt,rule);
     assert.match(prompt,/O livro volta para a estante/);
   }
-  assert.equal(CREATIVE_REFERENCE.revision,2);
+  assert.equal(CREATIVE_REFERENCE.revision,4);
 });

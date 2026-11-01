@@ -1,0 +1,18 @@
+[
+  {
+    "aspect": "landscape",
+    "sha256": "911c1e43293ecdaebe5e7f10a242598fe31b884be3ce8d6ed3fc15d069e80842",
+    "meanVolumeDb": -24.8,
+    "blackSegments": [],
+    "frozenSceneSegments": [],
+    "passed": true
+  },
+  {
+    "aspect": "portrait",
+    "sha256": "0f971435b72fd114a1d457386cc95e2dc707ac052e8915a655842811b66feeed",
+    "meanVolumeDb": -24.8,
+    "blackSegments": [],
+    "frozenSceneSegments": [],
+    "passed": true
+  }
+]

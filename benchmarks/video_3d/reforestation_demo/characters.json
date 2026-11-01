@@ -1,0 +1,26 @@
+{
+  "characters": [
+    {
+      "id": "field-biologist",
+      "params": {
+        "gender": 0, "age": 0.54, "muscle": 0.55, "weight": 0.45, "height": 0.52,
+        "african": 0.22, "asian": 0.15, "caucasian": 0.63,
+        "detail": "high", "hair": "ponytail01", "hairTint": "#594334",
+        "eyes": "brown", "skinTint": "#ead2b9", "outfit": "male_casualsuit03", "outfitTint": "#d0dabb",
+        "shoes": "shoes04", "faceShapes": true, "speechShapes": false,
+        "expression": "neutral", "weapon": "none", "carry": "none"
+      }
+    },
+    {
+      "id": "drone-operator",
+      "params": {
+        "gender": 1, "age": 0.58, "muscle": 0.6, "weight": 0.5, "height": 0.6,
+        "african": 0.7, "asian": 0.05, "caucasian": 0.25,
+        "detail": "high", "hair": "short02", "hairTint": "#3b302c",
+        "eyes": "darkbrown", "outfit": "male_casualsuit05", "outfitTint": "#e8e4d1",
+        "shoes": "shoes04", "faceShapes": true, "speechShapes": false,
+        "expression": "neutral", "weapon": "none", "carry": "none"
+      }
+    }
+  ]
+}

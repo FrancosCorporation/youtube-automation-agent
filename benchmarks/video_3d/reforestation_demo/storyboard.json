@@ -1,0 +1,35 @@
+{
+  "title": "Uma missão para semear o futuro",
+  "fiction": true,
+  "fps": 30,
+  "durationSeconds": 32,
+  "durationInFrames": 960,
+  "sentences": [
+    {
+      "text": "Nesta simulação, uma equipe prepara uma missão de reflorestamento.",
+      "startFrame": 23,
+      "endFrame": 135
+    },
+    {
+      "text": "A bióloga confere o terreno. Ao lado dela, o operador assume os controles do drone.",
+      "startFrame": 161,
+      "endFrame": 341
+    },
+    {
+      "text": "O drone decola, se afasta da equipe e segue os pontos marcados.",
+      "startFrame": 366,
+      "endFrame": 481
+    },
+    {
+      "text": "Em cada ponto, ele libera uma cápsula de sementes, que cai até o solo.",
+      "startFrame": 507,
+      "endFrame": 639
+    },
+    {
+      "text": "O mapa registra o percurso. Semear é só o começo: a equipe ainda precisa acompanhar a germinação e o crescimento.",
+      "startFrame": 665,
+      "endFrame": 892
+    }
+  ],
+  "audioSha256": "84500d5851d839fd6c07c4846b2d16c384fe586ead986da71b40d3f3c54c9ec0"
+}

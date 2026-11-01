@@ -1,0 +1,5 @@
+Nesta simulação, uma equipe prepara uma missão de reflorestamento.
+A bióloga confere o terreno. Ao lado dela, o operador assume os controles do drone.
+O drone decola, se afasta da equipe e segue os pontos marcados.
+Em cada ponto, ele libera uma cápsula de sementes, que cai até o solo.
+O mapa registra o percurso. Semear é só o começo: a equipe ainda precisa acompanhar a germinação e o crescimento.
