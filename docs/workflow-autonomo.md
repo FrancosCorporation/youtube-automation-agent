@@ -78,6 +78,10 @@ flowchart TD
 
 `scripts/channel-scheduler.js` é o único dono da produção/publicação Pulso. `npm run scheduler` inicia outro sistema, AgentTube/Express/SQLite, conforme [ADR-0001](adr/0001-fronteira-entre-pipelines.md). Não usar esse comando como substituto do serviço de usuário.
 
+### Padrão editorial de vídeo longo (v2.19.0)
+
+O master principal do YouTube é horizontal 16:9, com meta de 950 palavras narradas, mínimo editorial de 850 palavras e validação da duração real de áudio em pelo menos 360 segundos. A seleção automática procura matéria com contexto factual suficiente e descarta pautas curtas em vez de estender a fala com repetição ou fatos genéricos. Em roteiros longos, seis ou mais seções distribuem a explicação; cada frase permanece vinculada a uma ação, transformação ou mudança de câmera no plano de cenas. O render também cria o master vertical 9:16, do qual `makeNarrativeSocialParts` extrai os Shorts e demais cortes verticais.
+
 ### Mapa de código existente
 
 | Responsabilidade | Arquivos principais |

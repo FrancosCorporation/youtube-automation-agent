@@ -331,6 +331,7 @@ const PLATFORM_VIDEO_LIMIT_SECONDS = {
   instagram: platformVideoLimitSeconds('instagram'),
   x: platformVideoLimitSeconds('x')
 };
+const YOUTUBE_LONGFORM_MIN_SECONDS = 6 * 60;
 const TELEGRAM_APP_MAX_FILE_BYTES = telegramFileLimitBytes();
 const X_POST_FULL_VIDEO = /^(1|true|yes)$/i.test(String(process.env.X_POST_FULL_VIDEO || ''));
 
@@ -340,7 +341,9 @@ async function durationAllowed(videoPath, platform) {
   if (!Number.isFinite(maxSeconds) || maxSeconds <= 0) {
     throw new Error(`limite de duração não definido para ${platform}`);
   }
-  return { duration, maxSeconds, allowed: duration <= maxSeconds };
+  const minSeconds = platform === 'youtube' ? YOUTUBE_LONGFORM_MIN_SECONDS : 0;
+  return { duration, minSeconds, maxSeconds,
+    allowed: duration >= minSeconds && duration <= maxSeconds };
 }
 function withBudget(promise, platform, ms = UPLOAD_TIMEOUT_MS) {
   return withOperationBudget(promise, { platform, timeoutMs: ms });
@@ -1079,10 +1082,14 @@ async function uploadToAll({ videoPath, clips = [], title, hashtags, themeId = '
       console.warn(`  [youtube] duração não verificada: ${String(error.message || error).slice(0, 120)}`);
     }
     if (durationCheck && !durationCheck.allowed) {
+      const rejection = durationCheck.duration < durationCheck.minSeconds
+        ? `ignorado: master YouTube com ${durationCheck.duration.toFixed(1)}s abaixo do mínimo editorial de ${durationCheck.minSeconds}s (6 minutos)`
+        : `ignorado: ${durationCheck.duration.toFixed(1)}s excede o limite configurado de ${durationCheck.maxSeconds}s`;
       results.long.youtube = await persistNoSend({
         scope: 'long', platform: 'youtube', videoPath, previous: previousLong('youtube'),
-        result: `ignorado: ${durationCheck.duration.toFixed(1)}s excede o limite configurado de ${durationCheck.maxSeconds}s`
+        result: rejection
       });
+      if (durationCheck.duration < durationCheck.minSeconds) console.warn(`  [youtube] ${rejection}`);
     } else if (durationCheck) {
       results.long.youtube = await runUpload({
         scope: 'long', platform: 'youtube', videoPath, previous: previousLong('youtube'),
@@ -1369,4 +1376,4 @@ async function retryPendingSocials(options) {
   });
 }
 
-module.exports = { uploadToAll, retryPendingYouTubeShorts, retryPendingSocials, checkpointedPublication, uploadTikTok, uploadKwai, uploadInstagram, uploadX, uploadTelegram, isLogged, isSocialHandlerAvailable, allowUnknownAndroidSession, verifyKwaiPostInProfile, waitForKwaiPostInProfile, resumeKwaiComposerIfMatching, completeKwaiDraftFromEditor, waitForKwaiUi, waitForKwaiPostTapTransition, PLATFORM_BUDGET_MS, DEFAULT_KWAI_UPLOAD_TIMEOUT_MS, PLATFORM_VIDEO_LIMIT_SECONDS, TELEGRAM_APP_MAX_FILE_BYTES };
+module.exports = { uploadToAll, retryPendingYouTubeShorts, retryPendingSocials, checkpointedPublication, uploadTikTok, uploadKwai, uploadInstagram, uploadX, uploadTelegram, isLogged, isSocialHandlerAvailable, allowUnknownAndroidSession, verifyKwaiPostInProfile, waitForKwaiPostInProfile, resumeKwaiComposerIfMatching, completeKwaiDraftFromEditor, waitForKwaiUi, waitForKwaiPostTapTransition, PLATFORM_BUDGET_MS, DEFAULT_KWAI_UPLOAD_TIMEOUT_MS, PLATFORM_VIDEO_LIMIT_SECONDS, YOUTUBE_LONGFORM_MIN_SECONDS, TELEGRAM_APP_MAX_FILE_BYTES };

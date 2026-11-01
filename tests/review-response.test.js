@@ -38,6 +38,9 @@ const {
   SCRIPT_REVIEW_MODELS,
   SCRIPT_REVISION,
   sourceBoundedWordTarget,
+  countNarrativeSpokenWords,
+  YOUTUBE_LONGFORM_TARGET_WORDS,
+  YOUTUBE_LONGFORM_MIN_WORDS,
   factRepairWordTarget,
   factRepairGuidance,
   buildScriptRepairPrompt, buildScriptRepairTasks
@@ -204,12 +207,15 @@ test('the deployed provider-qualified Gemini preference overrides NVIDIA order w
   assert(candidates.some(candidate => candidate.provider === 'nvidia'));
 });
 
-test('60/day shared profile bounds new scripts while retaining the original target outside that profile', () => {
+test('pipelined YouTube scripts target six-minute long form while honoring only safe minimum budgets', () => {
   const context = 'palavra '.repeat(2000);
-  assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '1' }), 450);
+  assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '1' }), 950);
   assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '0' }), 950);
   assert.equal(sourceBoundedWordTarget(300, context, { PULSO_PIPELINED_PRODUCTION: '1' }), 300);
-  assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '1', PULSO_NARRATIVE_WORD_BUDGET: '-1' }), 450);
+  assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '1', PULSO_NARRATIVE_WORD_BUDGET: '-1' }), 950);
+  assert.equal(sourceBoundedWordTarget(950, context, { PULSO_PIPELINED_PRODUCTION: '1', PULSO_NARRATIVE_WORD_BUDGET: '850' }), 850);
+  assert.equal(YOUTUBE_LONGFORM_TARGET_WORDS, 950);
+  assert.equal(YOUTUBE_LONGFORM_MIN_WORDS, 850);
 });
 
 test('repair tasks enumerate every invalid claim and map sentence paths to editable fields', () => {
@@ -276,6 +282,7 @@ test('factual repair asks for a shorter script and prioritizes removing unsuppor
   assert.equal(factRepairWordTarget(950, source), 600);
   assert.equal(factRepairWordTarget(500, source), 500);
   assert.equal(factRepairWordTarget(950, ''), 950);
+  assert.equal(factRepairWordTarget(950, 'evidence '.repeat(945)), 850);
   const guidance = factRepairGuidance('Remova testes e entrevistas não citados.');
   assert.match(guidance, /não substitua uma alegação rejeitada por outra inferência/);
   assert.match(guidance, /Entregue uma versão mais curta/);
@@ -296,10 +303,23 @@ test('lexical evidence feedback explains the deterministic same-language overlap
   assert.match(feedback, /prefira os termos da fonte a sinônimos/);
 });
 
-test('long scripts use fewer visual sections to support steadier scenes', () => {
-  assert.equal(narrativeSectionCount(950), 5);
+test('six-minute scripts split into enough chapters for sentence-linked animated scenes', () => {
+  assert.equal(narrativeSectionCount(950), 6);
   assert.equal(narrativeSectionCount(700), 4);
   assert.equal(narrativeSectionCount(400), 3);
+});
+
+test('YouTube long-form gate checks spoken words and leaves manual short clips alone', () => {
+  assert.equal(scriptGateFailure({ status: 'approved' }, true, 9, {
+    spokenWordCount: 849, minimumSpokenWords: 850
+  }), 'youtube_longform_narrative_too_short');
+  assert.equal(scriptGateFailure({ status: 'approved' }, true, 9, {
+    spokenWordCount: 850, minimumSpokenWords: 850
+  }), null);
+  assert.equal(scriptGateFailure({ status: 'approved' }, false, 9, { spokenWordCount: 100 }), null);
+  assert.equal(countNarrativeSpokenWords({ hook: 'Gancho aqui.',
+    sections: [{ title: 'Não narrado', content: 'Dois fatos são explicados.' }],
+    conclusion: { finalThought: 'Fim da história.' } }), 9);
 });
 
 test('script generation uses per-model token and reasoning budgets with bounded timeouts', () => {

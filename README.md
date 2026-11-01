@@ -12,7 +12,7 @@ Research topics → write scripts → generate narration and visuals → assembl
 
 ## What's new on master
 
-- **v2.11.0 is now on master:** karaoke captions show the complete spoken sentence while highlighting the current word.
+- **v2.19.0 is now on master:** scheduled YouTube masters target 6–7 minutes with richer source-backed narration and sentence-linked scene animation; the portrait master supplies vertical Shorts cuts.
 
 ## What's new in v2.11.0
 

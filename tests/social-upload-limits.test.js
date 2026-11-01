@@ -23,7 +23,8 @@ process.env.X_POST_FULL_VIDEO = '';
 process.env.SOCIALS_DISABLED = '';
 process.env.YT_MAX_VIDEO_SECONDS = '900';
 
-const { uploadToAll, retryPendingYouTubeShorts, PLATFORM_VIDEO_LIMIT_SECONDS, TELEGRAM_APP_MAX_FILE_BYTES } = require('../scripts/upload-to-socials');
+const { uploadToAll, retryPendingYouTubeShorts, PLATFORM_VIDEO_LIMIT_SECONDS, YOUTUBE_LONGFORM_MIN_SECONDS,
+  TELEGRAM_APP_MAX_FILE_BYTES } = require('../scripts/upload-to-socials');
 const { recordAndroidSession } = require('../utils/android-session-state');
 const approvedQa = { status: 'verified', visualReview: 'approved' };
 
@@ -68,6 +69,7 @@ test('YouTube Shorts retry excludes artifacts outside the explicit visual-review
 
 test('X Android configuration cannot exceed the documented Premium app limit', () => {
   assert.equal(PLATFORM_VIDEO_LIMIT_SECONDS.x, 600);
+  assert.equal(YOUTUBE_LONGFORM_MIN_SECONDS, 360);
 });
 
 test('owner-excluded Telegram stays disabled even with a configured channel and a fresh login', async t => {
@@ -112,7 +114,7 @@ test('an explicit Shorts-only routing skip leaves the long-upload option indepen
   const probe = path.join(fixture, 'ffprobe');
   fs.writeFileSync(master, 'fixture master');
   fs.writeFileSync(short, 'fixture short');
-  fs.writeFileSync(probe, '#!/bin/sh\nprintf "90\\n"\n', { mode: 0o755 });
+  fs.writeFileSync(probe, '#!/bin/sh\nprintf "360\\n"\n', { mode: 0o755 });
   const previousProbe = process.env.FFPROBE_PATH;
   const uploader = require('../utils/youtube-studio-publisher');
   const original = uploader.uploadWithStudio;
@@ -179,6 +181,41 @@ test('YouTube long upload is rejected before the API when duration exceeds the c
 
   assert.match(results.long.youtube, /901\.0s excede o limite configurado de 900s/);
   assert.equal(events.some(event => event.platform === 'youtube' && /excede o limite/.test(event.result)), true);
+});
+
+test('YouTube master shorter than six minutes is held before publication', async t => {
+  const originalEnv = Object.fromEntries(['FFPROBE_PATH', 'TELEGRAM_CHANNEL', 'SOCIALS_DISABLED']
+    .map(key => [key, process.env[key]]));
+  const videoPath = path.join(stateDir, 'youtube-under-six-minutes.mp4');
+  const probePath = path.join(stateDir, 'ffprobe-under-six-minutes');
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(videoPath, Buffer.from('fixture video'));
+  fs.writeFileSync(probePath, '#!/bin/sh\nprintf "%s\\n" "359.9"\n', { mode: 0o755 });
+  process.env.FFPROBE_PATH = probePath;
+  process.env.TELEGRAM_CHANNEL = '';
+  process.env.SOCIALS_DISABLED = 'telegram';
+  t.after(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  const events = [];
+  const results = await uploadToAll({
+    videoPath,
+    title: 'fixture',
+    clips: [],
+    qaManifest: {
+      ...approvedQa,
+      visualReviewAssets: [{ path: videoPath, sha256: crypto.createHash('sha256').update(fs.readFileSync(videoPath)).digest('hex') }],
+      visualReviewScopeInvalid: false
+    },
+    onPublicationState: async event => events.push(event)
+  });
+
+  assert.match(results.long.youtube, /abaixo do mínimo editorial de 360s \(6 minutos\)/);
+  assert.equal(events.some(event => event.platform === 'youtube' && event.result?.status === 'attempting'), false);
 });
 
 test('YouTube Shorts retry applies its own 180-second ceiling before the API', async t => {

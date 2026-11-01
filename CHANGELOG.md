@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.19.0 — 2026-11-01
+
+- Raised scheduled YouTube long-form scripts to a 950-word target, with an 850-word editorial floor and a measured six-minute narration gate.
+- Skip short news notices when a richer source-backed topic is available; otherwise record the hold and advance to another topic instead of padding with unsupported detail.
+- Split longer scripts into more narrative chapters so every spoken sentence receives scene action or camera coverage; Shorts remain vertical cuts from the portrait master.
+- Hold any YouTube master below six minutes before upload while keeping Shorts duration rules independent.
+
 ## Unreleased
 
 - Bundled the DarkzSEO-compatible content audit so the preflight no longer depends on the unpublished 1.4 Python package; external 1.4+ checkouts remain opt-in through `DARKZSEO_PATH`

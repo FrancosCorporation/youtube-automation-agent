@@ -1,3 +1,11 @@
+## 01/11/2026 — vídeo principal do YouTube com pelo menos seis minutos (v2.19.0)
+
+O proprietário esclareceu: master principal horizontal 16:9 com cerca de seis minutos ou mais, explicação mais completa e animações sincronizadas a cada trecho; Shorts são verticais 9:16 e devem ser extraídos da versão vertical. A produção anterior pedia 950 palavras, mas o perfil contínuo limitava o writer a 450; a notícia breve do PAT de Itapetininga teve 238 palavras e narração real de 101,2 s (1min41s). Portanto, o tema curto contribuiu, mas a limitação de 450 palavras impedia buscar o tamanho pedido; não havia um limite literal de 2 minutos.
+
+Código atualizado localmente para v2.19.0: meta de 950 palavras, piso de 850 (na taxa observada de ~141 palavras/min, ~6min02), fonte automática mínima de 945 palavras, seis ou mais seções conforme a meta e ações/movimentos de câmera vinculados às frases. A duração da narração é medida e precisa atingir 360 s antes da autoria/render; o uploader também retém qualquer master YouTube menor que seis minutos, sem aplicar esse piso aos Shorts. Pautas curtas são registradas como rejeitadas e a seleção avança para outra fonte adequada; sem repetição ou fatos inventados. O master vertical e os cortes já fazem parte do pipeline existente.
+
+Verificação dirigida: 55/55 testes; sintaxe, ESLint e `git diff --check` passaram. O job antigo `0bee8859-1b27-4063-b8c6-2c48cd4bbdff`, iniciado às 23:22Z antes desta alteração, continua em autoria/render com a voz de 101,2 s. Foi preservado; converter exigiria refazer roteiro e narração. O scheduler precisará ser recarregado em janela segura depois que esse job e qualquer fila/publicação terminarem, para carregar o guard do uploader; recaps também são elevados pelo gerador atualizado lido por processos filhos.
+
 ## 01/11/2026 — humanos detalhados locais e nova cena de reflorestamento (v2.17.0)
 
 Após recuperar o checkpoint da conta anterior, o proprietário rejeitou a aparência dos humanos procedurais e qualquer etapa Mixamo/site por vídeo. Indicou repositórios Three.js e pediu outro tema como teste de amplitude. A orientação atual substitui a regra anterior de corpos procedurais; elenco do Game Farma continua rejeitado. Skill, AGENTS, padrão criativo e prompt/cache foram atualizados (referência r4, autor v2.15).

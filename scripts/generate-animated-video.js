@@ -83,6 +83,11 @@ const {
   createRecapBrief
 } = require('../utils/recap-schedule');
 const SCRIPT_REVISION = 'retention-emotions-v29-inline-source-evidence';
+const YOUTUBE_LONGFORM_TARGET_WORDS = 950;
+const YOUTUBE_LONGFORM_MIN_WORDS = 850;
+const YOUTUBE_LONGFORM_MIN_DURATION_MS = 6 * 60 * 1000;
+const YOUTUBE_LONGFORM_MIN_SOURCE_WORDS = Math.ceil(YOUTUBE_LONGFORM_MIN_WORDS / 0.9);
+const DEFAULT_PIPELINED_NARRATIVE_WORD_BUDGET = 1000;
 const SCRIPT_GENERATION_MIN_TOKENS = 6000;
 const SCRIPT_GENERATION_MAX_FALLBACKS = 10;
 const SCRIPT_GENERATION_MAX_CALLS = SCRIPT_GENERATION_MAX_FALLBACKS + 1;
@@ -299,9 +304,10 @@ function parseReviewChoice(choice) {
 
 function sourceBoundedWordTarget(targetWords, sourceContext, environment = process.env) {
   const originalRequest = Number.isSafeInteger(targetWords) && targetWords > 0 ? targetWords : 0;
-  const configuredBudget = Number(environment.PULSO_NARRATIVE_WORD_BUDGET || 450);
-  const cadenceBudget = Number.isSafeInteger(configuredBudget) && configuredBudget >= 150 && configuredBudget <= 650
-    ? configuredBudget : 450;
+  const configuredBudget = Number(environment.PULSO_NARRATIVE_WORD_BUDGET || DEFAULT_PIPELINED_NARRATIVE_WORD_BUDGET);
+  const cadenceBudget = Number.isSafeInteger(configuredBudget)
+    && configuredBudget >= YOUTUBE_LONGFORM_MIN_WORDS && configuredBudget <= 1400
+    ? configuredBudget : DEFAULT_PIPELINED_NARRATIVE_WORD_BUDGET;
   const requested = environment.PULSO_PIPELINED_PRODUCTION === '1' ? Math.min(originalRequest, cadenceBudget) : originalRequest;
   const sourceWords = countWords(sourceContext);
   if (!sourceWords) return requested;
@@ -317,7 +323,10 @@ function factRepairWordTarget(targetWords, sourceContext) {
   // After a factual rejection, a shorter rewrite reduces pressure to fill gaps
   // with plausible but unsupported details. Accuracy takes precedence over
   // the original length target.
-  return Math.min(boundedTarget, Math.floor(sourceWords * 0.75));
+  const repairTarget = Math.min(boundedTarget, Math.floor(sourceWords * 0.75));
+  return boundedTarget >= YOUTUBE_LONGFORM_MIN_WORDS
+    ? Math.max(YOUTUBE_LONGFORM_MIN_WORDS, repairTarget)
+    : repairTarget;
 }
 
 function factRepairGuidance(feedback) {
@@ -328,7 +337,18 @@ function factRepairGuidance(feedback) {
 
 function narrativeSectionCount(targetWords) {
   const words = Number.isSafeInteger(targetWords) && targetWords > 0 ? targetWords : 0;
-  return Math.max(3, Math.min(5, Math.round(words / 200)));
+  return Math.max(3, Math.min(7, Math.round(words / 160)));
+}
+
+function countNarrativeSpokenWords(script) {
+  const sections = Array.isArray(script?.sections) ? script.sections : script?.mainContent?.sections || [];
+  const conclusion = typeof script?.conclusion === 'string'
+    ? script.conclusion : script?.conclusion?.finalThought;
+  return countWords([
+    script?.hook,
+    ...sections.map(section => typeof section?.content === 'string' ? section.content : ''),
+    conclusion
+  ].filter(Boolean).join(' '));
 }
 
 function scriptGenerationRequestOptions(model, targetWords) {
@@ -385,12 +405,18 @@ function automaticReviewFailure(review, automatic) {
   return review?.status === 'rejected' ? 'source_claims_unverified' : 'publication_review_unavailable';
 }
 
-function scriptGateFailure(review, automatic, hookWordCount, { sourceEligible = false } = {}) {
+function scriptGateFailure(review, automatic, hookWordCount, {
+  sourceEligible = false, spokenWordCount = null, minimumSpokenWords = 0
+} = {}) {
   // A source-backed narrative plan cannot be built with a rejected review,
   // even for manual runs. Stop before generating TTS or screenshots.
   const reviewFailure = automaticReviewFailure(review, automatic || sourceEligible);
   if (reviewFailure) return reviewFailure;
-  return isHookWordCountValid(hookWordCount) ? null : 'hook_word_count_out_of_range';
+  if (!isHookWordCountValid(hookWordCount)) return 'hook_word_count_out_of_range';
+  if (minimumSpokenWords > 0 && (!Number.isFinite(spokenWordCount) || spokenWordCount < minimumSpokenWords)) {
+    return 'youtube_longform_narrative_too_short';
+  }
+  return null;
 }
 
 function scriptProviderUsageService(provider) {
@@ -659,11 +685,14 @@ async function writeScriptWithNvidia({ topic, targetWords, context, extraFeedbac
   const persona = theme?.persona || 'roteirista de um canal de YouTube em PORTUGUÊS DO BRASIL sobre tecnologia/atualidades';
   const sectionCount = narrativeSectionCount(narrativeTargetWords);
   const sectionWordTarget = Math.max(1, Math.round(narrativeTargetWords / sectionCount));
+  const durationGuidance = targetWords >= YOUTUBE_LONGFORM_MIN_WORDS
+    ? `PADRÃO DO VÍDEO PRINCIPAL DO YOUTUBE: mire ${YOUTUBE_LONGFORM_TARGET_WORDS} palavras (cerca de 6–7 minutos em PT-BR) e nunca fique abaixo de ${YOUTUBE_LONGFORM_MIN_WORDS} palavras. Desenvolva a pauta em ${sectionCount} seções com explicação progressiva; cada frase deve acrescentar contexto ou detalhe verificável e originar uma ação, transformação ou mudança de câmera na cena. Não repita ideias nem acrescente fatos genéricos para esticar o tempo. A meta editorial calculada para esta fonte é ${narrativeTargetWords} palavras; se o material não sustentar o mínimo, a pauta será substituída por outra com conteúdo suficiente.`
+    : `Escreva um roteiro narrado com cerca de ${narrativeTargetWords} palavras (aprox. ${Math.max(1, Math.round(narrativeTargetWords / 150))} minutos). A duração nunca justifica inventar nem extrapolar fatos.`;
   const prompt = draft ? buildScriptRepairPrompt({ script: draft, feedback: extraFeedback, topic, context, sourceAgeHours, sourceCatalog }) : `Você é ${persona}.
 ${sourceBlock}
 ${formatGuidance}
 ${growthGuidance}
-Escreva um roteiro narrado com cerca de ${narrativeTargetWords} palavras (aprox. ${Math.max(1, Math.round(narrativeTargetWords / 150))} minutos). A duração é secundária à precisão: se a fonte não sustentar o tamanho pedido, entregue menos texto em vez de completar com fatos externos.
+${durationGuidance}
 IDIOMA — REGRA INVIOLÁVEL: TODO o conteúdo (title, hook, sections, conclusion) deve estar 100% em PORTUGUÊS DO BRASIL. Se o tema/artigo estiver em inglês, TRADUZA e ADAPTE para PT-BR. É PROIBIDO escrever qualquer parte em inglês.
 ESTRUTURA — RETENÇÃO COM PAYOFF: o hook deve ter 7–12 palavras, ser específico e criar uma pergunta mental ou consequência concreta que a fonte responda; nunca prometa algo que o vídeo não responde. Sem saudação, apresentação do canal ou frases como "você não vai acreditar". Até 15 segundos, explique por que o assunto importa. Cada seção acrescenta informação sustentada pela fonte e fecha com uma ponte curta. Use exemplos concretos apenas quando estiverem na fonte; analogias inventadas devem ser identificadas como hipotéticas e não podem introduzir números, locais ou comportamentos como fatos. Plante perguntas e responda dentro do vídeo; não empilhe cliffhangers.
 ${hookStructureGuidance(topic)}
@@ -1109,6 +1138,7 @@ async function loadOrWriteScript({
   formatId,
   visualRebuild = null,
   automatic = false,
+  requireLongForm = false,
   allowCache = true
 }) {
   const cachePath = visualRebuild?.scriptCache?.scriptPath
@@ -1175,7 +1205,8 @@ async function loadOrWriteScript({
       const requestMatches = !meta || (meta.topic === topic && meta.targetWords === targetWords && meta.formatId === formatId);
       const validShape = cached && typeof cached.title === 'string' && typeof cached.hook === 'string'
         && Array.isArray(cached.sections) && cached.sections.length > 0
-        && Array.isArray(cached.claimEvidence) && cached.claimEvidence.length > 0;
+        && Array.isArray(cached.claimEvidence) && cached.claimEvidence.length > 0
+        && (!requireLongForm || countNarrativeSpokenWords(cached) >= YOUTUBE_LONGFORM_MIN_WORDS);
       const reviewerMetadataAvailable = !automatic || Boolean(meta?.generationModel);
       if (ageHours >= 0 && ageHours <= SCRIPT_CACHE_TTL_HOURS && contextMatches && requestMatches && validShape && reviewerMetadataAvailable) {
         console.log(`      roteiro em cache ${SCRIPT_REVISION} — reutilizando (${ageHours.toFixed(1)}h)`);
@@ -1248,13 +1279,19 @@ async function loadOrWriteScript({
   }
 
   const hookWordCount = countHookWords(review.script?.hook);
+  const spokenWordCount = countNarrativeSpokenWords(review.script);
   const gateFailure = scriptGateFailure(review.publicationReview, automatic, hookWordCount, {
-    sourceEligible: sourceEvidence?.eligible === true
+    sourceEligible: sourceEvidence?.eligible === true,
+    spokenWordCount,
+    minimumSpokenWords: requireLongForm ? YOUTUBE_LONGFORM_MIN_WORDS : 0
   });
   if (gateFailure === 'hook_word_count_out_of_range') {
     const error = new Error('hook_word_count_out_of_range');
     error.code = 'hook_word_count_out_of_range';
     throw error;
+  }
+  if (gateFailure === 'youtube_longform_narrative_too_short') {
+    console.warn(`      roteiro descartado: ${spokenWordCount} palavras faladas; YouTube exige ${YOUTUBE_LONGFORM_MIN_WORDS}+ para mirar seis minutos`);
   }
   review.script.hookStructureId = selectHookStructure(topic).id;
   review.script.formatId = formatId;
@@ -2036,7 +2073,10 @@ async function main() {
   if (!(await checkFFmpeg())) throw new Error('ffmpeg ausente');
   const fromG1 = process.argv.includes('--from-g1');
   const recap = process.argv.includes('--recap');
-  const targetWords = Number(visualRebuild?.sourceEditorial.targetWords ?? arg('words', recap ? 400 : 950));
+  const requestedTargetWords = Number(visualRebuild?.sourceEditorial.targetWords ?? arg('words', YOUTUBE_LONGFORM_TARGET_WORDS));
+  const targetWords = recap && !visualRebuild && Number.isSafeInteger(requestedTargetWords)
+    ? Math.max(YOUTUBE_LONGFORM_TARGET_WORDS, requestedTargetWords)
+    : requestedTargetWords;
   const noImages = process.argv.includes('--no-images');
 
   // TEMA DA INSTÂNCIA (parâmetro): carregado ANTES de qualquer uso.
@@ -2049,6 +2089,7 @@ async function main() {
   let originTitle = '', originUrl = '';
   const explicitUrl = arg('article', visualRebuild?.sourceReview.sourceUrl || '');
   const auto = process.argv.includes('--auto');
+  const requireLongForm = (auto || recap || targetWords >= YOUTUBE_LONGFORM_MIN_WORDS) && !visualRebuild;
   const sourceDates = new Map();
   const rejectedSourceDates = new Set();
   const configuredSourceAge = Number(process.env.MAX_TOPIC_FALLBACK_AGE_HOURS || 168);
@@ -2146,7 +2187,7 @@ async function main() {
         context = candidateContext;
         articleSource = candidate.source || articleSource;
       }
-      if (context.length >= 300 && context.split(/\s+/).filter(Boolean).length >= 40) break;
+      if (countWords(context) >= YOUTUBE_LONGFORM_MIN_SOURCE_WORDS) break;
     }
     // Cobertura em PT: só adota se o título confirmar que é a mesma história.
     let ptCoverage = await fetchNewsReferences(top.title, 6);
@@ -2175,23 +2216,41 @@ async function main() {
             && countWords(context) >= DEFAULT_MINIMUM_CONTEXT_WORDS) break;
       }
     }
-    if (countWords(context) < 150) {
+    if (requireLongForm && countWords(context) < YOUTUBE_LONGFORM_MIN_SOURCE_WORDS) {
       const alternative = await findNarrativeReadyCandidate(
         rankedCandidates.slice(1).filter(candidate => !sameStoryTitle(top.title, candidate.title, 0.6)),
         {
           resolveGoogleNewsUrl,
           extractArticleContext: extractNarrativeContext,
-          // RSS descriptions and some publisher pages are often too short for
-          // a fact-reviewed narration. Search more distinct primary sources
-          // before failing this theme's cycle; the 150-word evidence gate stays.
-          maxFetches: 8,
-          minimumWords: 150
+          // Six-minute masters need a substantial, fact-checkable source.
+          // Skip short notices and continue to another strong topic instead
+          // of filling the runtime with generalities or invented detail.
+          maxFetches: 12,
+          minimumWords: YOUTUBE_LONGFORM_MIN_SOURCE_WORDS
         }
       );
       if (!alternative.candidate) {
-        console.warn(`      pauta descartada: contexto extraído tem ${countWords(context)} palavra(s); ${alternative.fetches} fonte(s) alternativa(s) também não sustentaram uma narração`);
-        const error = new Error('source_context_too_short');
-        error.code = 'source_context_too_short';
+        console.warn(`      pauta descartada: contexto tem ${countWords(context)} palavras; ${alternative.fetches} alternativas não sustentaram um roteiro de seis minutos`);
+        await recordTopic({
+          jobId: JOB_ID,
+          renderer: RENDERER_ID,
+          theme: theme.id,
+          title: top.title,
+          url: directUrl || top.url || top.link || '',
+          source: articleSource || top.source || 'Imprensa',
+          sourceEvidence: assessSourceEvidence({
+            sourceTitle: top.title,
+            sourceUrl: directUrl || top.url || top.link || '',
+            context,
+            mode: 'auto'
+          }),
+          publicationEligible: false,
+          publicationHold: { reason: 'youtube_longform_source_too_short' },
+          originTitle: top.title,
+          originUrl: directUrl || top.url || top.link || ''
+        });
+        const error = new Error('youtube_longform_source_too_short');
+        error.code = 'youtube_longform_source_too_short';
         throw error;
       }
       top = alternative.candidate;
@@ -2266,6 +2325,24 @@ async function main() {
   if (article?.link && sourceDates.has(article.link)) {
     sourceEvidence.publishedAt = sourceDates.get(article.link);
     sourceEvidence.dateProvenance = 'publisher';
+  }
+  if (requireLongForm && countWords(context) < YOUTUBE_LONGFORM_MIN_SOURCE_WORDS) {
+    await recordTopic({
+      jobId: JOB_ID,
+      renderer: RENDERER_ID,
+      theme: theme.id,
+      title: sourceTitle || topic,
+      url: article?.link || '',
+      source: article?.source || 'Imprensa',
+      sourceEvidence,
+      publicationEligible: false,
+      publicationHold: { reason: 'youtube_longform_source_too_short' },
+      originTitle: originTitle || sourceTitle || topic,
+      originUrl: originUrl || article?.link || ''
+    });
+    throw Object.assign(new Error(`fonte com ${countWords(context)} palavras; são necessárias pelo menos ${YOUTUBE_LONGFORM_MIN_SOURCE_WORDS} para um vídeo de seis minutos`), {
+      code: 'youtube_longform_source_too_short'
+    });
   }
   if (recap && !sourceEvidence.eligible) {
     const error = new Error(`contexto de recap insuficiente para sustentar o roteiro: ${sourceEvidence.reason}`);
@@ -2362,6 +2439,7 @@ async function main() {
     formatId: editorialFormat.id,
     visualRebuild,
     automatic: auto,
+    requireLongForm,
     // Context hash, request and TTL must match, and every cached script still
     // receives fresh deterministic source/evidence validation, including current freshness checks.
     allowCache: !auto || context.trim().length >= 300
@@ -2388,7 +2466,7 @@ async function main() {
   }
   script.seed = visualRebuild?.sourceEditorial.seed ?? parsedSeed ?? Math.floor(Math.random() * 1e9);
   console.log(`      seed: ${script.seed}`);
-  const words = [script.hook, ...script.mainContent.sections.map(s => s.content), script.conclusion.finalThought].join(' ').split(/\s+/).filter(Boolean).length;
+  const words = countNarrativeSpokenWords(script);
   console.log(`      ${script.mainContent.sections.length} seções | ~${words} palavras | ${script.mainContent.sections.filter(s => s.visual).length} gráficos`);
 
   console.log('[1.5/5] SEO dinâmico (título CTR + descrição + hashtags por notícia)');
@@ -2465,6 +2543,26 @@ async function main() {
   const { audioPath, timings } = ttsResult;
   script.timings = timings;
   const total = ttsResult.totalDurationMs || timings.reduce((n, t) => n + t.durationMs, 0);
+  if (requireLongForm && total < YOUTUBE_LONGFORM_MIN_DURATION_MS) {
+    await recordTopic({
+      jobId: JOB_ID,
+      videoId: activeVideoId,
+      renderer: RENDERER_ID,
+      theme: theme.id,
+      title: sourceTitle || topic,
+      url: article?.link || '',
+      source: article?.source || 'Imprensa',
+      sourceEvidence,
+      publicationEligible: false,
+      publicationReview,
+      publicationHold: { reason: 'youtube_longform_narration_too_short', durationMs: total },
+      originTitle: originTitle || sourceTitle || topic,
+      originUrl: originUrl || article?.link || ''
+    });
+    throw Object.assign(new Error(`narração de ${(total / 1000).toFixed(1)}s abaixo do mínimo editorial de seis minutos para YouTube`), {
+      code: 'youtube_longform_narration_too_short'
+    });
+  }
   const images = imagesResult.scenes;
   const thumbnailArt = imagesResult.thumbnailImage;
   const portraitThumbnailArt = imagesResult.portraitThumbnailImage;
@@ -2824,6 +2922,9 @@ module.exports = {
   SCRIPT_REVIEW_CONCURRENCY,
   SCRIPT_REVIEW_MODELS,
   SCRIPT_REVISION,
+  YOUTUBE_LONGFORM_TARGET_WORDS,
+  YOUTUBE_LONGFORM_MIN_WORDS,
+  YOUTUBE_LONGFORM_MIN_DURATION_MS,
   synthesizeNarration,
   generateSceneImages,
   screenshotArticles,
@@ -2834,5 +2935,6 @@ module.exports = {
   visualItemIsSourceGrounded,
   stripUnsupportedScriptVisuals,
   hasUnsupportedSingleFunderTitle,
-  reviewScriptDeterministically
+  reviewScriptDeterministically,
+  countNarrativeSpokenWords
 };

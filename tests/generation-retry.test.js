@@ -32,6 +32,11 @@ test('recursos e autoria de cenas retomam sem o backoff genérico de cinco minut
 test('fonte curta rejeitada troca de pauta após 30 s, sem repetir o mesmo roteiro nem aguardar a cota diária', () => {
   assert.equal(generationRetryDelayMs('source_context_too_short'), 30000);
   assert.equal(isRetryableGenerationFailure('source_context_too_short'), false);
+  for (const code of ['youtube_longform_source_too_short', 'youtube_longform_narrative_too_short',
+    'youtube_longform_narration_too_short']) {
+    assert.equal(generationRetryDelayMs(code), 30000);
+    assert.equal(isRetryableGenerationFailure(code), false);
+  }
 });
 
 test('perfil contínuo avança uma pauta reprovada sem liberar fatos nem aumentar o orçamento', t => {

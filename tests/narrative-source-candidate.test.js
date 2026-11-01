@@ -19,6 +19,24 @@ test('skips a headline-only page and chooses the next distinct article with enou
   assert.equal(result.fetches, 2);
 });
 
+test('long-form source selection can require enough evidence for a six-minute narration', async () => {
+  const candidates = [
+    { title: 'Short notice', url: 'https://publisher.example/notice', source: 'Publisher A' },
+    { title: 'Detailed topic', url: 'https://publisher.example/detailed', source: 'Publisher B' }
+  ];
+  const result = await findNarrativeReadyCandidate(candidates, {
+    resolveGoogleNewsUrl: async url => url,
+    extractArticleContext: async url => url.endsWith('/notice')
+      ? 'Fato verificável publicado pela fonte. '.repeat(100)
+      : 'Fato verificável publicado pela fonte apresenta dados e contexto adicional. '.repeat(140),
+    minimumWords: 945,
+    maxFetches: 4
+  });
+  assert.equal(result.candidate, candidates[1]);
+  assert.ok(result.contextWords >= 945);
+  assert.equal(result.fetches, 2);
+});
+
 test('resolves Google News wrappers only through the named publisher and keeps the source identity', async () => {
   const candidate = {
     title: 'Primary story',

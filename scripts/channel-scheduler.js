@@ -834,7 +834,7 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
     });
   }
   const args = recap
-    ? ['--recap', '--words', '400', '--out', finalOutPath, '--theme', theme || THEME, '--days', String(RECAP_EVERY_DAYS), '--seed', String(seed)]
+    ? ['--recap', '--words', '950', '--out', finalOutPath, '--theme', theme || THEME, '--days', String(RECAP_EVERY_DAYS), '--seed', String(seed)]
     : ['--auto', '--words', '950', '--out', finalOutPath, '--theme', theme || THEME, '--seed', String(seed)];
   // Retry com o mesmo outPath + --resume: etapas com cache (roteiro/narração/
   // prints) são reaproveitadas e, se o render já concluiu, pula direto.

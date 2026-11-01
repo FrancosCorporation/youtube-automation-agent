@@ -34,7 +34,8 @@ function generationRetryDelayMs(failureCode, now = new Date()) {
   if (failureCode === 'no_fresh_topic_candidates') return NO_FRESH_TOPIC_RETRY_DELAY_MS;
   // A source rejected before writing/rendering should advance the theme
   // rotation promptly, without relaxing the minimum factual context.
-  if (failureCode === 'source_context_too_short') return 30000;
+  if (['source_context_too_short', 'youtube_longform_source_too_short',
+    'youtube_longform_narrative_too_short', 'youtube_longform_narration_too_short'].includes(failureCode)) return 30000;
   if (failureCode === 'source_claims_unverified' && process.env.PULSO_PIPELINED_PRODUCTION === '1') return 30000;
   if (failureCode === 'host_resource_gate') return 10000;
   if (failureCode === 'narrative_scene_provider_unavailable') return 30000;
@@ -50,6 +51,7 @@ function isRetryableGenerationFailure(failureCode) {
   // checkpoint rather than silently abandoning a partially rendered video.
   if (['narrative_resume_plan_mismatch', 'narrative_asset_integrity_failed', 'narrative_render_output_collision'].includes(code)) return true;
   if (['source_claims_unverified', 'source_evidence_missing', 'source_context_too_short',
+    'youtube_longform_source_too_short', 'youtube_longform_narrative_too_short', 'youtube_longform_narration_too_short',
     'budget_exhausted', 'no_fresh_topic_candidates', 'invalid_topic', 'theme_disabled',
     'video_technical_qa_failed'].includes(code)) return false;
   return /timeout|timed_out|rate.?limit|temporar|network|connection|provider_unavailable|host_resource|render.*(?:failed|timeout)|fetch_failed|http_5\d\d|econn|eai_again|enotfound|spawn_/.test(code);
