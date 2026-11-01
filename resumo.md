@@ -1,3 +1,15 @@
+## 01/11/2026 — ENTREGA PRESERVADA: v2.12.0 publicada e serviço ativo (12:31 BRT)
+
+Código commitado e enviado ao fork do proprietário; tag/release pública **v2.12.0** aponta para **5dc401d23b879a1f480e70b54eebe29e00d3fafc**, confirmado com git ls-remote. Link: https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.12.0 . Release não é draft; os três assets tiveram tamanho/hash remoto conferidos: bundle criativo (678078404 bytes), evidência dos vídeos (21267297 bytes) e SHA256SUMS-v2.12.0.txt. Restauração dos 269 assets em diretório vazio passou. Atualização documental posterior não muda o código da tag.
+
+Estado final observado: scheduler PID 259862 e guard timer ativos, nenhuma pausa de migração; geração de Curiosidades iniciada às 15:23:16Z continua, sem MP4 novo confirmado deste job. Fallback NVIDIA já percorreu modelos após timeouts; Nemotron respondeu, mas a validação pediu reparo. Não reiniciar durante esse job. Worker de reconciliação importa os módulos sob demanda; os ajustes finais nos scanners ocorreram antes da primeira janela possível do worker após o restart (mínimo 3 min), sem necessidade de interromper geração para recarregá-los.
+
+**Comprovado:** 7 confirmações TikTok e 5 Instagram nesta execução, incluindo envio novo TikTok abf818cc pelo próprio serviço; teste de colisões corrigido nos dois formatos, seek/decode/verificação visual; CI completa 1105 Node/40 Python/UI, lint e TypeScript. Não confundir confirmação de posts existentes com criação de 12 novos vídeos. Registro operacional data/reports/social-recovery-20261101/release-verification.json e relatórios de reconciliação.
+
+**Ainda pendente:** X não tem conta/handler de publicação validados e atualização oficial do aplicativo falhou; pergunta sobre @ enviada sem resposta. YouTube aguarda uploadLimitExceeded até pelo menos 02/11 09:08 BRT; Gemini atingiu 600 chamadas hoje e os writers alternativos ainda enfrentam erros. Não zerar cotas, não repetir envio incerto e não anunciar todas as redes operantes. Roteiro/autoria continuam usando LLM; recuperação operacional nova é código local. O usuário reiterou que não quer depender de assistente LLM para manutenção.
+
+Histórico .planning e SHA256SUMS operacional ficaram locais, sem reset/clean; não foram publicados junto de credenciais/dados. Assets aprovados estão recuperáveis em Git/release. Próximo passo real: acompanhar o resultado da geração e confirmar novos envios pelo serviço; concluir X quando a identidade/sessão puder ser estabelecida. Não recriar o produtor nem reabrir aprovação do padrão.
+
 ## 01/11/2026 — envio novo TikTok confirmado (12:25 BRT)
 
 O serviço enviou abf818cc às 15:22:55Z; o reconciliador confirmou legenda integral e Everyone no perfil, sem repetir Post. Também confirmou 2ac25079, totalizando 12 confirmações nesta execução (7 TikTok e 5 Instagram). Relatório /tmp/pulso-tiktok-new-upload-confirmation.log e data/state/reconciliation-tiktok.json. A geração atual passou para o segundo modelo NVIDIA após timeout do primeiro, comprovando que o fallback corrigido não desabilita mais todo o provedor. Ainda sem MP4 novo deste job e sem X validado.
