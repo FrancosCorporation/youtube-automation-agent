@@ -1,3 +1,15 @@
+## 01/11/2026 — BENCHMARK 4 MOTORES CONCLUÍDO (retomada da conta anterior)
+
+Missão concluída localmente: quatro vídeos reais de 48 s, 1920×1080/30 fps, mesma narrativa/voz: A original, B Three procedural r187, C Blender nativo, D Blender GLB+Three. Tema congelado: eclusa, semente `1055545869`; nada foi enviado às redes. O usuário pediu **tempo de criação + render + montagem + validação até pronto** por motor, com esperas separadas.
+
+`benchmarks/video_3d/` contém fontes, scripts, contratos, evidências, prancha, métricas e relatório. Os cinco MP4s foram validados por FFprobe/FFmpeg, com áudio único e 1.440 frames; B/D passaram 14 seeks reais com diferença de pixels 0. A retomada `python3 benchmarks/video_3d/run.py --all` reconheceu A/B/C/D por hash e não rerenderizou nenhum master. `comparacoes/metricas.json` e `RELATORIO_FINAL.md` estão atualizados.
+
+Tempos medidos desde roteiro/áudio congelados até MP4 validado: A **2min27,6s**, B **2min12,4s**, C **16min56,0s**, D **2min38,2s**. C: Blender nativo 13min23,0s + montagem/encode Remotion 2min32,7s. A síntese inicial única e o desenvolvimento/revisão não foram cronometrados; permanecem não medidos. O parecer visual aponta C como melhor acabamento/reflexos e B como melhor equilíbrio de tempo, clareza e automação neste cenário.
+
+D inicialmente ficou vazio por uma espera GLTF mascarada; a correção foi verificada no vídeo final. Também foram corrigidos água do GLB, amostras Eevee e contagem de guards aguardando. A produção foi preservada por hash; o scheduler continuou ativo sem restart. Pendências YouTube/X, writers e cadência de 60 vídeos/dia permanecem independentes e não foram declaradas resolvidas.
+
+Entrega de código em fechamento para `v2.14.0`: fontes/evidências entram no Git; binários e assets recuperáveis serão anexados à release do fork autorizado. Não incluir perfis, tokens, bancos, caches ou dados privados.
+
 ## 01/11/2026 — incremento solicitado para v2.13.0 e diagnóstico do YouTube
 
 O proprietário pediu commit, push e aumento minor de 0.1: package.json e package-lock.json passam de 2.12.0 para **2.13.0**. Código da entrega anterior preservado; escopo atual é versionamento e documentação, conforme [notas da versão](docs/releases/v2.13.0.md). Destino autorizado: fork FrancosCorporation/youtube-automation-agent, branch master, tag/release v2.13.0. Conferir SHA remoto antes de encerrar a entrega. Histórico .planning e SHA256SUMS operacional permanecem locais; nenhum perfil, token, banco ou captura autenticada entra no commit. Assets continuam recuperáveis pela release v2.12.0.

@@ -1,0 +1,22 @@
+{
+  "seed": 1055545869,
+  "algorithm": "Python random.Random(seed).choice(candidates)",
+  "candidates": [
+    "Como uma eclusa levanta um barco",
+    "Como uma ponte basculante se abre",
+    "Como um elevador usa um contrapeso",
+    "Como um periscópio permite enxergar por cima"
+  ],
+  "selected": "Como uma eclusa levanta um barco",
+  "experiment": "educational illustrative benchmark; not queued for social publication",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "palette": {
+    "petroleum": "#081923",
+    "mint": "#95d7bc",
+    "cream": "#f3eee0",
+    "amber": "#ecb47e"
+  },
+  "source": "https://www.tva.com/Environment/Managing-the-River/How-the-Navigation-System-Works"
+}

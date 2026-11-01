@@ -1,0 +1,28 @@
+{
+  "name": "pixel-seek",
+  "command": [
+    "env",
+    "PULSO_CONSTRAINED_RENDER=1",
+    "nice",
+    "-n",
+    "10",
+    "taskset",
+    "-c",
+    "0,1,2,3,4,5",
+    "node",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/shared/guard.cjs",
+    "node",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/shared/seek-check.cjs"
+  ],
+  "startedAtEpoch": 1793554231.3088477,
+  "wallSecondsIncludingWait": 76.62348222732544,
+  "exitCode": 0,
+  "peakTreeRssBytes": 2393968640,
+  "rssMethod": "sum of RSS across live process tree; shared pages can be counted more than once; 500 ms sampling",
+  "gpuDevicePeakUsedBytes": 9045200896,
+  "gpuAttribution": "whole device, includes other processes; not renderer-exclusive",
+  "samples": 145,
+  "sampleIntervalMs": 500,
+  "renderWallSeconds": 37.0558021068573,
+  "resourceWaitSeconds": 39.56815242767334
+}

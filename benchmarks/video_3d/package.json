@@ -1,0 +1,19 @@
+{
+  "name": "pulso-video-3d-benchmark",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated four-engine benchmark; production dependencies are unchanged",
+  "scripts": {
+    "benchmark": "python3 run.py --all",
+    "test": "node --test shared/contracts.test.cjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.8.2",
+    "@remotion/cli": "4.0.537",
+    "@remotion/three": "4.0.537",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.537",
+    "three": "0.187.0"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "atEpoch": 1793554445.6793523,
+  "reason": "Expand cache dependency coverage; all previous input and output hashes unchanged. Only model source edit removed unused destructuring variable; all 1440 stateAt results equal frozen frames.json. No image-generating inputs changed.",
+  "engines": {
+    "A": {
+      "previousSignature": "190a220e321ab9f94d68a91c4faf41fa6bccbce2271508c2c69dc4ac92604f46",
+      "addedInputs": [
+        "utils/narrative-animation-tracks.js"
+      ],
+      "allPreviousInputsUnchanged": true
+    },
+    "B": {
+      "previousSignature": "ce1081f37dea9e9b0597d6d1d19516cdaaabd3bb0ed6c1305a79642b4164931b",
+      "addedInputs": [
+        "benchmarks/video_3d/shared/model.cjs",
+        "utils/narrative-animation-tracks.js"
+      ],
+      "allPreviousInputsUnchanged": true
+    },
+    "C": {
+      "previousSignature": "5a92f4794b923b8b464ca789567c3ac2cf7c0648ab7e6f225a8e6595dd360202",
+      "addedInputs": [
+        "benchmarks/video_3d/shared/model.cjs",
+        "utils/narrative-animation-tracks.js"
+      ],
+      "allPreviousInputsUnchanged": true
+    },
+    "D": {
+      "previousSignature": "5dba11be8bd10a847748ffeb889ef293dd24767804483a49a01eb7d6298a352a",
+      "addedInputs": [
+        "benchmarks/video_3d/shared/model.cjs",
+        "utils/narrative-animation-tracks.js"
+      ],
+      "allPreviousInputsUnchanged": true
+    }
+  }
+}

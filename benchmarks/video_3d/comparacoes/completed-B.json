@@ -1,0 +1,15 @@
+{
+  "inputSha256": "fe0b2302602836636301365f15448f305a515ee135f0231ea5b1322ce752825c",
+  "inputFiles": {
+    "benchmarks/video_3d/roteiro/storyboard.json": "506a7efe94caab66c092e8b11cbd528c38929b59ea3a95b91909b7a210d7c4bb",
+    "benchmarks/video_3d/roteiro/narracao.m4a": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+    "utils/narrative-animation-tracks.js": "f57a44e7e70aeb3030bfedf9174e087f6739ad692facdecd2a2f1de2f007cfbc",
+    "benchmarks/video_3d/package-lock.json": "3e699b007610d8e08e7e0a8e0e920fe727c1f5828de424e903a41f7a0b51db08",
+    "benchmarks/video_3d/shared/scene.json": "18e45b64ce474b9aafd0735cca11318e9151f118b1f494922c784c2a904811a9",
+    "benchmarks/video_3d/shared/entry.jsx": "0a3668f9e4772303e8103b282801df1db25ed3d3c35cd4207a1bec2552906d91",
+    "benchmarks/video_3d/shared/model.cjs": "11cef055be239fca76f3a126c31902c8462733f6c85baf588898c8ef4737429a",
+    "benchmarks/video_3d/motores/threejs/Procedural.jsx": "3e4efcdf9a79ba3ced6d21ff0cecf9e53f1846c25b2ccd001c95ff09e13b45c9"
+  },
+  "outputSha256": "dd0a035d63058b39d3c8b775d9f20cfabe12714274ef4ca2127d1a3ebec32261",
+  "narrationSha256": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a"
+}

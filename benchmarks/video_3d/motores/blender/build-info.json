@@ -1,0 +1,22 @@
+{
+  "blender": "5.2.2 LTS",
+  "engine": "BLENDER_EEVEE",
+  "nativeFrameSize": [
+    1690,
+    670
+  ],
+  "finalFrameSize": [
+    1920,
+    1080
+  ],
+  "fps": 30,
+  "frames": 1440,
+  "groups": 12,
+  "glbBytes": 1339724,
+  "eeveeProperties": {
+    "taa_render_samples": "64",
+    "use_raytracing": "True"
+  },
+  "camera": "same frame-indexed position/target as A/B/D; Blender depth of field f/8",
+  "fluid": "procedural illustrative surface/level, not a fluid solver"
+}

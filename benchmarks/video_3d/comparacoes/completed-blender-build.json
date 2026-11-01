@@ -1,0 +1,11 @@
+{
+  "inputs": {
+    "shared/scene.json": "18e45b64ce474b9aafd0735cca11318e9151f118b1f494922c784c2a904811a9",
+    "shared/frames.json": "47763b3ececb8910dabb92bf898d367fe8271e5329af921b669bff48e78d1ef3",
+    "motores/blender/build.py": "809bbe4ee85eab9459da38337bd78d4b98257d2b44ef7662774c7fe529a790ab"
+  },
+  "outputs": {
+    "motores/blender/eclusa.blend": "69388c43a9be9ec4a82f17936c107f9520c7a281a1723c2c01df52718f998619",
+    "motores/hibrido/lock.blender.glb": "0fb1a65e25d4b6b660164f5ee5a96db682341a1f0f5c4546c3ba924b1c0c7a22"
+  }
+}

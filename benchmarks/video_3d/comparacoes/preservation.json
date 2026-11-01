@@ -1,0 +1,19 @@
+{
+  "checkedAtEpoch": 1793553738.1997256,
+  "productionSourceHashesUnchanged": {
+    "experiments/remotion-motion-review/package.json": true,
+    "experiments/remotion-motion-review/package-lock.json": true,
+    "experiments/remotion-motion-review/src/NarrativeEpisodeV2.tsx": true,
+    "experiments/remotion-motion-review/src/NarrativeIllustrationScene.tsx": true,
+    "utils/narrative-episode-renderer.js": true,
+    "scripts/channel-scheduler.js": true
+  },
+  "schedulerStatus": "active",
+  "schedulerRestartedByBenchmark": false,
+  "focusedRegressionTests": {
+    "passed": 16,
+    "failed": 0,
+    "scope": "benchmark spatial contracts and original props/tracks/illustration normalization"
+  },
+  "claimScope": "Existing production renderer executed A successfully; no production source modified. Does not certify social delivery or provider availability."
+}

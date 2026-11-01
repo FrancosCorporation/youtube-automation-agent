@@ -1,0 +1,33 @@
+{
+  "name": "C-native-preview",
+  "command": [
+    "env",
+    "PULSO_CONSTRAINED_RENDER=1",
+    "nice",
+    "-n",
+    "10",
+    "taskset",
+    "-c",
+    "0,1,2,3,4,5",
+    "node",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/shared/guard.cjs",
+    "blender",
+    "--background",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/motores/blender/eclusa.blend",
+    "--python",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/motores/blender/render.py",
+    "--",
+    "1,301,601,901,1201"
+  ],
+  "startedAtEpoch": 1793552654.999544,
+  "wallSecondsIncludingWait": 56.94660234451294,
+  "exitCode": 0,
+  "peakTreeRssBytes": 1595633664,
+  "rssMethod": "sum of RSS across live process tree; shared pages can be counted more than once; 500 ms sampling",
+  "gpuDevicePeakUsedBytes": 10143518720,
+  "gpuAttribution": "whole device, includes other processes; not renderer-exclusive",
+  "samples": 108,
+  "sampleIntervalMs": 500,
+  "renderWallSeconds": 19.379590272903442,
+  "resourceWaitSeconds": 37.567456007003784
+}

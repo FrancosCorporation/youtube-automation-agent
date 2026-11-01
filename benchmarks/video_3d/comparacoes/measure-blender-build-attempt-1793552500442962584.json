@@ -1,0 +1,21 @@
+{
+  "name": "blender-build",
+  "command": [
+    "blender",
+    "--background",
+    "--factory-startup",
+    "--python",
+    "benchmarks/video_3d/motores/blender/build.py"
+  ],
+  "startedAtEpoch": 1793552056.1906135,
+  "wallSecondsIncludingWait": 23.60430884361267,
+  "exitCode": 0,
+  "peakTreeRssBytes": 487084032,
+  "rssMethod": "sum of RSS across live process tree; shared pages can be counted more than once; 500 ms sampling",
+  "gpuDevicePeakUsedBytes": 8509067264,
+  "gpuAttribution": "whole device, includes other processes; not renderer-exclusive",
+  "samples": 44,
+  "sampleIntervalMs": 500,
+  "renderWallSeconds": 23.60430884361267,
+  "resourceWaitSeconds": 0
+}

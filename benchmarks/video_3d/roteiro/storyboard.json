@@ -1,0 +1,826 @@
+{
+  "seed": 1055545869,
+  "title": "Como uma eclusa levanta um barco",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "durationSeconds": 48,
+  "durationInFrames": 1440,
+  "scriptSha256": "87d0bf9efbbed96a5daf2757844205d45c36896382a2b6519ab62889b92bc94f",
+  "audioSha256": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+  "wavSha256": "99c7b95ed423f88a187839246795b3757b74e8305bd04bcf0bee5143f1664538",
+  "narration": "roteiro/narracao.m4a",
+  "narrationMaster": "roteiro/narracao.wav",
+  "leadInMs": 500,
+  "music": null,
+  "voice": "pt-BR-AntonioNeural",
+  "sentences": [
+    {
+      "id": "s0",
+      "groupId": "lock",
+      "text": "Um barco precisa passar de um trecho baixo do canal para outro mais alto, e a eclusa funciona como um elevador de água.",
+      "startFrame": 0,
+      "endFrame": 248,
+      "wordTimings": [
+        {
+          "text": "Um",
+          "startFrame": 17,
+          "endFrame": 22
+        },
+        {
+          "text": "barco",
+          "startFrame": 23,
+          "endFrame": 34
+        },
+        {
+          "text": "precisa",
+          "startFrame": 35,
+          "endFrame": 47
+        },
+        {
+          "text": "passar",
+          "startFrame": 47,
+          "endFrame": 59
+        },
+        {
+          "text": "de",
+          "startFrame": 59,
+          "endFrame": 62
+        },
+        {
+          "text": "um",
+          "startFrame": 62,
+          "endFrame": 65
+        },
+        {
+          "text": "trecho",
+          "startFrame": 65,
+          "endFrame": 75
+        },
+        {
+          "text": "baixo",
+          "startFrame": 76,
+          "endFrame": 86
+        },
+        {
+          "text": "do",
+          "startFrame": 86,
+          "endFrame": 89
+        },
+        {
+          "text": "canal",
+          "startFrame": 89,
+          "endFrame": 100
+        },
+        {
+          "text": "para",
+          "startFrame": 100,
+          "endFrame": 107
+        },
+        {
+          "text": "outro",
+          "startFrame": 107,
+          "endFrame": 116
+        },
+        {
+          "text": "mais",
+          "startFrame": 116,
+          "endFrame": 122
+        },
+        {
+          "text": "alto",
+          "startFrame": 122,
+          "endFrame": 135
+        },
+        {
+          "text": "e",
+          "startFrame": 145,
+          "endFrame": 148
+        },
+        {
+          "text": "a",
+          "startFrame": 149,
+          "endFrame": 150
+        },
+        {
+          "text": "eclusa",
+          "startFrame": 150,
+          "endFrame": 165
+        },
+        {
+          "text": "funciona",
+          "startFrame": 165,
+          "endFrame": 182
+        },
+        {
+          "text": "como",
+          "startFrame": 182,
+          "endFrame": 189
+        },
+        {
+          "text": "um",
+          "startFrame": 189,
+          "endFrame": 192
+        },
+        {
+          "text": "elevador",
+          "startFrame": 193,
+          "endFrame": 208
+        },
+        {
+          "text": "de",
+          "startFrame": 209,
+          "endFrame": 212
+        },
+        {
+          "text": "água",
+          "startFrame": 213,
+          "endFrame": 222
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "groupId": "lock",
+      "text": "Primeiro, ele entra numa câmara que está no mesmo nível da água do lado de baixo.",
+      "startFrame": 248,
+      "endFrame": 408,
+      "wordTimings": [
+        {
+          "text": "Primeiro",
+          "startFrame": 248,
+          "endFrame": 262
+        },
+        {
+          "text": "ele",
+          "startFrame": 270,
+          "endFrame": 276
+        },
+        {
+          "text": "entra",
+          "startFrame": 276,
+          "endFrame": 284
+        },
+        {
+          "text": "numa",
+          "startFrame": 285,
+          "endFrame": 291
+        },
+        {
+          "text": "câmara",
+          "startFrame": 292,
+          "endFrame": 304
+        },
+        {
+          "text": "que",
+          "startFrame": 304,
+          "endFrame": 307
+        },
+        {
+          "text": "está",
+          "startFrame": 307,
+          "endFrame": 313
+        },
+        {
+          "text": "no",
+          "startFrame": 314,
+          "endFrame": 317
+        },
+        {
+          "text": "mesmo",
+          "startFrame": 317,
+          "endFrame": 329
+        },
+        {
+          "text": "nível",
+          "startFrame": 329,
+          "endFrame": 340
+        },
+        {
+          "text": "da",
+          "startFrame": 340,
+          "endFrame": 343
+        },
+        {
+          "text": "água",
+          "startFrame": 344,
+          "endFrame": 351
+        },
+        {
+          "text": "do",
+          "startFrame": 352,
+          "endFrame": 355
+        },
+        {
+          "text": "lado",
+          "startFrame": 355,
+          "endFrame": 366
+        },
+        {
+          "text": "de",
+          "startFrame": 366,
+          "endFrame": 369
+        },
+        {
+          "text": "baixo",
+          "startFrame": 369,
+          "endFrame": 382
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "groupId": "lock",
+      "text": "A comporta se fecha atrás do barco, isolando essa câmara entre duas portas resistentes.",
+      "startFrame": 408,
+      "endFrame": 593,
+      "wordTimings": [
+        {
+          "text": "A",
+          "startFrame": 408,
+          "endFrame": 411
+        },
+        {
+          "text": "comporta",
+          "startFrame": 411,
+          "endFrame": 429
+        },
+        {
+          "text": "se",
+          "startFrame": 429,
+          "endFrame": 433
+        },
+        {
+          "text": "fecha",
+          "startFrame": 433,
+          "endFrame": 441
+        },
+        {
+          "text": "atrás",
+          "startFrame": 442,
+          "endFrame": 450
+        },
+        {
+          "text": "do",
+          "startFrame": 450,
+          "endFrame": 453
+        },
+        {
+          "text": "barco",
+          "startFrame": 454,
+          "endFrame": 467
+        },
+        {
+          "text": "isolando",
+          "startFrame": 476,
+          "endFrame": 492
+        },
+        {
+          "text": "essa",
+          "startFrame": 492,
+          "endFrame": 498
+        },
+        {
+          "text": "câmara",
+          "startFrame": 499,
+          "endFrame": 510
+        },
+        {
+          "text": "entre",
+          "startFrame": 510,
+          "endFrame": 517
+        },
+        {
+          "text": "duas",
+          "startFrame": 518,
+          "endFrame": 530
+        },
+        {
+          "text": "portas",
+          "startFrame": 530,
+          "endFrame": 542
+        },
+        {
+          "text": "resistentes",
+          "startFrame": 542,
+          "endFrame": 567
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "groupId": "lock",
+      "text": "Válvulas deixam a água do trecho mais alto entrar por passagens controladas, movida pela gravidade.",
+      "startFrame": 593,
+      "endFrame": 794,
+      "wordTimings": [
+        {
+          "text": "Válvulas",
+          "startFrame": 593,
+          "endFrame": 611
+        },
+        {
+          "text": "deixam",
+          "startFrame": 612,
+          "endFrame": 623
+        },
+        {
+          "text": "a",
+          "startFrame": 623,
+          "endFrame": 624
+        },
+        {
+          "text": "água",
+          "startFrame": 624,
+          "endFrame": 634
+        },
+        {
+          "text": "do",
+          "startFrame": 634,
+          "endFrame": 638
+        },
+        {
+          "text": "trecho",
+          "startFrame": 638,
+          "endFrame": 648
+        },
+        {
+          "text": "mais",
+          "startFrame": 649,
+          "endFrame": 654
+        },
+        {
+          "text": "alto",
+          "startFrame": 654,
+          "endFrame": 664
+        },
+        {
+          "text": "entrar",
+          "startFrame": 664,
+          "endFrame": 673
+        },
+        {
+          "text": "por",
+          "startFrame": 674,
+          "endFrame": 678
+        },
+        {
+          "text": "passagens",
+          "startFrame": 679,
+          "endFrame": 696
+        },
+        {
+          "text": "controladas",
+          "startFrame": 696,
+          "endFrame": 719
+        },
+        {
+          "text": "movida",
+          "startFrame": 727,
+          "endFrame": 741
+        },
+        {
+          "text": "pela",
+          "startFrame": 741,
+          "endFrame": 747
+        },
+        {
+          "text": "gravidade",
+          "startFrame": 748,
+          "endFrame": 768
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "groupId": "lock",
+      "text": "Conforme a câmara enche, o nível da água sobe e o barco flutua junto, sem precisar de um guindaste.",
+      "startFrame": 794,
+      "endFrame": 1000,
+      "wordTimings": [
+        {
+          "text": "Conforme",
+          "startFrame": 794,
+          "endFrame": 811
+        },
+        {
+          "text": "a",
+          "startFrame": 811,
+          "endFrame": 813
+        },
+        {
+          "text": "câmara",
+          "startFrame": 814,
+          "endFrame": 826
+        },
+        {
+          "text": "enche",
+          "startFrame": 826,
+          "endFrame": 836
+        },
+        {
+          "text": "o",
+          "startFrame": 844,
+          "endFrame": 846
+        },
+        {
+          "text": "nível",
+          "startFrame": 846,
+          "endFrame": 856
+        },
+        {
+          "text": "da",
+          "startFrame": 857,
+          "endFrame": 859
+        },
+        {
+          "text": "água",
+          "startFrame": 859,
+          "endFrame": 867
+        },
+        {
+          "text": "sobe",
+          "startFrame": 868,
+          "endFrame": 879
+        },
+        {
+          "text": "e",
+          "startFrame": 879,
+          "endFrame": 880
+        },
+        {
+          "text": "o",
+          "startFrame": 881,
+          "endFrame": 882
+        },
+        {
+          "text": "barco",
+          "startFrame": 882,
+          "endFrame": 893
+        },
+        {
+          "text": "flutua",
+          "startFrame": 893,
+          "endFrame": 905
+        },
+        {
+          "text": "junto",
+          "startFrame": 905,
+          "endFrame": 916
+        },
+        {
+          "text": "sem",
+          "startFrame": 926,
+          "endFrame": 931
+        },
+        {
+          "text": "precisar",
+          "startFrame": 932,
+          "endFrame": 947
+        },
+        {
+          "text": "de",
+          "startFrame": 948,
+          "endFrame": 951
+        },
+        {
+          "text": "um",
+          "startFrame": 951,
+          "endFrame": 954
+        },
+        {
+          "text": "guindaste",
+          "startFrame": 954,
+          "endFrame": 974
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "groupId": "lock",
+      "text": "Quando a água alcança o mesmo nível do trecho superior, a outra comporta pode se abrir.",
+      "startFrame": 1000,
+      "endFrame": 1170,
+      "wordTimings": [
+        {
+          "text": "Quando",
+          "startFrame": 1000,
+          "endFrame": 1008
+        },
+        {
+          "text": "a",
+          "startFrame": 1009,
+          "endFrame": 1010
+        },
+        {
+          "text": "água",
+          "startFrame": 1010,
+          "endFrame": 1020
+        },
+        {
+          "text": "alcança",
+          "startFrame": 1020,
+          "endFrame": 1033
+        },
+        {
+          "text": "o",
+          "startFrame": 1034,
+          "endFrame": 1034
+        },
+        {
+          "text": "mesmo",
+          "startFrame": 1035,
+          "endFrame": 1044
+        },
+        {
+          "text": "nível",
+          "startFrame": 1045,
+          "endFrame": 1054
+        },
+        {
+          "text": "do",
+          "startFrame": 1055,
+          "endFrame": 1058
+        },
+        {
+          "text": "trecho",
+          "startFrame": 1058,
+          "endFrame": 1068
+        },
+        {
+          "text": "superior",
+          "startFrame": 1069,
+          "endFrame": 1085
+        },
+        {
+          "text": "a",
+          "startFrame": 1094,
+          "endFrame": 1097
+        },
+        {
+          "text": "outra",
+          "startFrame": 1097,
+          "endFrame": 1106
+        },
+        {
+          "text": "comporta",
+          "startFrame": 1106,
+          "endFrame": 1122
+        },
+        {
+          "text": "pode",
+          "startFrame": 1122,
+          "endFrame": 1130
+        },
+        {
+          "text": "se",
+          "startFrame": 1131,
+          "endFrame": 1134
+        },
+        {
+          "text": "abrir",
+          "startFrame": 1134,
+          "endFrame": 1144
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "groupId": "lock",
+      "text": "O barco segue viagem, enquanto a eclusa fica pronta para outro ciclo: controlar a água permite vencer a diferença de altura.",
+      "startFrame": 1170,
+      "endFrame": 1440,
+      "wordTimings": [
+        {
+          "text": "O",
+          "startFrame": 1170,
+          "endFrame": 1173
+        },
+        {
+          "text": "barco",
+          "startFrame": 1174,
+          "endFrame": 1185
+        },
+        {
+          "text": "segue",
+          "startFrame": 1185,
+          "endFrame": 1194
+        },
+        {
+          "text": "viagem",
+          "startFrame": 1195,
+          "endFrame": 1209
+        },
+        {
+          "text": "enquanto",
+          "startFrame": 1218,
+          "endFrame": 1229
+        },
+        {
+          "text": "a",
+          "startFrame": 1229,
+          "endFrame": 1230
+        },
+        {
+          "text": "eclusa",
+          "startFrame": 1230,
+          "endFrame": 1244
+        },
+        {
+          "text": "fica",
+          "startFrame": 1245,
+          "endFrame": 1252
+        },
+        {
+          "text": "pronta",
+          "startFrame": 1253,
+          "endFrame": 1263
+        },
+        {
+          "text": "para",
+          "startFrame": 1263,
+          "endFrame": 1270
+        },
+        {
+          "text": "outro",
+          "startFrame": 1270,
+          "endFrame": 1278
+        },
+        {
+          "text": "ciclo",
+          "startFrame": 1278,
+          "endFrame": 1291
+        },
+        {
+          "text": "controlar",
+          "startFrame": 1299,
+          "endFrame": 1315
+        },
+        {
+          "text": "a",
+          "startFrame": 1315,
+          "endFrame": 1317
+        },
+        {
+          "text": "água",
+          "startFrame": 1317,
+          "endFrame": 1325
+        },
+        {
+          "text": "permite",
+          "startFrame": 1325,
+          "endFrame": 1338
+        },
+        {
+          "text": "vencer",
+          "startFrame": 1338,
+          "endFrame": 1350
+        },
+        {
+          "text": "a",
+          "startFrame": 1350,
+          "endFrame": 1352
+        },
+        {
+          "text": "diferença",
+          "startFrame": 1352,
+          "endFrame": 1370
+        },
+        {
+          "text": "de",
+          "startFrame": 1370,
+          "endFrame": 1373
+        },
+        {
+          "text": "altura",
+          "startFrame": 1373,
+          "endFrame": 1386
+        }
+      ]
+    }
+  ],
+  "captions": [
+    {
+      "startFrame": 17,
+      "endFrame": 150,
+      "text": "Um barco precisa passar de um trecho baixo do canal para outro mais alto e a"
+    },
+    {
+      "startFrame": 150,
+      "endFrame": 248,
+      "text": "eclusa funciona como um elevador de água"
+    },
+    {
+      "startFrame": 248,
+      "endFrame": 369,
+      "text": "Primeiro ele entra numa câmara que está no mesmo nível da água do lado de"
+    },
+    {
+      "startFrame": 369,
+      "endFrame": 408,
+      "text": "baixo"
+    },
+    {
+      "startFrame": 408,
+      "endFrame": 542,
+      "text": "A comporta se fecha atrás do barco isolando essa câmara entre duas portas"
+    },
+    {
+      "startFrame": 542,
+      "endFrame": 593,
+      "text": "resistentes"
+    },
+    {
+      "startFrame": 593,
+      "endFrame": 727,
+      "text": "Válvulas deixam a água do trecho mais alto entrar por passagens controladas"
+    },
+    {
+      "startFrame": 727,
+      "endFrame": 794,
+      "text": "movida pela gravidade"
+    },
+    {
+      "startFrame": 794,
+      "endFrame": 932,
+      "text": "Conforme a câmara enche o nível da água sobe e o barco flutua junto sem"
+    },
+    {
+      "startFrame": 932,
+      "endFrame": 1000,
+      "text": "precisar de um guindaste"
+    },
+    {
+      "startFrame": 1000,
+      "endFrame": 1131,
+      "text": "Quando a água alcança o mesmo nível do trecho superior a outra comporta pode"
+    },
+    {
+      "startFrame": 1131,
+      "endFrame": 1170,
+      "text": "se abrir"
+    },
+    {
+      "startFrame": 1170,
+      "endFrame": 1315,
+      "text": "O barco segue viagem enquanto a eclusa fica pronta para outro ciclo controlar"
+    },
+    {
+      "startFrame": 1315,
+      "endFrame": 1440,
+      "text": "a água permite vencer a diferença de altura"
+    }
+  ],
+  "scenes": [
+    {
+      "id": 0,
+      "title": "Um elevador de água",
+      "startFrame": 0,
+      "endFrame": 248,
+      "objective": "Estabelecer canal baixo, câmara e trecho alto; órbita de visão geral."
+    },
+    {
+      "id": 1,
+      "title": "Entrada no nível baixo",
+      "startFrame": 248,
+      "endFrame": 408,
+      "objective": "Travelling acompanha barco pela comporta inferior aberta."
+    },
+    {
+      "id": 2,
+      "title": "Fechar para isolar",
+      "startFrame": 408,
+      "endFrame": 593,
+      "objective": "Vista lateral mostra fechamento depois de o barco estar dentro."
+    },
+    {
+      "id": 3,
+      "title": "A gravidade faz o trabalho",
+      "startFrame": 593,
+      "endFrame": 794,
+      "objective": "Aproximação à passagem de enchimento; fluxo entra por baixo."
+    },
+    {
+      "id": 4,
+      "title": "A água sobe. O barco também.",
+      "startFrame": 794,
+      "endFrame": 1000,
+      "objective": "Câmera se aproxima da câmara aberta em corte; barco e água sobem juntos."
+    },
+    {
+      "id": 5,
+      "title": "Níveis iguais: passagem livre",
+      "startFrame": 1000,
+      "endFrame": 1170,
+      "objective": "Abrir comporta superior apenas após equalização; explorar ângulo oposto."
+    },
+    {
+      "id": 6,
+      "title": "Uma diferença de altura vencida",
+      "startFrame": 1170,
+      "endFrame": 1440,
+      "objective": "Acompanhar saída e afastar para mostrar diferença de níveis."
+    }
+  ],
+  "disclosure": "Esquema em corte; dimensões e velocidade ilustrativas. Não é projeto de engenharia."
+}

@@ -1,0 +1,17 @@
+{
+  "inputSha256": "603856194aa7fcce82481dec9e2fdfeb416af18d5874332462172a0535015f68",
+  "outputSha256": "7d1a79f7a3f9a8d5ed9b1b38988a709b083df078bfc0e75d810948215b9ea1e7",
+  "narrationSha256": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+  "previousBroadSignature": "dce3b1b157ec0dd6cf647e45d3a7bdc323a22b54cceadb58d9013b310bdaa531",
+  "inputFiles": {
+    "benchmarks/video_3d/roteiro/storyboard.json": "506a7efe94caab66c092e8b11cbd528c38929b59ea3a95b91909b7a210d7c4bb",
+    "benchmarks/video_3d/roteiro/narracao.m4a": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+    "utils/narrative-animation-tracks.js": "f57a44e7e70aeb3030bfedf9174e087f6739ad692facdecd2a2f1de2f007cfbc",
+    "benchmarks/video_3d/motores/original/props.json": "eb3fe1f35c36e8c2dbd773e56921c1045ebcce6779edd64fc125554297d75cc4",
+    "experiments/remotion-motion-review/package-lock.json": "ce1c4a9fc8a83fe315c95b72888357577b30a670798425f5b31f852594eb2f4e",
+    "experiments/remotion-motion-review/src/NarrativeEpisodeV2.tsx": "f0b2fc18112765b7cda72a1cbd81b5d25035c9af17ecff792d31398d692af278",
+    "experiments/remotion-motion-review/src/NarrativeIllustrationScene.tsx": "d875982dba1f5394a0d864afcb9592f3ca2a5943dfbd82617e72bd1f8c93734a",
+    "experiments/remotion-motion-review/src/ApprovedRobotPresenter.tsx": "490acdfc89c48910f5e3b98840be79aae8d89fa1c61a06aaeb6db458c5895790"
+  },
+  "signatureScopeNote": "A data and production source unchanged since completed render; fingerprint scoped to A, excluding later B/C/D refinements."
+}

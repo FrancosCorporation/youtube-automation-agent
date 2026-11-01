@@ -1,0 +1,17 @@
+{
+  "inputSha256": "a0c62ff574391c0c763ab32f900963435cffe296d360cd7c12e5de39a0497536",
+  "inputFiles": {
+    "benchmarks/video_3d/roteiro/storyboard.json": "506a7efe94caab66c092e8b11cbd528c38929b59ea3a95b91909b7a210d7c4bb",
+    "benchmarks/video_3d/roteiro/narracao.m4a": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+    "utils/narrative-animation-tracks.js": "f57a44e7e70aeb3030bfedf9174e087f6739ad692facdecd2a2f1de2f007cfbc",
+    "benchmarks/video_3d/package-lock.json": "3e699b007610d8e08e7e0a8e0e920fe727c1f5828de424e903a41f7a0b51db08",
+    "benchmarks/video_3d/shared/scene.json": "18e45b64ce474b9aafd0735cca11318e9151f118b1f494922c784c2a904811a9",
+    "benchmarks/video_3d/shared/entry.jsx": "0a3668f9e4772303e8103b282801df1db25ed3d3c35cd4207a1bec2552906d91",
+    "benchmarks/video_3d/shared/model.cjs": "11cef055be239fca76f3a126c31902c8462733f6c85baf588898c8ef4737429a",
+    "benchmarks/video_3d/motores/blender/build.py": "809bbe4ee85eab9459da38337bd78d4b98257d2b44ef7662774c7fe529a790ab",
+    "benchmarks/video_3d/motores/blender/render.py": "8481c94015daa847048f5178029ea895d51bb2c2c745c939bb9a4f3ee2dffb60",
+    "benchmarks/video_3d/motores/blender/eclusa.blend": "69388c43a9be9ec4a82f17936c107f9520c7a281a1723c2c01df52718f998619"
+  },
+  "outputSha256": "439b3c7dd5b3014d6b9d2d37317bcf0c4d00318eb7d39e725264f1889420d5b3",
+  "narrationSha256": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a"
+}

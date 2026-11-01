@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-11-01T13:59:05-03:00",
+  "productionSourceHashes": {
+    "experiments/remotion-motion-review/package.json": "c517c1d46e19c102bf86c8af204396ebe5e0a43635549d6a9d20ee77272ff035",
+    "experiments/remotion-motion-review/package-lock.json": "ce1c4a9fc8a83fe315c95b72888357577b30a670798425f5b31f852594eb2f4e",
+    "experiments/remotion-motion-review/src/NarrativeEpisodeV2.tsx": "f0b2fc18112765b7cda72a1cbd81b5d25035c9af17ecff792d31398d692af278",
+    "experiments/remotion-motion-review/src/NarrativeIllustrationScene.tsx": "d875982dba1f5394a0d864afcb9592f3ca2a5943dfbd82617e72bd1f8c93734a",
+    "utils/narrative-episode-renderer.js": "45f496d30f8a15c19e08549a1ef84ff399330bd558d02e229ddd46d501b96f25",
+    "scripts/channel-scheduler.js": "5c09f5904b86cb0a104acb6700b6c6841b1be589f5b896d936ab1270319d7ca4"
+  },
+  "python": "3.14.4",
+  "node": "v22.22.1",
+  "ffmpeg": "ffmpeg version 8.0.1-3ubuntu2 Copyright (c) 2000-2025 the FFmpeg developers",
+  "gpu": [
+    "05:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 22 [Radeon RX 6700/6700 XT/6750 XT / 6800M/6850M XT] (rev c0)"
+  ]
+}

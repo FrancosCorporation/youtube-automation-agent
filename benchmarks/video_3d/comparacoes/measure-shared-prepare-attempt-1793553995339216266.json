@@ -1,0 +1,19 @@
+{
+  "name": "shared-prepare",
+  "command": [
+    "node",
+    "/home/servidor/Git/youtube_ai/youtube-automation-agent/benchmarks/video_3d/prepare.cjs"
+  ],
+  "startedAtEpoch": 1793553966.5191622,
+  "wallSecondsIncludingWait": 1.0494775772094727,
+  "exitCode": 0,
+  "peakTreeRssBytes": 20901888,
+  "rssMethod": "sum of RSS across live process tree; shared pages can be counted more than once; 500 ms sampling",
+  "gpuDevicePeakUsedBytes": 9150128128,
+  "gpuAttribution": "whole device, includes other processes; not renderer-exclusive",
+  "samples": 2,
+  "sampleIntervalMs": 500,
+  "renderWallSeconds": 1.0494775772094727,
+  "resourceWaitSeconds": 0,
+  "initialNarrationAlreadyExisted": true
+}

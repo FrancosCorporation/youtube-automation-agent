@@ -1,0 +1,45 @@
+{
+  "recordedAtEpoch": 1793554837.1119971,
+  "cpuLogical": 28,
+  "cpuPhysical": 14,
+  "cpuAffinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27
+  ],
+  "memoryTotalBytes": 32469016576,
+  "memoryAvailableBytes": 14334140416,
+  "diskFreeBytes": 36585246720,
+  "python": "3.14.4",
+  "gpu": [
+    {
+      "device": "/sys/class/drm/card1/device",
+      "vramTotalBytes": 12868124672
+    }
+  ]
+}

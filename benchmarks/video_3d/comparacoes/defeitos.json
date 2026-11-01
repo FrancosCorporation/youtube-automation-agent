@@ -1,0 +1,58 @@
+{
+  "processFailures": [
+    {
+      "stage": "report aggregation after successful media validation",
+      "error": "NameError comparison_start; unquoted diagnostic dictionary key also found",
+      "fix": "Initialize timer before comparison encode, persist each engine validation, quote key and invoke report generator",
+      "renderedMediaPreserved": true
+    }
+  ],
+  "visualDefects": [
+    {
+      "engine": "D",
+      "stage": "preview",
+      "defect": "GLB scene absent despite successful renderer exit",
+      "evidence": "comparacoes/frames/D-preview-blank.png",
+      "cause": "Inner Suspense fallback masked ThreeCanvas loader delayRender",
+      "fix": "Removed inner Suspense; native ThreeCanvas boundary waits for GLTFLoader",
+      "verified": true,
+      "fixedEvidence": "comparacoes/frames/D-preview.png"
+    },
+    {
+      "engine": "C",
+      "stage": "preview",
+      "defect": "Visible grain in reflections at 32 Eevee samples",
+      "fix": "Raised final render to 64 samples",
+      "verified": true
+    },
+    {
+      "engine": "B",
+      "stage": "preview",
+      "defect": "Water normals formed overly regular ridges",
+      "fix": "Reduced amplitude and mixed deterministic periodic waves",
+      "verified": true
+    },
+    {
+      "engine": "D",
+      "stage": "preview",
+      "defect": "glTF omitted Blender procedural water bump node, leaving surface flat",
+      "fix": "Frame-indexed Three normal map added to exported water materials, using the same wave parameters as B",
+      "verified": true,
+      "fixedEvidence": "comparacoes/frames/D-29.png and seek-pixels.json"
+    }
+  ],
+  "operationalAdjustments": [
+    {
+      "issue": "Original resource gate classified scene authoring as render contention",
+      "fix": "While holding production render lock, omit exact authoring parent PIDs; actual renderer children and memory/load gate remain enforced",
+      "abortedWaitSeconds": 740,
+      "isRenderFailure": false
+    },
+    {
+      "issue": "Waiting benchmark guards contained future remotion command in argv; mutually misclassified as active renders",
+      "fix": "Exclude exact benchmark guard parents only after acquiring shared render lock; keep real children in gate",
+      "isRenderFailure": false,
+      "restart": "Only three verified childless benchmark waiters were stopped; native Blender result preserved; production untouched"
+    }
+  ]
+}

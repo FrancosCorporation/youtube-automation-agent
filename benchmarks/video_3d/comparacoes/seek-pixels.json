@@ -1,0 +1,158 @@
+{
+  "results": [
+    {
+      "engine": "B",
+      "frame": 90,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "b1c16ac02fe8bedb74a04576b9634d0b4d960bbc175e832612039fc084ef4d52",
+      "revisitedSha256": "b1c16ac02fe8bedb74a04576b9634d0b4d960bbc175e832612039fc084ef4d52"
+    },
+    {
+      "engine": "B",
+      "frame": 330,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "bee886d31c7ded5e77adede0f1e12d6f5412b68d6ee526b78d7e4768594a9acb",
+      "revisitedSha256": "bee886d31c7ded5e77adede0f1e12d6f5412b68d6ee526b78d7e4768594a9acb"
+    },
+    {
+      "engine": "B",
+      "frame": 480,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "030cb738f2c52929e15730928c4a67af9b53be7221e84624344ebbf94c55b173",
+      "revisitedSha256": "030cb738f2c52929e15730928c4a67af9b53be7221e84624344ebbf94c55b173"
+    },
+    {
+      "engine": "B",
+      "frame": 690,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "f8b815fdbfbca04383168e75195c06f3510957f0d5df5128f66a450be0a865ae",
+      "revisitedSha256": "f8b815fdbfbca04383168e75195c06f3510957f0d5df5128f66a450be0a865ae"
+    },
+    {
+      "engine": "B",
+      "frame": 870,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "af5f1c21060126abb229e9724c62d6d2109ff389c8dbeb12132024b8a4b822ab",
+      "revisitedSha256": "af5f1c21060126abb229e9724c62d6d2109ff389c8dbeb12132024b8a4b822ab"
+    },
+    {
+      "engine": "B",
+      "frame": 1080,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "3e9e5ff9880453af71a458291f6437e57df6a1f142e7bb28d4ae580cb54c90ef",
+      "revisitedSha256": "3e9e5ff9880453af71a458291f6437e57df6a1f142e7bb28d4ae580cb54c90ef"
+    },
+    {
+      "engine": "B",
+      "frame": 1320,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "bc74cfa7d8fd03c448fed0695ef7cb211e1af8cc99877f15c409a612aa267b24",
+      "revisitedSha256": "bc74cfa7d8fd03c448fed0695ef7cb211e1af8cc99877f15c409a612aa267b24"
+    },
+    {
+      "engine": "D",
+      "frame": 90,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "8dc45e1290dfc09ca95b1670c55c48d812b01e35b5f7ca15ee734032e88d4e9a",
+      "revisitedSha256": "8dc45e1290dfc09ca95b1670c55c48d812b01e35b5f7ca15ee734032e88d4e9a"
+    },
+    {
+      "engine": "D",
+      "frame": 330,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "169c3c45eb5f2eef39ade46572d4dceae0844b865c5830dcc39410f0790d56d4",
+      "revisitedSha256": "169c3c45eb5f2eef39ade46572d4dceae0844b865c5830dcc39410f0790d56d4"
+    },
+    {
+      "engine": "D",
+      "frame": 480,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "3ba3130397001b8fe9cff815c7628a146fd5294ef63adb20f875598128e02949",
+      "revisitedSha256": "3ba3130397001b8fe9cff815c7628a146fd5294ef63adb20f875598128e02949"
+    },
+    {
+      "engine": "D",
+      "frame": 690,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "4c09ee31a7a1eea719ccc14d447b9d77e727126e968801f02bc6daf9aa8d7266",
+      "revisitedSha256": "4c09ee31a7a1eea719ccc14d447b9d77e727126e968801f02bc6daf9aa8d7266"
+    },
+    {
+      "engine": "D",
+      "frame": 870,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "fe658d23b81ba45efc3b96d52379950b567dbab6eeac8aea1bffe53a02f383b3",
+      "revisitedSha256": "fe658d23b81ba45efc3b96d52379950b567dbab6eeac8aea1bffe53a02f383b3"
+    },
+    {
+      "engine": "D",
+      "frame": 1080,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "296a13d7c26c52b64c688217b8ba9c11cff9aaac97a754ece721d183df6bbe70",
+      "revisitedSha256": "296a13d7c26c52b64c688217b8ba9c11cff9aaac97a754ece721d183df6bbe70"
+    },
+    {
+      "engine": "D",
+      "frame": 1320,
+      "passed": true,
+      "maxChannelDelta": 0,
+      "channelsOver8": 0,
+      "rmse": 0,
+      "firstSha256": "c89b18e647948baf1c4b30a38bd5152a5cf28c8c74086b79993d2daf789680df",
+      "revisitedSha256": "c89b18e647948baf1c4b30a38bd5152a5cf28c8c74086b79993d2daf789680df"
+    }
+  ],
+  "errors": [],
+  "renderers": {
+    "B": {
+      "vendor": "Google Inc. (AMD)",
+      "renderer": "ANGLE (AMD, AMD Radeon RX 6750 XT (radeonsi navi22 ACO), OpenGL ES 3.2)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+    },
+    "D": {
+      "vendor": "Google Inc. (AMD)",
+      "renderer": "ANGLE (AMD, AMD Radeon RX 6750 XT (radeonsi navi22 ACO), OpenGL ES 3.2)",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+    }
+  },
+  "passed": true
+}

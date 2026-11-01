@@ -1,0 +1,38 @@
+{
+  "consultedOn": "2026-11-01",
+  "sources": [
+    {
+      "url": "https://www.remotion.dev/docs/three",
+      "use": "ThreeCanvas integration; frame-driven animation"
+    },
+    {
+      "url": "https://www.remotion.dev/docs/three-canvas",
+      "use": "useCurrentFrame instead of realtime useFrame"
+    },
+    {
+      "url": "https://r3f.docs.pmnd.rs/getting-started/introduction",
+      "use": "R3F 9 with React 19"
+    },
+    {
+      "url": "https://threejs.org/",
+      "use": "r187 current release"
+    },
+    {
+      "url": "https://github.com/mrdoob/three.js/releases/tag/r187",
+      "use": "Release r187; verify modern material/addon APIs"
+    },
+    {
+      "url": "https://www.tva.com/Environment/Managing-the-River/How-the-Navigation-System-Works",
+      "use": "Lock chamber, valves, gravity fill, level equalization and gate order"
+    }
+  ],
+  "versionEvidence": {
+    "productionThree": "0.186.1",
+    "experimentalThree": "0.187.0",
+    "remotion": "4.0.537",
+    "react": "19.2.3",
+    "r3f": "9.8.2",
+    "blender": "5.2.2 LTS"
+  },
+  "blenderDocs": "Web fetching manual/API failed; bpy introspection and real build/export validated installed API."
+}

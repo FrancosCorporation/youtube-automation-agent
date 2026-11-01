@@ -1,0 +1,16 @@
+{
+  "inputSha256": "3e2b4715c31a46219794d94791cdfd198db9b561078f4dd34cc32d98f20fe04e",
+  "inputFiles": {
+    "benchmarks/video_3d/roteiro/storyboard.json": "506a7efe94caab66c092e8b11cbd528c38929b59ea3a95b91909b7a210d7c4bb",
+    "benchmarks/video_3d/roteiro/narracao.m4a": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a",
+    "utils/narrative-animation-tracks.js": "f57a44e7e70aeb3030bfedf9174e087f6739ad692facdecd2a2f1de2f007cfbc",
+    "benchmarks/video_3d/package-lock.json": "3e699b007610d8e08e7e0a8e0e920fe727c1f5828de424e903a41f7a0b51db08",
+    "benchmarks/video_3d/shared/scene.json": "18e45b64ce474b9aafd0735cca11318e9151f118b1f494922c784c2a904811a9",
+    "benchmarks/video_3d/shared/entry.jsx": "0a3668f9e4772303e8103b282801df1db25ed3d3c35cd4207a1bec2552906d91",
+    "benchmarks/video_3d/shared/model.cjs": "11cef055be239fca76f3a126c31902c8462733f6c85baf588898c8ef4737429a",
+    "benchmarks/video_3d/motores/hibrido/Hybrid.jsx": "56ca0790e4698c2fca57d2cd6ea0ab7b5ef88266120f21a761f99a66414b795d",
+    "benchmarks/video_3d/motores/hibrido/lock.blender.glb": "0fb1a65e25d4b6b660164f5ee5a96db682341a1f0f5c4546c3ba924b1c0c7a22"
+  },
+  "outputSha256": "b9a0bad84b58b4f043acba96b5e450306a5541000236e862b6174a4af5cbd325",
+  "narrationSha256": "a04957d1cbf90dce0720584808afb821e400f64e3e647e693686390e7ee01f8a"
+}

@@ -1,0 +1,16 @@
+node_modules/
+__pycache__/
+public/
+.work/
+logs/
+outputs/*.mp4
+roteiro/*.mp3
+roteiro/*.wav
+roteiro/*.m4a
+motores/blender/frames/
+motores/blender/*-frames-*/
+motores/blender/*.blend*
+motores/hibrido/*.glb
+comparacoes/frames/*.png
+comparacoes/*.png
+HANDOFF.md

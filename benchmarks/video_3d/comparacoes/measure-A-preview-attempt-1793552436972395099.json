@@ -1,0 +1,28 @@
+{
+  "name": "A-preview",
+  "command": [
+    "node",
+    "benchmarks/video_3d/shared/guard.cjs",
+    "experiments/remotion-motion-review/node_modules/.bin/remotion",
+    "still",
+    "experiments/remotion-motion-review/src/index.ts",
+    "NarrativeEpisode",
+    "benchmarks/video_3d/comparacoes/frames/A-preview.png",
+    "--props=benchmarks/video_3d/motores/original/props.json",
+    "--public-dir=benchmarks/video_3d/public",
+    "--frame=900",
+    "--gl=angle",
+    "--log=info"
+  ],
+  "startedAtEpoch": 1793551695.070378,
+  "wallSecondsIncludingWait": 740.9416217803955,
+  "exitCode": -15,
+  "peakTreeRssBytes": 85139456,
+  "rssMethod": "sum of RSS across live process tree; shared pages can be counted more than once; 500 ms sampling",
+  "gpuDevicePeakUsedBytes": 9495347200,
+  "gpuAttribution": "whole device, includes other processes; not renderer-exclusive",
+  "samples": 1405,
+  "sampleIntervalMs": 500,
+  "cancelledBeforeRender": true,
+  "cancellationReason": "Verified childless benchmark waiter stopped to correct resource coordination; no renderer had started"
+}
