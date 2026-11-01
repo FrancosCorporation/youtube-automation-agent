@@ -24,3 +24,5 @@ O gate de encenação amostra 5.403 estados de corpo/carga/porta e a separação
 O detector de congelamento trabalha no viewport 3D com tolerância −80 dB e duração de três segundos; texto e robô não ocultam uma cena parada. O primeiro scan global a −50 dB marcou movimentos lentos como congelamentos; seu relatório foi preservado em `reports/landscape/initial-low-motion-report.json`. A mudança foi verificada com fixtures de cena parada/apresentador em movimento e cena em movimento/layout parado. QA técnico não aprova sozinho continuidade ou qualidade visual; os relatórios começam com revisão visual pendente.
 
 Este episódio é autoria específica em código, com componente humano e regras de movimento reutilizáveis. A direção também foi aplicada ao prompt das duas rotas do autor de produção e aos reparos/cache. Isso não equivale a integrar estes GLBs à autoria automática de todas as pautas nem a demonstrar publicação recorrente. YAI-063 continua parcial.
+
+[Vídeos, pranchas e assets recuperáveis na release v2.16.0](https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.16.0).

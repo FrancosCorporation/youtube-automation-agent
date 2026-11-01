@@ -12,6 +12,8 @@ O proprietário apontou: sombra/mancha em volta da boca falante do robô; esfera
 
 **Persistência no código:** autor v2.13 usa a direção r2 nas duas rotas e nos reparos; cenas parciais antigas sem a referência correspondente não migram silenciosamente para a nova chave de cache. O teste de regressão cobre rejeição de referência r1. O componente `shared/RiggedHuman.jsx` é reutilizável, mas este episódio ainda tem autoria específica: não integra os GLBs ao autor automático de todas as pautas, nem comprova recuperação estética universal ou distribuição social. O piloto CHAPEA e seus MP4s foram preservados; nenhum novo envio social foi solicitado/realizado neste teste.
 
+**Preservação da nova entrega:** commit `0328ef26c7721d581aabf1fca1cf73cc970da3e5` e tag `v2.16.0` confirmados no fork do proprietário. [Release com os dois vídeos e downloads](https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.16.0): seis assets com SHA-256 remoto idêntico ao local; ZIP de 27.761.964 bytes com 38 arquivos e manifest interno verificado. Fontes, regras multitema e evidências pequenas estão no Git; modelos/áudio/pranchas/frames ficam recuperáveis no pacote. Scheduler consultado ativo, sem reinício nesta tarefa. Hash do MP4 CHAPEA anterior continua `e07ad1badbe5cbe2a81e83c2e732ee9b1933f5ac92cc5d7123c40f753e9e01bb`.
+
 ## 01/11/2026 — piloto de notícia em Three.js procedural; retomada após troca de conta
 
 **Pedido do proprietário:** escolher uma notícia real, criar/renderizar um vídeo de cerca de um minuto com Three.js procedural para avaliar o resultado, manter o robô apresentador visível e verificar se o código já sustenta esse fluxo e faz revisão confiável. O proprietário pediu registrar tudo neste resumo.

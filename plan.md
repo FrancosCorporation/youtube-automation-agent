@@ -1,6 +1,6 @@
 # Plano de entrega — Pulso / YouTube AI
 
-**Cursor vigente — 01/11/2026, entrega 2.16.0 em fechamento:** críticas ao CHAPEA persistidas como diretrizes multitema no padrão criativo, skill e prompt/cache do autor. Novo piloto de encomendas com outra narração, humanos GLB articulados, porta antes da passagem e entrega da caixa; 55 s/30 fps em 16:9 e 9:16. QA técnico passou nos dois formatos; 40 testes e 20 comparações reais de seek passaram. Revisão específica de frames e sequências registrada em `benchmarks/video_3d/parcel_demo/reports/`. CHAPEA não foi rerenderizado. Autoria genérica, integração desses humanos à produção e publicação recorrente continuam sem comprovação; YAI-063 parcial.
+**Cursor vigente — 01/11/2026, [v2.16.0 publicada](https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.16.0):** críticas ao CHAPEA persistidas como diretrizes multitema no padrão criativo, skill e prompt/cache do autor. Novo piloto de encomendas com outra narração, humanos GLB articulados, porta antes da passagem e entrega da caixa; 55 s/30 fps em 16:9 e 9:16. QA técnico passou nos dois formatos; 40 testes e 20 comparações reais de seek passaram. Revisão específica de frames e sequências registrada em `benchmarks/video_3d/parcel_demo/reports/`. CHAPEA não foi rerenderizado. Autoria genérica, integração desses humanos à produção e publicação recorrente continuam sem comprovação; YAI-063 parcial.
 
 Histórico de retomada arquivado em [checkpoints de 01/11](docs/archive/checkpoints-plano-2026-11-01-retomada.md).
 
