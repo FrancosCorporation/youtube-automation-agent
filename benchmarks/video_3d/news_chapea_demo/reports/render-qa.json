@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "startedAt": "2026-11-01T18:21:47.058Z",
+  "preparedAt": "2026-11-01T18:21:49.840Z",
+  "renderStartedAt": "2026-11-01T18:21:49.841Z",
+  "renderFinishedAt": "2026-11-01T18:24:18.317Z",
+  "renderSeconds": 148.476,
+  "completedAt": "2026-11-01T18:25:55.562Z",
+  "pipelineSeconds": 159.339,
+  "output": "benchmarks/video_3d/outputs/news_chapea_procedural.mp4",
+  "outputBytes": 12672393,
+  "sha256": "e07ad1badbe5cbe2a81e83c2e732ee9b1933f5ac92cc5d7123c40f753e9e01bb",
+  "media": {
+    "durationSeconds": 60.011,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "frames": 1800,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioDurationSeconds": 60.011,
+    "audioMeanVolumeDb": -24.2
+  },
+  "checks": {
+    "fullDecode": "passed",
+    "blackFrames": "passed",
+    "frozenSegments": "passed",
+    "voicePresent": "passed",
+    "visualFrameSamples": [
+      "review_frames/frame-04.png",
+      "review_frames/frame-16.png",
+      "review_frames/frame-24.png",
+      "review_frames/frame-32.png",
+      "review_frames/frame-44.png",
+      "review_frames/frame-54.png"
+    ],
+    "contactSheet": "review-contact-sheet.png",
+    "visualReview": "agent inspected the six extracted frames; semantic correctness still requires scene-specific review",
+    "warnings": [
+      "React Three Fiber 9.8.2 uses the deprecated THREE.Clock API with Three.js r187; animation is frame-driven and does not read wall-clock time."
+    ]
+  },
+  "problems": [],
+  "validationRerunAt": "2026-11-01T18:25:55.563Z"
+}

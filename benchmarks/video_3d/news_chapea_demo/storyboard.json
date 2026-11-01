@@ -1,0 +1,103 @@
+{
+  "title": "NASA simula uma missão de 378 dias a Marte",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "durationSeconds": 60,
+  "durationInFrames": 1800,
+  "sentences": [
+    {
+      "id": "s1",
+      "text": "Quatro voluntários da NASA passaram um ano vivendo como se estivessem em Marte.",
+      "startFrame": 17,
+      "endFrame": 138
+    },
+    {
+      "id": "s2",
+      "text": "A missão CHAPEA 2 aconteceu dentro de um habitat impresso em três dimensões, em Houston — na Terra, não no planeta vermelho.",
+      "startFrame": 164,
+      "endFrame": 389
+    },
+    {
+      "id": "s3",
+      "text": "O Mars Dune Alpha tem cerca de mil e setecentos pés quadrados.",
+      "startFrame": 415,
+      "endFrame": 523
+    },
+    {
+      "id": "s4",
+      "text": "Durante trezentos e setenta e oito dias, a equipe cultivou plantas, administrou recursos limitados e realizou atividades externas com trajes.",
+      "startFrame": 549,
+      "endFrame": 804
+    },
+    {
+      "id": "s5",
+      "text": "Também enfrentou atrasos de comunicação: uma mensagem entre Marte e a Terra pode levar até quarenta e cinco minutos em cada sentido.",
+      "startFrame": 830,
+      "endFrame": 1050
+    },
+    {
+      "id": "s6",
+      "text": "A simulação ajuda pesquisadores a estudar saúde e desempenho em missões longas.",
+      "startFrame": 1076,
+      "endFrame": 1218
+    },
+    {
+      "id": "s7",
+      "text": "Em outubro, a NASA anunciou que a equipe concluiria o experimento ao completar trezentos e setenta e oito dias, com saída planejada para trinta e um de outubro.",
+      "startFrame": 1244,
+      "endFrame": 1504
+    },
+    {
+      "id": "s8",
+      "text": "Os dados poderão orientar como manter futuros exploradores saudáveis, produtivos e conectados.",
+      "startFrame": 1530,
+      "endFrame": 1702
+    }
+  ],
+  "captions": [
+    {
+      "startFrame": 17,
+      "endFrame": 164,
+      "text": "Quatro voluntários da NASA passaram um ano vivendo como se estivessem em Marte."
+    },
+    {
+      "startFrame": 164,
+      "endFrame": 415,
+      "text": "A missão CHAPEA 2 aconteceu dentro de um habitat impresso em três dimensões, em Houston — na Terra, não no planeta vermelho."
+    },
+    {
+      "startFrame": 415,
+      "endFrame": 549,
+      "text": "O Mars Dune Alpha tem cerca de mil e setecentos pés quadrados."
+    },
+    {
+      "startFrame": 549,
+      "endFrame": 830,
+      "text": "Durante trezentos e setenta e oito dias, a equipe cultivou plantas, administrou recursos limitados e realizou atividades externas com trajes."
+    },
+    {
+      "startFrame": 830,
+      "endFrame": 1076,
+      "text": "Também enfrentou atrasos de comunicação: uma mensagem entre Marte e a Terra pode levar até quarenta e cinco minutos em cada sentido."
+    },
+    {
+      "startFrame": 1076,
+      "endFrame": 1244,
+      "text": "A simulação ajuda pesquisadores a estudar saúde e desempenho em missões longas."
+    },
+    {
+      "startFrame": 1244,
+      "endFrame": 1530,
+      "text": "Em outubro, a NASA anunciou que a equipe concluiria o experimento ao completar trezentos e setenta e oito dias, com saída planejada para trinta e um de outubro."
+    },
+    {
+      "startFrame": 1530,
+      "endFrame": 1800,
+      "text": "Os dados poderão orientar como manter futuros exploradores saudáveis, produtivos e conectados."
+    }
+  ],
+  "audioSha256": "5556835949d5760ee890b5d79f7bc434d13bb83d22d4920549162e0a021319f8",
+  "voice": "pt-BR-AntonioNeural",
+  "sourceDate": "2026-10-27"
+}
