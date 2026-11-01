@@ -14,6 +14,8 @@
 
 **Resposta direta sobre a capacidade do código:** este checkout consegue preparar, renderizar e verificar tecnicamente este piloto, e agora tem um comando reproduzível com guard de recursos/lock, FFprobe/FFmpeg, detecção de quadros pretos/congelados, amostras visuais e SHA. Execute `node benchmarks/video_3d/news_chapea_demo/render-and-review.cjs`; para repetir somente QA do MP4 existente, use o mesmo comando com `--qa-only`. Mas o piloto não prova que o sistema converte qualquer notícia em cenas 3D automaticamente: seleção factual, modelos, ações, câmera e sincronismo desta história foram escritos especificamente para CHAPEA nos arquivos da pasta `news_chapea_demo`. O QA semântico continua exigindo inspeção específica. A rota r187 ainda não foi integrada como padrão geral do scheduler/produção; YAI-063 segue parcial.
 
+**Preservação da entrega:** commit `55f42f24d399be0ceae378f06113b9a590d7c126` enviado ao fork autorizado; tag `v2.15.0` aponta para esse commit. [Release e downloads](https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.15.0) conferidos remotamente. O MP4, a prancha, o ZIP de áudio/alinhamentos/QA e o arquivo de checksums tiveram SHA-256 remoto igual ao local. Nenhum vídeo foi enviado às redes sociais.
+
 ## 01/11/2026 — BENCHMARK 4 MOTORES CONCLUÍDO (retomada da conta anterior)
 
 Missão concluída localmente: quatro vídeos reais de 48 s, 1920×1080/30 fps, mesma narrativa/voz: A original, B Three procedural r187, C Blender nativo, D Blender GLB+Three. Tema congelado: eclusa, semente `1055545869`; nada foi enviado às redes. O usuário pediu **tempo de criação + render + montagem + validação até pronto** por motor, com esperas separadas.

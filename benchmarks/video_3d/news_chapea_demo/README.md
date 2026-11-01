@@ -20,4 +20,4 @@ Este é um piloto com cenas escritas à mão. Ele comprova que o renderer conseg
 
 ## Assets recuperáveis
 
-A release v2.15.0 fornece o MP4 e um ZIP com narração, alinhamentos, roteiro, prancha, seis frames e relatório QA. Para restaurar os assets do ZIP, extraia-o na raiz do repositório; o `assets-manifest.json` verifica os arquivos contidos. Recrie o pacote com `python3 benchmarks/video_3d/news_chapea_demo/package-assets.py` depois do render e QA.
+A [release v2.15.0](https://github.com/FrancosCorporation/youtube-automation-agent/releases/tag/v2.15.0) fornece o MP4 e um ZIP com narração, alinhamentos, roteiro, prancha, seis frames e relatório QA. Para restaurar os assets do ZIP, extraia-o na raiz do repositório; o `assets-manifest.json` verifica os arquivos contidos. Recrie o pacote com `python3 benchmarks/video_3d/news_chapea_demo/package-assets.py` depois do render e QA.
