@@ -7,6 +7,12 @@
 - Added explicit reschedule, publish-now, and delete-schedule controls while keeping generated content when a schedule is removed
 - Fixed YouTube OAuth to use the configured loopback redirect URI instead of generating a mismatched callback
 
+## v2.13.0 — 2026-11-01
+
+- Incremented the package and lockfile minor version from 2.12.0 to 2.13.0 at the owner's request.
+- Documented the authenticated YouTube Studio feature-eligibility inspection, the browser upload route, and the distinction between a retry estimate and an actual channel unlock.
+- Preserved the v2.12.0 implementation and creative-asset release; this release changes version metadata and documentation only.
+
 ## v2.11.0 — 2026-10-12
 
 - Fixed animated karaoke captions so the complete sentence stays visible while the current spoken word is highlighted.
