@@ -198,7 +198,7 @@ const installFaceDisplay = (model: ModelLike): FaceDisplayState => {
     const faceMaterials = originalMaterials.map((original) => {
       const material = original.clone();
       const originalCacheKey = material.customProgramCacheKey?.bind(material) ?? (() => "");
-      material.customProgramCacheKey = () => `${originalCacheKey()}:approvedRobotFaceDisplayV1`;
+      material.customProgramCacheKey = () => `${originalCacheKey()}:approvedRobotFaceDisplayV2`;
       material.onBeforeCompile = (shader) => {
         shader.uniforms.uApprovedRobotBlink = state.blink;
         shader.uniforms.uApprovedRobotMouthOpen = state.mouthOpen;
@@ -228,17 +228,20 @@ const installFaceDisplay = (model: ModelLike): FaceDisplayState => {
           float approvedEyeLine = max(approvedEyeLineL, approvedEyeLineR) * approvedFaceFront * uApprovedRobotBlink;
           float approvedMouthRegion = (1.0 - smoothstep(0.9, 1.08, length(vec2(approvedFacePoint.x / 0.29, (approvedFacePoint.y - 2.8) / 0.17)))) * approvedFaceFront;
           float approvedSpeaking = smoothstep(0.07, 0.2, uApprovedRobotMouthOpen);
-          float approvedMouthPatch = approvedMouthRegion * approvedSpeaking;
+          // Erase only the bright authored lip pixels in the diffuse map. A flat
+          // black ellipse over the final lit visor produced a visible dark halo.
+          float approvedAuthoredLip = smoothstep(0.12, 0.34, diffuseColor.g - diffuseColor.r * 0.5) * approvedMouthRegion;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.018, 0.035, 0.040), approvedAuthoredLip);
           float approvedMouthHeight = 0.018 + 0.052 * uApprovedRobotMouthOpen;
           float approvedMouthOuter = 1.0 - smoothstep(0.86, 1.02, length(vec2(approvedFacePoint.x / 0.17, (approvedFacePoint.y - 2.8) / approvedMouthHeight)));
           float approvedMouthInner = 1.0 - smoothstep(0.72, 0.92, length(vec2(approvedFacePoint.x / 0.135, (approvedFacePoint.y - 2.8) / max(0.008, approvedMouthHeight - 0.01))));
           float approvedMouthOpening = approvedMouthInner * approvedSpeaking * approvedFaceFront;
-          float approvedMouthRim = approvedMouthOuter * approvedSpeaking * approvedFaceFront;`,
+          float approvedMouthRim = approvedMouthOuter * approvedFaceFront;`,
         );
         shader.fragmentShader = shader.fragmentShader.replace(
           "#include <opaque_fragment>",
           `#include <opaque_fragment>
-          gl_FragColor.rgb = mix(gl_FragColor.rgb, approvedVisorColor, max(approvedEyeArea, approvedMouthPatch));
+          gl_FragColor.rgb = mix(gl_FragColor.rgb, approvedVisorColor, approvedEyeArea);
           gl_FragColor.rgb = mix(gl_FragColor.rgb, uApprovedRobotAccentPrimary, max(approvedEyeLine, approvedMouthRim));
           gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.004, 0.008, 0.012), approvedMouthOpening);`,
         );

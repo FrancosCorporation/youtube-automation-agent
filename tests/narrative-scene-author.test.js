@@ -576,6 +576,12 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
   calls.length = 0;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert(calls.includes('scene-01'), 'a corrupt legacy scene must be regenerated');
+  await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash,
+    creativeReference: { ...partial.creativeReference, revision: 1 } }));
+  await fs.unlink(partialPath);
+  calls.length = 0;
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  assert(calls.includes('scene-01'), 'legacy scenes made before the owner feedback must be regenerated');
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash }));
   await fs.unlink(partialPath);
   calls.length = 0;

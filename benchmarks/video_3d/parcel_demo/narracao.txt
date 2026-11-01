@@ -1,0 +1,7 @@
+Uma encomenda passa por várias etapas antes de chegar ao destinatário.
+Tudo começa com a identificação: nome, endereço completo e CEP precisam estar legíveis na etiqueta.
+Na triagem, as encomendas são separadas conforme o destino. O CEP ajuda a orientar o encaminhamento e a distribuição.
+Depois vem o transporte entre unidades. Por isso, o caminho de uma caixa pode incluir mais de um centro de tratamento.
+Na etapa final de distribuição, a encomenda é preparada para seguir até o endereço indicado.
+O entregador leva a caixa ao destino. Quando a entrega é feita, ela passa para a pessoa que recebe o objeto.
+O endereço e o CEP corretos ajudam a encomenda a encontrar seu caminho. E o rastreamento permite acompanhar as etapas registradas desse percurso.

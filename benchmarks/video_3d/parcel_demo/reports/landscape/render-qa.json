@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "startedAt": "2026-11-01T19:01:04.227Z",
+  "preparedAt": "2026-11-01T19:01:06.966Z",
+  "renderStartedAt": "2026-11-01T19:01:06.967Z",
+  "renderFinishedAt": "2026-11-01T19:03:12.276Z",
+  "renderSeconds": 125.309,
+  "completedAt": "2026-11-01T19:06:17.569Z",
+  "pipelineSeconds": 138.199,
+  "output": "benchmarks/video_3d/outputs/parcel_delivery.mp4",
+  "outputBytes": 7459889,
+  "sha256": "bd56498a10f730b55e2aa78620d278d88f1f6507d28f4aad5cdc4ecb639bbdc5",
+  "media": {
+    "durationSeconds": 55.019,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "frames": 1650,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioDurationSeconds": 55.019,
+    "audioMeanVolumeDb": -24.3
+  },
+  "checks": {
+    "fullDecode": "passed",
+    "blackFrames": "passed",
+    "frozenSegments": "passed",
+    "freezeScan": {
+      "region": [
+        40,
+        240,
+        1460,
+        620
+      ],
+      "noiseDb": -80,
+      "minimumSeconds": 3,
+      "scope": "scene viewport; presenter and captions cannot hide a frozen scene"
+    },
+    "voicePresent": "passed",
+    "visualFrameSamples": [
+      "review_frames/landscape/frame-03.png",
+      "review_frames/landscape/frame-09.png",
+      "review_frames/landscape/frame-16.png",
+      "review_frames/landscape/frame-24.png",
+      "review_frames/landscape/frame-31.png",
+      "review_frames/landscape/frame-37.png",
+      "review_frames/landscape/frame-41.png",
+      "review_frames/landscape/frame-48.png",
+      "review_frames/landscape/frame-53.png"
+    ],
+    "contactSheet": "review-contact-sheet.png",
+    "visualReview": {
+      "status": "inspected",
+      "reviewedAt": "2026-11-01T19:11:31.935577+00:00",
+      "reviewedSha256": "bd56498a10f730b55e2aa78620d278d88f1f6507d28f4aad5cdc4ecb639bbdc5",
+      "evidence": "Nine extracted frames per format; six-frame door and six-frame handover sequences from the landscape master; preview frames in both layouts. No owner approval is implied.",
+      "scope": "Anatomical GLB characters, mouth halo, scene readability, identity/clothing continuity, gate passage and parcel transfer. Not exhaustive mesh-level finger/contact validation or a universal aesthetic check."
+    },
+    "warnings": [
+      "React Three Fiber 9.8.2 uses the deprecated THREE.Clock API with Three.js r187; animation is frame-driven and does not read wall-clock time."
+    ]
+  },
+  "problems": [],
+  "validationRerunAt": "2026-11-01T19:06:17.570Z"
+}

@@ -1,0 +1,9 @@
+public/
+models/*.glb
+narracao-original.mp3
+narracao.wav
+narracao.m4a
+palavras.json
+audio-envelope.json
+preview-*.png
+review_frames/

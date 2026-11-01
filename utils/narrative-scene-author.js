@@ -14,7 +14,7 @@ const {
   sha256, stableJson, validateCueVisualGrounding, validateNarrativeEpisodePlan
 } = require('./narrative-episode-plan');
 
-const AUTHOR_REVISION = 'narrative-scene-author-v2.12';
+const AUTHOR_REVISION = 'narrative-scene-author-v2.13';
 const MAX_MODEL_ATTEMPTS = 2;
 const CHAPTER_FIRST_THRESHOLD = 4;
 const MAX_CHAPTER_REPAIRS = 5;
@@ -151,6 +151,7 @@ function buildPrompt({ plan, chapterInputs, sourceContext, retryErrors = [], vis
     })))}\n` : '';
   return `Você é diretor de arte e animador editorial do Pulso, em português do Brasil. Crie a encenação visual deste episódio de ${theme?.brand || plan.themeId}.
 TEMA: ${plan.themeId}. TÍTULO: ${plan.title}.
+${creativeReferencePrompt()}
 FONTE PARA CONFERÊNCIA: ${plan.source.sourceTitle || 'não informada'} ${plan.source.sourceUrl || ''}
 CONTEXTO: """${context}"""
 ROTEIRO E TEMPOS REAIS DE TTS (não reescreva nem complete o texto): ${JSON.stringify(compact)}
@@ -582,7 +583,8 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     } catch { /* No entry under the new key yet. */ }
     try {
       const partial = JSON.parse(await fs.readFile(`${legacyCachePath}.${input.id}.partial`, 'utf8'));
-      if (partial.inputSha256 !== legacyInputSha256
+      if (stableJson(partial.creativeReference) !== stableJson(CREATIVE_REFERENCE)
+        || partial.inputSha256 !== legacyInputSha256
         || partial.sceneSha256 !== sha256(Buffer.from(stableJson(partial.scene)))) continue;
       const scene = normalizeScene(partial.scene, input, plan, `${sourceContext || ''} ${plan.title || ''}`);
       await writeAtomic(destination, `${JSON.stringify({ ...partial, scene, inputSha256,
@@ -711,7 +713,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
             if (!Array.isArray(parsed.scenes) || parsed.scenes.length !== 1) throw new Error('resposta não contém exatamente uma cena');
             scene = normalizeScene(parsed.scenes[0], input, plan, `${sourceContext || ''} ${plan.title || ''}`);
             sceneModel = attemptModel;
-            await writeAtomic(chapterCachePath, `${JSON.stringify({ inputSha256, scene, model: sceneModel,
+            await writeAtomic(chapterCachePath, `${JSON.stringify({ inputSha256, scene, model: sceneModel, creativeReference: CREATIVE_REFERENCE,
               sceneSha256: sha256(Buffer.from(stableJson(scene))) })}\n`);
             break;
           } catch (error) {
@@ -745,7 +747,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
               scene = normalizeScene(buildDeterministicScene(input, plan, sourceContext), input, plan,
                 `${sourceContext || ''} ${plan.title || ''}`);
               sceneModel = 'deterministic-fallback';
-              await writeAtomic(chapterCachePath, `${JSON.stringify({ inputSha256, scene, model: sceneModel,
+              await writeAtomic(chapterCachePath, `${JSON.stringify({ inputSha256, scene, model: sceneModel, creativeReference: CREATIVE_REFERENCE,
                 sceneSha256: sha256(Buffer.from(stableJson(scene))) })}\n`);
               logger.warn?.(`autoria de ${input.id}: usando fallback determinístico validado`);
             } catch (error) {

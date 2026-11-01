@@ -109,10 +109,10 @@ function validate(renderTiming, preparedAt, previousReport = null) {
   ]);
 
   const report = {
+    ...renderTiming,
     status: problems.length ? 'failed' : 'passed',
     startedAt: previousReport?.startedAt ?? new Date(pipelineStarted).toISOString(),
     preparedAt: previousReport?.preparedAt ?? preparedAt,
-    ...renderTiming,
     completedAt: new Date().toISOString(),
     pipelineSeconds: previousReport?.pipelineSeconds ?? (Date.now() - pipelineStarted) / 1000,
     ...(previousReport ? { validationRerunAt: new Date().toISOString() } : {}),

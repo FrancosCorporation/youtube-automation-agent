@@ -1,0 +1,23 @@
+{
+  "assets": [
+    {
+      "file": "models/crew-01.glb",
+      "sha256": "30b2d42722a8d7b6b66f0686a5dc6c423b53cc3467330ae86977be14aa227145",
+      "bytes": 3151736,
+      "sourceProject": "game_farma, proprietário do workspace",
+      "sourceAsset": "joao_queimacao_walkidle_gait_candidate_v007.glb",
+      "kind": "adulto fictício gerado; rig e clips Walk/Idle preexistentes",
+      "likeness": "não é retrato de pessoa real; não representa funcionário específico"
+    },
+    {
+      "file": "models/crew-02.glb",
+      "sha256": "6afd8d7875c1f445c5f00304ee81497b050851c9ed8f0d4bb0e629ce21095e51",
+      "bytes": 712556,
+      "sourceProject": "game_farma, proprietário do workspace",
+      "sourceAsset": "carla_dengue_voxel_mixamo_walkidle_candidate_v009_arm_rebase_v003.glb",
+      "kind": "adulto fictício gerado; rig e clips Walk/Idle preexistentes",
+      "likeness": "não é retrato de pessoa real; não representa funcionário específico"
+    }
+  ],
+  "scope": "Reutilização de modelos locais do proprietário; fonte original preservada. Malhas e texturas são renderizadas no Three.js, não imagens 2D de pessoas."
+}
