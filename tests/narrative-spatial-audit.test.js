@@ -47,6 +47,21 @@ test('mesh translation follows parent rotation and scale, matching the renderer 
   const body = bodyAt(illustration, { nodeId: 'ball', meshIndex: 0 }, 'landscape', 0);
   assert.ok(Math.abs(body.center[0]) < 1e-10); assert.equal(body.center[1], 2); assert.equal(body.radius, .6);
 });
+test('human actor collision checks use a conservative full-body envelope in both aspects', () => {
+  const spoken = { id: 's1', text: 'Uma pessoa caminha ao lado do suporte.', startFrame: 0, endFrame: 24 };
+  const layout = { landscape: { x: .5, y: .5 }, portrait: { x: .5, y: .5 } };
+  const raw = [{ dimension: '3d', cueSentenceId: 's1', explanation: 'A pessoa caminha perto do suporte.', nodes: [
+    { id: 'person', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', layout },
+    { id: 'support', evidence: 'suporte', layout, meshes: [{ type: 'box', color: '#95d7bc', position: [0, .82, 0], size: [.2, 1.8, .2] }] }
+  ], spatialChecks: [{ subject: { nodeId: 'person' }, obstacles: [{ nodeId: 'support', meshIndex: 0 }] }] }];
+  assert.throws(() => normalizeIllustrations(raw, [spoken], 24), /colisão person atravessa support/);
+  const [illustration] = normalizeIllustrations(drawing(2), [sentence], 24);
+  const [actor] = normalizeIllustrations(raw.map(item => ({ ...item, spatialChecks: [] })), [spoken], 24);
+  const body = bodyAt(actor, { nodeId: 'person' }, 'landscape', 0);
+  assert.equal(body.type, 'box');
+  assert.ok(body.half[1] > .8);
+  assert.equal(illustration.dimension, '3d');
+});
 test('approved creative direction is injected on first authorship and repair requests, without model calls', () => {
   for (const retryErrors of [[], ['illustration: colisão ball[0] atravessa post[0]']]) {
     const prompt = buildAdaptivePrompt({ plan: { title: 'Outro assunto', fps: 24 }, chapterInputs: [{ id: 'scene-1', narration: [sentence] }], retryErrors });
@@ -54,6 +69,8 @@ test('approved creative direction is injected on first authorship and repair req
     assert.match(prompt, /não copie frutas/);
     assert.match(prompt, /spatialChecks/);
     assert.match(prompt, /preparação, ação, contato/);
+    assert.match(prompt, /actorId/);
+    assert.match(prompt, /person-a/);
   }
   assert.equal(sceneFailureTag(new Error('illustration: colisão ball[0] atravessa post[0]')), 'invalid_adaptive_illustration');
 });

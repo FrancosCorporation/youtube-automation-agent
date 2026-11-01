@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "generator": "Ara 3D Gen",
+  "repository": "https://github.com/olatunde85/3d-gen",
+  "commit": "2e5724de1b12444bf0c2454555fedfc976a4274c",
+  "sourceCodeLicense": "MIT",
+  "baseAssetsLicense": "CC0-1.0",
+  "motionLicense": "CMU: commercial use permitted, no standalone motion-data resale",
+  "catalogSha256": "36f1ab37ebe7e2f11d843f749cc84906ba59f4bdcfb480694cf83cb71df3c80f",
+  "actors": [
+    {
+      "id": "person-a",
+      "file": "person-a.glb",
+      "sourceId": "field-biologist",
+      "sha256": "2694924eeaa23bb92f1fddb0d2c88f0e925f114b7e5ec79086aafbde3c3233b1",
+      "bytes": 9483404,
+      "heightMeters": 1.632028579711914,
+      "boundsMeters": {
+        "width": 1.05,
+        "depth": 0.7
+      },
+      "triangles": 112844,
+      "joints": 69,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Carry idle",
+        "Carry walk",
+        "Use / press"
+      ],
+      "loopingAnimations": [
+        "Idle",
+        "Walk",
+        "Carry idle",
+        "Carry walk"
+      ],
+      "illustrative": true
+    },
+    {
+      "id": "person-b",
+      "file": "person-b.glb",
+      "sourceId": "drone-operator",
+      "sha256": "32c385aed9d01ea052b3ef67526567b6bcd47f4daffda9c8ddca214957dc9d97",
+      "bytes": 9280384,
+      "heightMeters": 1.9315722465515137,
+      "boundsMeters": {
+        "width": 1.05,
+        "depth": 0.7
+      },
+      "triangles": 115620,
+      "joints": 69,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Carry idle",
+        "Carry walk",
+        "Use / press"
+      ],
+      "loopingAnimations": [
+        "Idle",
+        "Walk",
+        "Carry idle",
+        "Carry walk"
+      ],
+      "illustrative": true
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 // Local geometric QA for declared physical interactions, not a physics solver.
 // Uses the same global tracks as the renderer. No model calls or stateful simulation.
 const { animationState } = require('./narrative-animation-tracks');
+const { resolveHumanActor } = require('./narrative-human-actors');
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const mul = (a, b) => a.map((v, i) => v * b[i]);
@@ -22,7 +23,9 @@ function normalizeSpatialChecks(raw, nodes) {
   const ref = value => {
     const node = nodes.find(n => n.id === value?.nodeId);
     const meshIndex = value?.meshIndex;
-    if (!node || !Number.isInteger(meshIndex) || !node.meshes[meshIndex]) fail('spatialChecks sem malha válida');
+    if (!node) fail('spatialChecks sem objeto válido');
+    if (node.actorId && meshIndex == null) return { nodeId: node.id };
+    if (!Number.isInteger(meshIndex) || !node.meshes[meshIndex]) fail('spatialChecks sem malha válida');
     if (!['sphere', 'box', 'cylinder'].includes(node.meshes[meshIndex].type)) fail('spatialChecks requer sphere, box ou cylinder; decomponha o sólido');
     return { nodeId: node.id, meshIndex };
   };
@@ -35,9 +38,22 @@ function normalizeSpatialChecks(raw, nodes) {
   });
 }
 function bodyAt(illustration, ref, aspect, frame) {
-  const node = illustration.nodes.find(n => n.id === ref.nodeId), mesh = node.meshes[ref.meshIndex];
+  const node = illustration.nodes.find(n => n.id === ref.nodeId);
   if ((illustration.motions || []).some(m => m.targetId === node.id && !['reveal', 'draw'].includes(m.kind))) fail(`spatialChecks: ${node.id} deve usar tracks para movimento físico`);
   const parent = animationState(illustration.tracks, node.id, frame);
+  if (node.actorId && ref.meshIndex == null) {
+    const actor = resolveHumanActor(node.actorId);
+    if (!actor) fail(`spatialChecks: ator humano desconhecido em ${node.id}`);
+    const pose = node.layout[aspect], scale = mul([pose.scale, pose.scale, pose.scale], parent.scale3d || [1, 1, 1]);
+    const rotation = add([0, 0, pose.rotate * Math.PI / 180], parent.rotation3d || [0, 0, 0]);
+    const actorSize = [actor.boundsMeters.width, actor.heightMeters, actor.boundsMeters.depth].map((size, i) => size * Math.abs(scale[i]));
+    const unit = axes.map(axis => rotate(axis, rotation));
+    const position = add([(pose.x - .5) * (aspect === 'portrait' ? 9.6 : 12), (.5 - pose.y) * 7, node.depth], parent.position3d || [0, 0, 0]);
+    position[1] += actorSize[1] / 2;
+    return { center: position, axes: unit, half: actorSize.map(v => v / 2), type: 'box', radius: Math.max(...actorSize) / 2,
+      rotation, opacity: parent.opacity ?? 1 };
+  }
+  const mesh = node.meshes[ref.meshIndex];
   const part = animationState(illustration.tracks, node.id, frame, ref.meshIndex);
   const pose = node.layout[aspect], scale = mul([pose.scale, pose.scale, pose.scale], parent.scale3d || [1, 1, 1]);
   const rotation = add([0, 0, pose.rotate * Math.PI / 180], parent.rotation3d || [0, 0, 0]);
@@ -115,7 +131,8 @@ function assertSpatialChecks(illustration, sentence) {
   const result = auditSpatialChecks(illustration, sentence);
   if (result.collisions.length) {
     const hit = result.collisions[0];
-    fail(`colisão ${hit.subject.nodeId}[${hit.subject.meshIndex}] atravessa ${hit.obstacle.nodeId}[${hit.obstacle.meshIndex}] em ${hit.aspect}, frame ${hit.frame}; reposicione o obstáculo ou corrija a trajetória, mantendo contato e cue`);
+    const format = ref => `${ref.nodeId}${ref.meshIndex == null ? '' : `[${ref.meshIndex}]`}`;
+    fail(`colisão ${format(hit.subject)} atravessa ${format(hit.obstacle)} em ${hit.aspect}, frame ${hit.frame}; reposicione o obstáculo ou corrija a trajetória, mantendo contato e cue`);
   }
   return result;
 }

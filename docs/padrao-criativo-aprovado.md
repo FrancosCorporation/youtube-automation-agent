@@ -10,6 +10,12 @@ Planejar corredores com a dimensão inteira do objeto. Peças sólidas não atra
 
 ## Integração e verificação sem gasto de modelo revisor
 
+### Aprovação do piloto e método de produção adotado — 01/11/2026
+
+Após ver os vídeos de reflorestamento gerados em horizontal e vertical, o proprietário aprovou o resultado e solicitou usar esse método em produção. A rota recorrente adota Three.js r187 + Remotion para 3D determinístico por frame; usa os humanos detalhados, texturizados, rigados e licenciados do catálogo GLB local; cria cenário, objetos e ações próprios para cada tema; e mantém layouts independentes 16:9/9:16. O autor e os reparos recebem o catálogo; assets são verificados por hash antes de renderizar. Pessoas não podem cair para pictogramas ou corpos procedurais. Não há Mixamo/site por vídeo. O proprietário aprovou o piloto específico; a próxima execução recorrente é necessária para confirmar que o serviço consumiu a integração.
+
+Tempos observados: benchmark de eclusa com r187, 2min12,4s ativos (+0,3s de espera) entre roteiro/áudio congelados e MP4 validado. No piloto aprovado, os renders dos dois aspectos levaram 84,51s e 86,79s, 2min51,3s se sequenciais; a preparação/export dos modelos levou 3,18s e 1,81s depois do setup. Voz inicial, pesquisa, autoria/revisão visual e tempo de setup não foram cronometrados nesse piloto. Não chamar esses 2min51,3s de tempo total da pauta.
+
 ### Diretrizes multitema — crítica do proprietário ao piloto CHAPEA, 01/11/2026
 
 O proprietário considerou a renderização razoável, mas apontou defeitos que impedem tratar o piloto como referência visual aprovada. O QA técnico anterior não percebeu esses problemas. Estas orientações valem para qualquer tema e para o próximo episódio com outra narração; não são um pedido para rerenderizar CHAPEA agora.
@@ -23,7 +29,7 @@ O proprietário considerou a renderização razoável, mas apontou defeitos que 
 - **Ações e ritmo:** quinze segundos de personagens parados não cumprem a direção. Executar atividades relacionadas à fala, com começo, contato/transformação e resultado. Movimento de câmera sozinho não basta. Pausas legíveis são válidas; evitar agitação permanente sem sentido.
 - **Trocas de cena:** são permitidas e podem melhorar a explicação. Cada plano precisa corresponder à narração e ter tempo para o público entender espaço, ação e consequência; não exigir que toda a história aconteça em uma única maquete nem acelerar cortes sem motivo.
 - **Comunicação e perspectiva:** usar um plano próprio para origem, envio, percurso e recebimento, com ângulo legível. A crítica concreta foi a mensagem Marte–Terra: cabe sair do habitat para um esquema dos dois planetas, sem deixar um globo flutuando dentro do ambiente. Em outros temas, escolher os participantes e o mecanismo daquela história.
-- **Amplitude:** o próximo teste deve ter outro tema e outra narração, aplicando essas regras. Não reutilizar mecanicamente habitat, astronautas, planetas ou o assunto da triagem aprovada.
+- **Amplitude:** o piloto de reflorestamento aprovado já aplicou estas regras em outro tema. Para cada pauta seguinte, criar narração, cenário, objetos e ações compatíveis; não reutilizar mecanicamente habitat, astronautas, planetas, laranjas ou máquinas da triagem.
 
 As diretrizes estão em `creativeReferencePrompt()` revisão 4, incluída nas chamadas iniciais e reparos do autor; a revisão também participa do hash de cache. Isso evita depender da memória da conversa. A descrição no prompt não equivale a validação automática de estética, ações humanas ou continuidade de figurino: os limites do verificador local seguem explícitos abaixo.
 

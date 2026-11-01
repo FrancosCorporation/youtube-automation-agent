@@ -9,6 +9,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import type { IllustrationMesh, IllustrationNode, NarrativeIllustration } from "../../../utils/narrative-illustration-plan.js";
 import { animationState, type AnimationState } from "../../../utils/narrative-animation-tracks.js";
 import { NarrativeIllustratedProp } from "./NarrativeDirectedScene";
+import { NarrativeHumanActor } from "./NarrativeHumanActor";
 
 const progress = (frame: number, start: number, end: number) => interpolate(frame, [start, Math.max(start + 1, end)], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(.4, 0, .2, 1) });
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;
@@ -70,7 +71,7 @@ const Mesh: React.FC<{ mesh: IllustrationMesh; draw: number; opacity: number; an
 };
 
 export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllustration; frame: number; portrait: boolean; side: "left" | "right" }> = ({ illustration, frame, portrait, side }) => {
-  const { width, height } = useVideoConfig();
+  const { width, height, fps } = useVideoConfig();
   const aspect = portrait ? "portrait" : "landscape";
   const is3d = illustration.dimension === "3d";
   const sceneWidth = Math.round(width * (portrait ? .92 : is3d ? .88 : .64)), sceneHeight = Math.round(height * (portrait ? .42 : .62));
@@ -100,13 +101,22 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
         <ambientLight intensity={1.2} /><hemisphereLight args={["#e7f4ee", "#31536a", 2]} />
         <directionalLight position={[-5, 7, 8]} intensity={3} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[6, 1, -3]} intensity={2} color="#88dccc" />
-        {states.map(({ node, pose, position, rotation, scale, opacity }) => <group key={node.id} position={position}
-          rotation={rotation} scale={scale} visible={opacity > .001}>
-          {node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
-        </group>)}
+        <React.Suspense fallback={null}>
+          {states.map(({ node, pose, position, rotation, scale, opacity }) => {
+            const actor = node as typeof node & { actorId?: string; actorMotion?: string; actorMotionStartFrame?: number };
+            return <group key={node.id} position={position} rotation={rotation} scale={scale} visible={opacity > .001}>
+              {actor.actorId ? <NarrativeHumanActor actorId={actor.actorId} motion={actor.actorMotion || "Idle"}
+                motionStartFrame={actor.actorMotionStartFrame ?? 0} frame={frame} fps={fps} opacity={opacity} />
+                : node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
+            </group>;
+          })}
+        </React.Suspense>
       </ThreeCanvas>
-      {states.filter(({ node }) => node.label).map(({ node, position, opacity }) => <div key={node.id} style={{ position: "absolute", ...labelPosition(position[0], position[1] - .65, position[2]),
-        color: "#f3eee0", background: "#09212ad9", padding: "5px 10px", borderRadius: 5, fontSize: portrait ? 22 : 22, fontWeight: 600, transform: "translate(-50%,0)", opacity }}>{node.label}</div>)}
+      {states.filter(({ node }) => node.label).map(({ node, position, opacity }) => {
+        const isActor = Boolean((node as typeof node & { actorId?: string }).actorId);
+        return <div key={node.id} style={{ position: "absolute", ...labelPosition(position[0], position[1] - (isActor ? .18 : .65), position[2]),
+          color: "#f3eee0", background: "#09212ad9", padding: "5px 10px", borderRadius: 5, fontSize: portrait ? 22 : 22, fontWeight: 600, transform: "translate(-50%,0)", opacity }}>{node.label}</div>;
+      })}
     </> : <svg width="100%" height="100%" viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}>
       <defs>
         <linearGradient id="direct-metal" x2=".8" y2="1"><stop stopColor="#ccddd0" /><stop offset="1" stopColor="#587e78" /></linearGradient>

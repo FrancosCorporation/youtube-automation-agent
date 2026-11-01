@@ -18,7 +18,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.537",
-    "three": "0.186.1"
+    "three": "0.187.0"
   },
   "devDependencies": {
     "@remotion/eslint-config-flat": "4.0.537",

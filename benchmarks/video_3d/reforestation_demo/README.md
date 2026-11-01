@@ -17,7 +17,7 @@ O [repositório indicado pelo proprietário](https://github.com/hmthanh/3d-human
 - `characters.json`: aparência e figurino deste elenco fictício.
 - `Scene.jsx` e `motion.cjs`: direção específica desta demonstração, incluindo personagens, trajetória, queda e persistência das sementes.
 
-Este piloto não comprova geração automática de qualquer objeto ou história. O compositor recorrente ainda precisa receber uma integração validada dos assets humanos: atualizar o prompt sozinho não acrescenta suporte a GLB ao contrato existente. Não houve reinício do scheduler nem liberação de publicação social por causa deste teste. A narração é sintetizada por Edge TTS; a independência de sites aqui se refere à criação/rig/animação dos humanos.
+O proprietário aprovou os vídeos deste piloto e adotou o método para produção. O compositor narrativo agora integra os atores GLB locais com checagem de SHA e animação determinística; a autoria continua específica ao assunto e à fala. O primeiro ciclo do serviço iniciado após essa integração ainda precisa confirmar o uso real em outra pauta. Isso não prova geração automática perfeita de qualquer objeto, colisão zero nem ciclo social. A narração é sintetizada por Edge TTS; não há etapa de site/Mixamo por vídeo para criar/rigar os humanos.
 
 ## Reproduzir
 

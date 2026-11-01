@@ -1,5 +1,7 @@
 # Benchmark real de quatro motores de vídeo 3D
 
+**Adoção posterior (01/11/2026, v2.18.0):** o proprietário aprovou os vídeos do piloto de reflorestamento e escolheu o método de produção. A conclusão deste benchmark continua válida para sua eclusa: Three.js procedural r187 (B) foi o mais rápido desde roteiro/áudio congelados até pronto, e o Blender nativo (C) teve o melhor acabamento visual. A produção agora combina o motor r187 + Remotion de B com humanos GLB locais licenciados e detalhados aprovados no piloto. A implementação está em `utils/narrative-human-actors.js`, `NarrativeHumanActor.tsx` e `NarrativeEpisodeRenderer`; a primeira geração recorrente posterior ainda precisa confirmar a execução. O benchmark original foi isolado e não alterou a produção no momento em que foi executado.
+
 ## Resultado e escopo
 
 Quatro masters reais e um comparativo sincronizado, todos com **1920×1080, 30 FPS, 48 segundos, 1.440 frames e a mesma narração PT-BR**. Os arquivos passaram por contagem de frames, decodificação completa, verificação de áudio e inspeção de presença de geometria. A conclusão visual depende da evidência registrada abaixo. O experimento não foi enviado à fila social e não alterou os componentes de produção.

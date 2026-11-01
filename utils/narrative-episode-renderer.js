@@ -13,6 +13,7 @@ const { probeRenderHardwareGate, createRenderTimingRecord, persistRenderTimingRe
 const { selectThemePalette } = require('./theme-visuals');
 const { VISUAL_DESIGN_TOKENS } = require('./visual-design-tokens');
 const { APPROVED_ROBOT_SRC, assertNarrativeEpisodeProps } = require('./narrative-episode-props');
+const { verifyHumanActorAssets } = require('./narrative-human-actors');
 const {
   ROOT, narrativePlanInputSha256, sha256, stableJson,
   validateNarrativeEpisodePlan, verifyNarrativeEpisodeAssets
@@ -27,7 +28,7 @@ const REMOTION_VERSION = '4.0.537';
 const RENDER_TIMEOUT_MS = 180 * 60 * 1000;
 // Component changes alter pixels and timing; do not resume an old-format
 // master alongside a newly rendered aspect under the same render identity.
-const NARRATIVE_COMPONENT_REVISION = 'NarrativeEpisode-v2.16';
+const NARRATIVE_COMPONENT_REVISION = 'NarrativeEpisode-v2.18-r187-human-actors';
 
 function safeId(value) {
   return String(value || 'episode').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80) || 'episode';
@@ -236,6 +237,9 @@ class NarrativeEpisodeRenderer {
       throw new Error(`CLI local do Remotion não está instalado: ${REMOTION_BIN}`);
     }
     await verifyNarrativeEpisodeAssets(plan);
+    const humanActorIds = (plan.scenes || []).flatMap(scene => scene.illustrations || [])
+      .flatMap(illustration => illustration.nodes || []).map(node => node.actorId).filter(Boolean);
+    await verifyHumanActorAssets(humanActorIds);
     const audioStat = await fs.lstat(audioPath);
     if (!audioStat.isFile() || audioStat.isSymbolicLink() || await hashFile(audioPath) !== plan.narrationSha256) {
       throw Object.assign(new Error('áudio de narração ausente, alterado ou não regular'), { code: 'NARRATIVE_AUDIO_INTEGRITY_FAILED' });

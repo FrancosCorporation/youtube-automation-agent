@@ -8,6 +8,7 @@ const { normalizeIllustrations } = require('./narrative-illustration-plan');
 const { cueHasLongBeatVariation, cueRequiresPairedVisual, validateCueVisualGrounding } = require('./narrative-visual-semantics');
 const { narrativeBeatSha256 } = require('./scene-image-prompt');
 const { narrativeBeatRelation } = require('./narrative-beat-relation');
+const { resolveHumanActor } = require('./narrative-human-actors');
 
 const SCHEMA_VERSION = 'pulso.narrative-episode/v2';
 const ACTION_KINDS = new Set(['travel', 'reveal-part', 'transform', 'rearrange', 'compare']);
@@ -324,7 +325,11 @@ function validateNarrativeEpisodePlan(plan, { root = ROOT, verifyAssets = false 
   }
   for (const scene of plan?.scenes || []) {
     try {
-      normalizeIllustrations(scene?.illustrations, (scene?.sentenceIds || []).map(id => sentenceById.get(id)).filter(Boolean), plan.fps);
+      const drawings = normalizeIllustrations(scene?.illustrations, (scene?.sentenceIds || []).map(id => sentenceById.get(id)).filter(Boolean), plan.fps);
+      for (const actorNode of drawings.flatMap(drawing => drawing.nodes).filter(node => node.actorId)) {
+        const actor = resolveHumanActor(actorNode.actorId);
+        if (!actor || actor.sha256 !== actorNode.actorSha256) errors.push(`scene:${scene?.id || 'unknown'}:actor:${actorNode.actorId}:hash`);
+      }
     } catch { errors.push(`scene:${scene?.id || 'unknown'}:illustrations`); }
     if (!scene?.id || sceneIds.has(scene.id)) errors.push(`scene:${scene?.id || 'unknown'}:duplicate_id`);
     else sceneIds.add(scene.id);

@@ -14,7 +14,7 @@ const {
   sha256, stableJson, validateCueVisualGrounding, validateNarrativeEpisodePlan
 } = require('./narrative-episode-plan');
 
-const AUTHOR_REVISION = 'narrative-scene-author-v2.15';
+const AUTHOR_REVISION = 'narrative-scene-author-v2.18-r187-human-actors';
 const MAX_MODEL_ATTEMPTS = 2;
 const CHAPTER_FIRST_THRESHOLD = 4;
 const MAX_CHAPTER_REPAIRS = 5;
