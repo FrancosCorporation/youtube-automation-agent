@@ -12232,3 +12232,18 @@ Implementação v2.18.0: os modelos/licenças entraram em `experiments/remotion-
 A geração do serviço iniciada às 21:55Z (`3c962d49-88e0-4da1-a24f-a06f452caf1e`) antecede esta integração e permanece intocada. O próximo processo de geração deve carregar o código novo; YAI-063 fica parcial até confirmar esse ciclo em outra pauta. Nenhuma postagem social foi disparada para este piloto nem por esta alteração.
 
 ## 01/11/2026 — humanos detalhados locais e nova cena de reflorestamento (v2.17.0)
+
+
+## 02/11/2026 — corrigir a automação, sem substituir o serviço por geração manual (v2.20.0)
+
+O proprietário pediu que a implementação suba para modelos maiores quando os pequenos falharem e esclareceu que o assistente deve corrigir o código, não ficar gerando vídeos manualmente. O diagnóstico encontrou 30 tentativas do mesmo job, modelos leves sem escalada real e capítulos com até 22 frases/ilustrações por resposta. As respostas frequentemente excediam tempo/tokens ou falhavam no contrato visual.
+
+`utils/narrative-scene-author.js` agora divide capítulos em blocos de até quatro frases, persiste blocos normalizados com hash, conserva rascunho/diagnóstico local e decisão de escalada entre tentativas e permite até dois reparos adicionais por bloco. Depois de falhar o leve, tenta Flash completo/Pro e rotas grandes já autorizadas; indisponibilidade não descarta o job. Não há conselho/debate entre revisores: os modelos produzem/reparam e a validação é local. Fallback determinístico sem ilustrações deixou de ser alternativa de autoria; metadados continuam usados na compilação.
+
+Verificação: 179/179 testes isolados, em 29 arquivos, ESLint, sintaxe e diff-check. A bateria cobre retomada de blocos sem repetição, timeline, escalada persistida, orçamento, privacidade das exceções, contratos visuais/atores/espacial e fila. Registros locais (não publicados): `/tmp/pulso-author-regression.log`, `data/reports/scene-escalation-probe-20261102/`, `data/reports/scene-author-rollout-20261102/before.json`.
+
+Implantação: commit remoto de segurança b3c45b5 incorporado sem reset/clean. Às 12:54 BRT, checkpoint do job 5af3c1c7-a068-4b1d-aefc-202bc5ce1ef5 enfileirado pela fila existente; somente a árvore do gerador antigo 982253 foi encerrada antes do render. Scheduler 259862 permaneceu ativo e seu backoff de cinco minutos governa a retomada. Fila de publicação estava vazia, sem upload ativo; nenhuma publicação foi repetida.
+
+Limites observados antes do pedido de foco exclusivo no código: Gemini Pro limitado; NVIDIA 120B 404, 550B 503; gateway Lebang sem conexão, MWAPI 403 e MiMo Pro 402. Gemini Flash completo respondeu a uma amostra de autoria, mas ela falhou no validador — não é vídeo aprovado. Não houve novas chamadas manuais depois da correção de escopo. Capas Android/Nano Banana Pro, qualidade de um episódio completo novo e confirmação dos destinos permanecem pendentes; não afirmar tudo resolvido. Release de autoria não inclui as mudanças ainda incompletas das capas.
+
+Às 12:59 BRT, o scheduler retomou automaticamente o mesmo job/saída e carregou a política nova, sem gerador manual. As rotas grandes foram tentadas e falharam por disponibilidade; o checkpoint foi preservado para nova tentativa. Foi acrescentada espera persistida por modelo (Retry-After; 429 5min, acesso/404 30min, 5xx/rede 1min), para não repetir chamadas a cada backoff de 30s do produtor. O prompt adaptativo agora oferece rótulos literais da frase ou vazio; reparos usam o rascunho em vez de refazer tudo sem contexto. Total final: 179/179 testes. Às 12:56 o worker social também registrou duas reconciliações Instagram confirmadas sem reenvio; isso não é envio de vídeo novo nem prova da geração longa corrigida.

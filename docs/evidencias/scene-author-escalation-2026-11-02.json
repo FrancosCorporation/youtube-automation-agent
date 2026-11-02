@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-02T16:04:00.945865+00:00",
+  "release": "v2.20.0",
+  "policy": "escalating-scene-parts-v1",
+  "validation": {
+    "nodeTests": 179,
+    "passed": 179,
+    "failed": 0,
+    "testFiles": 29,
+    "eslint": "passed",
+    "syntax": "passed",
+    "diffCheck": "passed"
+  },
+  "scheduler": {
+    "unit": "ai-video-scheduler.service",
+    "pid": 259862,
+    "keptActive": true,
+    "automaticResumeAt": "2026-11-02T15:59:04.633Z",
+    "jobId": "5af3c1c7-a068-4b1d-aefc-202bc5ce1ef5",
+    "attemptCount": 36,
+    "producerState": "generating"
+  },
+  "limitations": [
+    "premium_provider_access_and_availability",
+    "nano_banana_pro_android_integration_pending",
+    "no_new_completed_episode_or_publication_proven"
+  ],
+  "preservedRemoteCommit": "b3c45b51e1c3c2298c55ba2357d8f7b967517722"
+}

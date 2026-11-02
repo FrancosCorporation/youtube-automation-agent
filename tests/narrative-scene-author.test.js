@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { AUTHOR_REVISION, authorNarrativeScenes, buildChapterInputs, buildDeterministicScene, buildPrompt, literalLabelChoices, sceneFailureTag, validateAuthoredPlan } = require('../utils/narrative-scene-author');
+const { AUTHOR_REVISION, authorNarrativeScenes: realAuthorNarrativeScenes, buildChapterInputs, buildDeterministicScene, buildPrompt, literalLabelChoices, sceneFailureTag, validateAuthoredPlan } = require('../utils/narrative-scene-author');
 
 test('known rhythm and route validation failures get bounded repair feedback', () => {
   assert.equal(sceneFailureTag(new Error('scene-02: frase sentence-04 acima de 12 segundos precisa mudar o foco visual')), 'invalid_visual_rhythm');
@@ -13,6 +13,7 @@ test('known rhythm and route validation failures get bounded repair feedback', (
   assert.equal(sceneFailureTag(new Error('arbitrary provider response: acima de 12 segundos precisa mudar o foco visual')), 'error');
 });
 const { narrativePlanInputSha256, sha256, stableJson, validateNarrativeEpisodePlan } = require('../utils/narrative-episode-plan');
+const authorNarrativeScenes = options => realAuthorNarrativeScenes({ externalProviders: [], ...options });
 const { safeErrorTag } = require('../utils/safe-error-tag');
 const { isRetryableGenerationFailure } = require('../utils/generation-retry');
 
@@ -48,6 +49,18 @@ function basePlan() {
   return plan;
 }
 
+test('fallback destaca dois objetos quando a fala descreve envio', () => {
+  const plan = basePlan();
+  plan.sentences[0] = { ...plan.sentences[0], text: 'A pessoa envia a mensagem para a equipe.' };
+  const input = buildChapterInputs(plan)[0];
+  const scene = buildDeterministicScene(input, plan, '');
+  const focused = new Set([
+    ...scene.actions.filter(action => action.cueSentenceId === plan.sentences[0].id).map(action => action.targetObjectId),
+    ...scene.cameraShots.filter(shot => shot.cueSentenceId === plan.sentences[0].id).map(shot => shot.focusObjectId)
+  ]);
+  assert.equal(focused.size, 2);
+});
+
 function authoredScene(overrides = {}) {
   return {
     id: 'scene-01', visualThesis: 'Um sinal percorre o caminho e chega ao destino.',
@@ -82,7 +95,7 @@ function authoredScene(overrides = {}) {
   };
 }
 
-test('fallback determinístico cria cenas válidas sem provedor de autoria', async t => {
+test('metadados determinísticos não substituem autoria quando faltam provedores', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-deterministic-'));
   const previousFallback = process.env.PULSO_DETERMINISTIC_SCENE_FALLBACK;
   const previousNvidia = process.env.NVIDIA_API_KEY;
@@ -99,9 +112,9 @@ test('fallback determinístico cria cenas válidas sem provedor de autoria', asy
   const raw = buildDeterministicScene(buildChapterInputs(plan)[0], plan, 'Contexto da fonte aprovada.');
   const checked = validateAuthoredPlan({ ...plan, scenes: [raw] }, buildChapterInputs(plan), 'Contexto da fonte aprovada.');
   assert.equal(checked.valid, true, checked.errors.join('\n'));
-  const result = await authorNarrativeScenes({ plan, cacheDir, logger: {}, geminiEnabled: false, reserve: async () => {} });
-  assert.equal(result.scenes.length, 1);
-  assert.equal(result.author.modelsByScene['scene-01'], 'deterministic-fallback');
+  await assert.rejects(authorNarrativeScenes({ plan, cacheDir, logger: {}, geminiEnabled: false, reserve: async () => {} }),
+    error => error.code === 'NVIDIA_API_KEY_MISSING');
+  assert.deepEqual(await fs.readdir(cacheDir), [], 'metadados sem ilustração não podem substituir a autoria aprovada');
 });
 
 test('fallback determinístico não importa rótulo literal de outra frase curta', () => {
@@ -331,7 +344,7 @@ test('timeout no autor principal tenta outro modelo e valida e registra o result
       return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ scenes: [authoredScene()] }) } }] }) };
     }
   });
-  assert.deepEqual(models, ['z-ai/glm-5.3-flash', 'nvidia/nemotron-3.5-lightning-30b-a3b']);
+  assert.deepEqual(models, ['z-ai/glm-5.3-flash', 'nvidia/nemotron-3-super-120b-a12b']);
   assert.equal(result.author.model, models[1]);
   assert.equal(result.scenes.length, 1);
   const cached = await authorNarrativeScenes({
@@ -385,7 +398,7 @@ test('esgotar orçamento NVIDIA não impede a alternativa Gemini nem afrouxa o c
     request: async () => { throw new Error('NVIDIA não deve ser chamado sem orçamento'); },
     geminiRequest: async () => JSON.stringify({ scenes: [authoredScene()] })
   });
-  assert.deepEqual(reservations, ['nvidia', 'nvidia', 'script-gemini']);
+  assert.deepEqual(reservations, ['nvidia', 'script-gemini']);
   assert.equal(result.scenes.length, 1);
 });
 
@@ -464,7 +477,7 @@ test('fallback Gemini também rejeita cena que não passa na validação', async
     reserve: async () => {},
     geminiRequest: async () => { calls++; return JSON.stringify({ scenes: [authoredScene({ objects: [] })] }); }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.equal(calls, 2);
+  assert.equal(calls, 4);
 });
 
 test('cena sem cobertura de uma frase é rejeitada antes do cache e mantém falha recuperável', async t => {
@@ -525,7 +538,8 @@ test('respostas inválidas antes de salvar qualquer cena mantêm job recuperáve
     logger: { warn: message => messages.push(message) },
     request: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ scenes: [invalid] }) } }] }) })
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.ok(messages.every(message => message.includes('invalid_objects')));
+  assert.ok(messages.some(message => message.includes('invalid_objects')));
+  assert.ok(messages.every(message => !message.includes('private-token')));
   assert.equal(sceneFailureTag(new Error('segredo arbitrário')), 'error');
 });
 
@@ -573,17 +587,20 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
   const legacyPath = path.join(cacheDir, `${plan.themeId}-${legacyHash}.json.scene-01.partial`);
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash, sceneSha256: '0'.repeat(64) }));
   await fs.unlink(partialPath);
+  await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert(calls.includes('scene-01'), 'a corrupt legacy scene must be regenerated');
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash,
     creativeReference: { ...partial.creativeReference, revision: 1 } }));
   await fs.unlink(partialPath);
+  await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert(calls.includes('scene-01'), 'legacy scenes made before the owner feedback must be regenerated');
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash }));
   await fs.unlink(partialPath);
+  await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert.deepEqual(calls, ['scene-02', 'scene-02'], 'a valid exact legacy chapter survives the cache-key upgrade');
@@ -686,8 +703,8 @@ test('mesmo defeito de capítulo não gera ciclo infinito de reparos', async t =
       return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ scenes: [authoredScene({ objects: [] })] }) } }] }) };
     }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.deepEqual(calls, ['batch', 'batch', 'nvidia/nemotron-3.5-lightning-30b-a3b',
-    'nvidia/nemotron-3.5-lightning-30b-a3b', 'z-ai/glm-5.3-flash']);
+  assert.deepEqual(calls, ['batch', 'batch', 'nvidia/nemotron-3-super-120b-a12b',
+    'nvidia/nemotron-3-super-120b-a12b', 'nvidia/nemotron-3-ultra-550b-a55b']);
 });
 
 test('reparos de defeitos sempre diferentes respeitam o limite por capítulo', async t => {
@@ -720,9 +737,10 @@ test('reparos de defeitos sempre diferentes respeitam o limite por capítulo', a
       return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ scenes: [scene] }) } }] }) };
     }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.equal(models.filter(model => model === 'nvidia/nemotron-3.5-lightning-30b-a3b').length, 6);
-  assert.equal(models.at(-1), 'z-ai/glm-5.3-flash');
-  assert.equal(models.length, 7);
+  assert.equal(models.filter(model => model === 'z-ai/glm-5.3-flash').length, 0);
+  assert.equal(models.filter(model => model === 'nvidia/nemotron-3-super-120b-a12b').length, 3);
+  assert.equal(models.at(-1), 'nvidia/nemotron-3-ultra-550b-a55b');
+  assert.equal(models.length, 4);
 });
 
 test('episódio com muitos capítulos começa por uma cena e não por lote grande', async t => {
@@ -751,5 +769,145 @@ test('episódio com muitos capítulos começa por uma cena e não por lote grand
       throw Object.assign(new Error('expired'), { name: 'TimeoutError' });
     }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.deepEqual(calls, ['scene-01', 'scene-01']);
+  assert.deepEqual(calls, ['scene-01', 'scene-01', 'scene-01']);
+});
+
+test('escalada persiste: retomada não reinicia pelo modelo pequeno', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-escalation-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const calls = [];
+  let now = Date.now();
+  const options = { plan: basePlan(), cacheDir, geminiEnabled: true, logger: {}, reserve: async () => {}, now: () => now };
+  await assert.rejects(authorNarrativeScenes({ ...options, geminiRequest: async ({ model }) => {
+    calls.push(model);
+    throw Object.assign(new Error('provider down'), { status: 503 });
+  } }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  assert.deepEqual(calls, ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-pro-preview']);
+  calls.length = 0;
+  now += 60001;
+  const result = await authorNarrativeScenes({ ...options, geminiRequest: async ({ model }) => {
+    calls.push(model);
+    return JSON.stringify({ scenes: [authoredScene()] });
+  } });
+  assert.deepEqual(calls, ['gemini-3.5-flash']);
+  assert.equal(result.author.modelsByScene['scene-01'], 'gemini:gemini-3.5-flash');
+});
+
+function longScenePlan() {
+  const plan = basePlan();
+  plan.durationMs = 10000;
+  plan.durationInFrames = 240;
+  plan.sentences = Array.from({ length: 5 }, (_, index) => ({ id: `cue-${index + 1}`, groupId: 'hook',
+    text: 'O sinal parte.', startFrame: index * 48, endFrame: (index + 1) * 48 }));
+  plan.chapters[0] = { ...plan.chapters[0], durationInFrames: 240, sentenceIds: plan.sentences.map(s => s.id) };
+  plan.claims = plan.sentences.map(sentence => ({ id: `claim-${sentence.id}`, sentenceId: sentence.id,
+    text: sentence.text, sourceContextHash: plan.source.contextHash }));
+  plan.speechEnvelope.levels = Array(1000).fill(0.5);
+  plan.speechEnvelopeSha256 = sha256(Buffer.from(stableJson(plan.speechEnvelope)));
+  plan.inputSha256 = narrativePlanInputSha256(plan);
+  return plan;
+}
+
+function adaptiveSceneForPrompt(prompt) {
+  const inputs = JSON.parse(prompt.split('\n').find(line => line.startsWith('Cenas e narração exata: ')).slice('Cenas e narração exata: '.length));
+  const pose = x => ({ landscape: { x, y: 0.5, scale: 1 }, portrait: { x, y: 0.4, scale: 1 } });
+  return { id: inputs[0].id, visualThesis: 'O sinal segue seu percurso na frase narrada.',
+    illustrations: inputs[0].sentences.map(sentence => ({ cueSentenceId: sentence.id,
+      explanation: 'O sinal desloca-se para mostrar sua partida.',
+      nodes: [
+        { id: 'signal', evidence: 'sinal', label: 'sinal', layout: pose(0.3), shapes: [{ type: 'ellipse', cx: 0, cy: 0, rx: 20, ry: 20, fill: '#95d7bc' }] },
+        { id: 'route', evidence: 'parte', label: '', layout: pose(0.6), shapes: [{ type: 'line', x1: -40, y1: 0, x2: 40, y2: 0, stroke: '#95d7bc', strokeWidth: 4 }] }
+      ], motions: [{ targetId: 'signal', cueText: 'parte', kind: 'move', durationSeconds: 1, to: pose(0.6) }]
+    })) };
+}
+
+test('capítulo longo retoma apenas bloco pendente com modelo maior e mantém a timeline', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-parts-resume-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let failLast = true;
+  let now = Date.now();
+  const calls = [];
+  const reservations = [];
+  const options = { plan: longScenePlan(), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', routeId: 'opencode:test:large', model: 'large' }],
+    reserve: async provider => reservations.push(provider),
+    geminiRequest: async () => { throw new Error('Gemini sem credencial não pode ser chamado'); },
+    externalRequest: async ({ prompt }) => {
+      const scene = adaptiveSceneForPrompt(prompt);
+      calls.push(scene.illustrations.map(item => item.cueSentenceId));
+      if (failLast && calls.at(-1).includes('cue-5')) throw Object.assign(new Error('private-provider-error'), { status: 404 });
+      return JSON.stringify({ scenes: [scene] });
+    } };
+  await assert.rejects(authorNarrativeScenes(options), error => isRetryableGenerationFailure(safeErrorTag(error)));
+  assert.deepEqual(calls, [['cue-1', 'cue-2', 'cue-3', 'cue-4'], ['cue-5']]);
+  failLast = false;
+  calls.length = 0;
+  await assert.rejects(authorNarrativeScenes(options), error => isRetryableGenerationFailure(safeErrorTag(error)));
+  assert.deepEqual(calls, [], 'a rota indisponível respeita a espera persistida');
+  now += 30 * 60 * 1000 + 1;
+  const result = await authorNarrativeScenes(options);
+  assert.deepEqual(calls, [['cue-5']], 'não repetir chamada do bloco aprovado');
+  assert.deepEqual(result.scenes[0].illustrations.map(item => item.cueSentenceId), options.plan.sentences.map(item => item.id));
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+  assert.equal(result.scenes[0].illustrations.at(-1).motions[0].startFrame, 192);
+  assert(reservations.every(item => item === 'script-opencode-test'));
+});
+
+test('reparo recebe rascunho defeituoso e diagnóstico local sem aceitar erro privado do provedor', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-draft-repair-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const models = [];
+  const result = await authorNarrativeScenes({ plan: basePlan(), cacheDir, logger: {}, geminiEnabled: true,
+    reserve: async () => {}, geminiRequest: async ({ model, prompt }) => {
+      models.push(model);
+      assert(!prompt.includes('private-provider-token'));
+      if (models.length === 1) throw new Error('illustration: private-provider-token');
+      if (models.length === 2) return JSON.stringify({ scenes: [authoredScene({ objects: [] })] });
+      assert(prompt.includes('RASCUNHO A REPARAR'));
+      assert(prompt.includes('"objects":[]'));
+      assert(prompt.includes('objetos com IDs únicos'));
+      return JSON.stringify({ scenes: [authoredScene()] });
+    }
+  });
+  assert.deepEqual(models, ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.5-flash']);
+  assert.equal(result.scenes.length, 1);
+});
+
+
+test('prompt adaptativo oferece rótulos literais para evitar afirmações novas nos desenhos', () => {
+  const { buildAdaptivePrompt } = require('../utils/narrative-scene-author');
+  const plan = basePlan();
+  const prompt = buildAdaptivePrompt({ plan, chapterInputs: buildChapterInputs(plan), sourceContext: '' });
+  const line = prompt.split('\n').find(item => item.startsWith('Cenas e narração exata: '));
+  const sentences = JSON.parse(line.slice('Cenas e narração exata: '.length))[0].sentences;
+  for (const sentence of sentences) {
+    assert(sentence.literalLabels.length > 0);
+    assert(sentence.literalLabels.every(label => sentence.text.includes(label) && label.length <= 24));
+  }
+  assert(prompt.includes('ou string vazia'));
+});
+
+
+test('espera automática classifica erros e respeita Retry-After sem expor mensagens', () => {
+  const { sceneProviderStatus, sceneProviderRetryAt } = require('../utils/narrative-scene-author');
+  assert.equal(sceneProviderStatus(new Error('Retryable HTTP Error: Too Many Requests')), 429);
+  assert.equal(sceneProviderRetryAt({ status: 429 }, 1000), 301000);
+  assert.equal(sceneProviderRetryAt({ code: 'NVIDIA_HTTP_404' }, 1000), 1801000);
+  assert.equal(sceneProviderRetryAt({ status: 503, retryAfter: '720' }, 1000), 721000);
+  assert.equal(sceneProviderRetryAt(new Error('illustration: rótulo não narrado'), 1000), null);
 });
