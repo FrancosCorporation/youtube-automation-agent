@@ -46,6 +46,25 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps, { orderByTime = fa
       return { cueSentenceId: sentence.id, boundary, ...(key.cueText ? { cueText: key.cueText } : {}), offsetSeconds,
         frame, value: scalar ? values[0] : [...values], easing };
     });
+    // Some writers copy the cue's elapsed time into an offset that is already
+    // relative to that same cue. When this demonstrably clamps distinct word
+    // cues to the same end frame, use the measured word times themselves.
+    // Restrict this to two word states with real word alignment and offsets
+    // matching the elapsed word times; ambiguous collisions remain errors.
+    if (orderByTime && parsed.length === 2 && parsed[0].frame === end && parsed[1].frame === end
+      && parsed.every(key => key.boundary === 'word' && key.offsetSeconds > 0)
+      && parsed[0].cueSentenceId === parsed[1].cueSentenceId) {
+      const sentence = sentences.find(item => item.id === parsed[0].cueSentenceId);
+      const anchors = parsed.map(key => narrativeLabelCueFrame(key.cueText, sentence));
+      const copiedElapsed = anchors.every((anchor, index) => anchor != null
+        && Math.abs(parsed[index].offsetSeconds - (anchor - sentence.startFrame) / fps) <= .2);
+      if (copiedElapsed && anchors[0] < anchors[1]) {
+        for (let i = 0; i < parsed.length; i++) {
+          parsed[i].offsetSeconds = 0;
+          parsed[i].frame = anchors[i];
+        }
+      }
+    }
     // An author may list measured cues in object order instead of time order.
     // Order the explicit time/value pairs only during authorship. Publication
     // remains strict; neither cues, values nor their easing are retimed.

@@ -5,6 +5,7 @@ test_state_dir="$(mktemp -d "${TMPDIR:-/tmp}/youtube-ai-ci.XXXXXX")"
 trap 'rm -rf "$test_state_dir"' EXIT
 
 export STATE_DIR="$test_state_dir/state"
+export GEMINI_IMAGE_LOCK_PATH="$test_state_dir/gemini-image-generation.lock"
 export YOUTUBE_AUTOMATION_DB_PATH="$test_state_dir/youtube_automation.db"
 export CI=1
 export NODE_ENV=test

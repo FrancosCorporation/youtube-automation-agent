@@ -65,6 +65,24 @@ test('a redundant clamped end hold preserves every pose and backward seek; confl
   data[0].keyframes[2].easing = 'ease-out';
   assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /tempos estritamente crescentes/);
 });
+test('authorship repairs word elapsed time copied into offsets only when measured cues prove it', () => {
+  const spoken = [{ id: 's1', text: 'Vagas em oito estados', startFrame: 0, endFrame: 92,
+    wordTimings: [{ text: 'oito', startFrame: 58 }, { text: 'estados', startFrame: 65 }] }];
+  const data = [{ targetId: 'wheel', property: 'opacity', keyframes: [
+    { cueSentenceId: 's1', boundary: 'word', cueText: 'oito', offsetSeconds: 2.4, value: 0 },
+    { cueSentenceId: 's1', boundary: 'word', cueText: 'estados', offsetSeconds: 2.7, value: 1 }
+  ] }];
+  assert.throws(() => normalizeAnimationTracks(data, nodes, spoken, 24), /tempos estritamente crescentes/);
+  const [fixed] = normalizeAnimationTracks(data, nodes, spoken, 24, { orderByTime: true });
+  assert.deepEqual(fixed.keyframes.map(key => [key.frame, key.offsetSeconds]), [[58, 0], [65, 0]]);
+  assert.deepEqual(normalizeAnimationTracks([fixed], nodes, spoken, 24), [fixed]);
+  const ambiguous = globalThis.structuredClone(data);
+  ambiguous[0].keyframes[0].offsetSeconds = 1.9;
+  assert.throws(() => normalizeAnimationTracks(ambiguous, nodes, spoken, 24, { orderByTime: true }), /tempos estritamente crescentes/);
+  const noTiming = [{ ...spoken[0], wordTimings: [] }];
+  const [untimed] = normalizeAnimationTracks(data, nodes, noTiming, 24, { orderByTime: true });
+  assert.deepEqual(untimed.keyframes.map(key => key.offsetSeconds), [2.4, 2.7]);
+});
 test('unknown targets, duplicate properties, reversed time and non-finite geometry are rejected', () => {
   for (const modify of [
     t => { t[0].targetId = 'missing'; }, t => { t[0].meshIndex = 2; },

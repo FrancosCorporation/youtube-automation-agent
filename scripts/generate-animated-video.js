@@ -1684,7 +1684,7 @@ async function generateSceneImages(script, slug, topic, options = {}) {
     : run();
   if (options.browserSessionLockHeld) return withDeviceSession();
   return withProcessFileLock(withDeviceSession, {
-    lockPath: options.browserLockPath || path.join(__dirname, '..', 'data', 'gemini-image-generation.lock'),
+    lockPath: options.browserLockPath || process.env.GEMINI_IMAGE_LOCK_PATH || path.join(__dirname, '..', 'data', 'gemini-image-generation.lock'),
     owner: 'Gemini narrative image generation',
     timeoutMs: Math.max(60000, Number(process.env.GEMINI_IMAGE_LOCK_TIMEOUT_MS || 60 * 60 * 1000)),
     pollIntervalMs: 500
