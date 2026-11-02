@@ -21,7 +21,13 @@ function createDeferredGenerationQueue({ root, filePath, attemptStore, withLock 
     if (value?.version !== 1 || !Array.isArray(value.entries) || value.entries.length > 100) {
       throw new Error('fila de recuperações inválida; arquivo preservado');
     }
-    return value.entries.map(entry => validateAttempt(entry, root));
+    return value.entries.map(entry => {
+      const attempt = validateAttempt(entry, root);
+      if (entry.notBefore != null && (typeof entry.notBefore !== 'string' || !Number.isFinite(Date.parse(entry.notBefore)))) {
+        throw new Error('prazo da recuperação inválido; arquivo preservado');
+      }
+      return { ...attempt, ...(entry.notBefore ? { notBefore: entry.notBefore } : {}) };
+    });
   }
   async function write(entries) {
     await fs.mkdir(path.dirname(filePath), { recursive: true, mode: 0o700 });
@@ -33,18 +39,19 @@ function createDeferredGenerationQueue({ root, filePath, attemptStore, withLock 
   }
   const locked = callback => withLock(callback, { lockPath, owner: 'deferred-generation-queue', timeoutMs: 30000 });
   return {
-    async enqueue(candidate) {
+    async enqueue(candidate, { notBefore } = {}) {
       const attempt = validateAttempt(candidate, root);
+      if (notBefore != null && (typeof notBefore !== 'string' || !Number.isFinite(Date.parse(notBefore)))) throw new Error('prazo da recuperação inválido');
       return locked(async () => {
         const entries = await read();
         if (entries.some(item => sameAttempt(item, attempt, root))) return false;
         if (entries.length >= 100) throw new Error('fila de recuperações cheia');
-        entries.push(attempt);
+        entries.push({ ...attempt, ...(notBefore ? { notBefore } : {}) });
         await write(entries);
         return true;
       });
     },
-    async claimNext({ skipCompleted = async () => false } = {}) {
+    async claimNext({ skipCompleted = async () => false, now = Date.now() } = {}) {
       return locked(async () => {
         const entries = await read();
         const active = await attemptStore.read();
@@ -54,13 +61,14 @@ function createDeferredGenerationQueue({ root, filePath, attemptStore, withLock 
           if (remaining.length !== entries.length) await write(remaining);
           return null;
         }
-        while (entries.length) {
-          const candidate = entries[0];
-          if (await skipCompleted(candidate)) { entries.shift(); await write(entries); continue; }
+        for (let index = 0; index < entries.length;) {
+          const candidate = entries[index];
+          if (await skipCompleted(candidate)) { entries.splice(index, 1); await write(entries); continue; }
+          if (candidate.notBefore && Date.parse(candidate.notBefore) > now) { index++; continue; }
           // Commit the durable in-flight checkpoint before removing the queue
           // item so a crash at either step never loses the recovery.
           const claimed = await attemptStore.write(candidate);
-          entries.shift();
+          entries.splice(index, 1);
           await write(entries);
           return claimed;
         }

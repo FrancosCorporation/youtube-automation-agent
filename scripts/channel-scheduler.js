@@ -1104,6 +1104,24 @@ async function recordGenerationDuration(ms) {
   await writeGenHistory(history);
 }
 
+async function deferRepeatedSceneAttempt(retryDelayMs) {
+  if (!Number.isSafeInteger(interruptedGeneration?.attemptCount) || interruptedGeneration.attemptCount < 3) return false;
+  const notBefore = new Date(Date.now() + Math.max(retryDelayMs, 30 * 60 * 1000)).toISOString();
+  try {
+    // Enqueue first: a crash can repeat work, but cannot lose the job.
+    await deferredGenerationQueue.enqueue(interruptedGeneration, { notBefore });
+    await generationAttemptStore.clear();
+    interruptedGeneration = null;
+    nextGenerationRetryAt = new Date(Date.now() + 30000).toISOString();
+    await setRuntimeComponent('producer', 'backoff');
+    log(`⏭️ autoria adiada até ${notBefore}; preservada para retomada, rodízio seguirá com outra pauta`);
+    return true;
+  } catch (error) {
+    log(`⚠️ não foi possível adiar autoria (${String(error.code || error.name || 'Error').slice(0, 80)}); checkpoint preservado`);
+    return false;
+  }
+}
+
 /**
  * PRODUCER (just-in-time): só gera quando está perto do próximo slot.
  * Se faltam mais de 5 min para o "ponto de corte" (início da geração),
@@ -1115,6 +1133,10 @@ async function producer() {
   log(`🗓️ recap semanal ${WEEKLY_RECAP_ENABLED ? 'habilitado' : 'desabilitado'}${WEEKLY_RECAP_ENABLED ? ` · cadência ${RECAP_EVERY_DAYS} dia(s)` : ''}`);
   if (PIPELINED_PRODUCTION) log('⚙️ produção compartilhada: até um próximo vídeo pronto enquanto o anterior é publicado; gate de recursos ativo');
   await setRuntimeComponent('producer', 'waiting');
+  // Apply the same fairness rule to a retry restored from an older process.
+  if (lastGenerationFailure?.code === 'narrative_scene_provider_unavailable') {
+    await deferRepeatedSceneAttempt(Math.max(0, Date.parse(nextGenerationRetryAt || '') - Date.now()) || 0);
+  }
 
   for (;;) {
     if (isScheduledGenerationPaused()) {
@@ -1309,6 +1331,11 @@ async function producer() {
           attemptStore: generationAttemptStore, expected: interruptedGeneration, root: ROOT
         });
         log(`♻️ tentativa persistida preservada (${video.jobId}, seed ${video.seed})`);
+        if (video.failureCode === 'narrative_scene_provider_unavailable' && await deferRepeatedSceneAttempt(retryDelayMs)) {
+          await sleep(30000);
+          await setRuntimeComponent('producer', 'waiting');
+          continue;
+        }
       } else {
         await generationAttemptStore.clear();
         interruptedGeneration = null;

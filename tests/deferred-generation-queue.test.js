@@ -53,3 +53,27 @@ test('fila inválida é preservada e item já enfileirado pode ser ignorado', as
   assert.equal(await f.queue.claimNext({ skipCompleted: async () => true }), null);
   assert.equal(await f.attemptStore.read(), null);
 });
+
+test('recuperações adiadas não bloqueiam outras pautas e voltam ao vencer o prazo', async t => {
+  const f = await fixture(t);
+  const other = { ...f.attempt, jobId: 'aa72797e-c16c-4cc4-93e7-83664be9a1cb', outPath: 'data/videos/other.mp4' };
+  const due = '2026-11-02T23:30:00.000Z';
+  await f.queue.enqueue(f.attempt, { notBefore: due });
+  await f.queue.enqueue(other);
+  assert.deepEqual(await f.queue.claimNext({ now: Date.parse(due) - 1 }), other);
+  await f.attemptStore.clear();
+  assert.equal(await f.queue.claimNext({ now: Date.parse(due) - 1 }), null);
+  const restarted = createDeferredGenerationQueue({ root: f.root, filePath: f.filePath, attemptStore: f.attemptStore });
+  assert.deepEqual(await restarted.claimNext({ now: Date.parse(due) }), f.attempt);
+  assert.deepEqual(await f.attemptStore.read(), f.attempt);
+});
+
+test('prazo inválido não é aceito nem apagado', async t => {
+  const f = await fixture(t);
+  await assert.rejects(f.queue.enqueue(f.attempt, { notBefore: 'inválido' }));
+  await fs.mkdir(path.dirname(f.filePath), { recursive: true });
+  const contents = JSON.stringify({ version: 1, entries: [{ ...f.attempt, notBefore: 'inválido' }] });
+  await fs.writeFile(f.filePath, contents);
+  await assert.rejects(f.queue.claimNext());
+  assert.equal(await fs.readFile(f.filePath, 'utf8'), contents);
+});
