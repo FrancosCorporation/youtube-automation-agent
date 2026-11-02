@@ -34,7 +34,7 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps) {
       if (!Number.isFinite(offsetSeconds) || Math.abs(offsetSeconds) > 12) fail('offset de trilha inválido');
       const anchor = boundary === 'start' ? sentence.startFrame : boundary === 'end' ? sentence.endFrame : narrativeLabelCueFrame(key.cueText, sentence) ?? sentence.startFrame;
       const frame = Math.max(start, Math.min(end, anchor + Math.round(offsetSeconds * fps)));
-      if (frame <= lastFrame) fail('trilha precisa de tempos estritamente crescentes');
+      if (frame <= lastFrame) fail(`trilha precisa de tempos estritamente crescentes em ${node.id}.${track.property}; frame ${frame} não supera ${lastFrame}; ajuste boundary/cueText/offsetSeconds sem sair da frase`);
       lastFrame = frame;
       const easing = key.easing || 'linear';
       if (!EASINGS.has(easing)) fail('curva da trilha inválida');

@@ -5,6 +5,7 @@ const path = require('node:path');
 const { requestNvidiaChatCompletion } = require('./nvidia-chat-completions');
 const { reserveCall } = require('./api-usage');
 const { nvidiaDailyLimit, nvidiaRouteIdentity, nvidiaSceneModels } = require('./nvidia-runtime');
+const { sceneResponseFormat } = require('./narrative-scene-schema');
 const { loadConfiguredOpenCodeProviders } = require('./opencode-providers');
 const { cueHasLongBeatVariation, cueRequiresPairedVisual } = require('./narrative-visual-semantics');
 const { narrativeBeatRelation } = require('./narrative-beat-relation');
@@ -646,21 +647,30 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     narrationSha256: plan.narrationSha256, source: plan.source, fps: plan.fps,
     durationMs: plan.durationMs, durationInFrames: plan.durationInFrames, seed: plan.seed,
     speechEnvelopeSha256: plan.speechEnvelopeSha256, chapters: plan.chapters,
-    sentences: plan.sentences, claims: plan.claims, assets: plan.assets, palette: plan.palette || null
+    sentences: plan.sentences, claims: plan.claims, palette: plan.palette || null
   };
   const visualInputSha256 = sha256(Buffer.from(stableJson(visualInputs)));
   const inputSha256 = sha256(Buffer.from(`${AUTHOR_REVISION}:${visualInputSha256}:${contextHash}:${model}:${critiqueHash}`));
   const cachePath = path.join(cacheDir, `${plan.themeId}-${inputSha256}.json`);
   const legacyInputSha256 = sha256(Buffer.from(`${AUTHOR_REVISION}:${plan.inputSha256}:${contextHash}:${model}:${critiqueHash}`));
   const legacyCachePath = path.join(cacheDir, `${plan.themeId}-${legacyInputSha256}.json`);
+  // Adaptive geometry is authored from narration/source, not optional stills.
+  // Retain checkpoints from before that cache separation, including the exact
+  // no-image variant created while Android was temporarily unavailable.
+  const compatibleCaches = [[], plan.assets || []].map(assets => {
+    const hash = sha256(Buffer.from(`${AUTHOR_REVISION}:${sha256(Buffer.from(stableJson({ ...visualInputs, assets })))}:${contextHash}:${model}:${critiqueHash}`));
+    return { path: path.join(cacheDir, `${plan.themeId}-${hash}.json`), hash, emptyAssets: !assets.length };
+  });
+  compatibleCaches.push({ path: legacyCachePath, hash: legacyInputSha256 });
+  const chapterInputs = buildChapterInputs(plan);
   const cached = await readCache(cachePath, inputSha256);
   if (cached) {
     logger.info?.(`plano de cenas reutilizado por hash (${cached.plan.scenes.length} cenas)`);
-    const rebound = { ...plan, scenes: cached.plan.scenes };
+    const rebound = { ...plan, scenes: cached.plan.scenes.map((scene, index) =>
+      normalizeScene(scene, chapterInputs[index], plan, `${sourceContext || ''} ${plan.title || ''}`)) };
     if (!validateNarrativeEpisodePlan(rebound).valid) throw new Error('cache visual não corresponde ao contrato atual');
-    return { ...rebound, author: cached.author, cachePath, cached: true };
+    return { ...rebound, author: { ...cached.author, scenesSha256: sha256(Buffer.from(stableJson(rebound.scenes))) }, cachePath, cached: true };
   }
-  const chapterInputs = buildChapterInputs(plan);
   const key = process.env.NVIDIA_API_KEY;
   if (!key && !geminiEnabled && !externalProviders.length) {
     throw Object.assign(new Error('chave de autoria das cenas ausente'), { code: 'NVIDIA_API_KEY_MISSING' });
@@ -679,15 +689,16 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
       await fs.access(destination);
       continue;
     } catch { /* No entry under the new key yet. */ }
-    try {
-      const partial = JSON.parse(await fs.readFile(`${legacyCachePath}.${input.id}.partial`, 'utf8'));
+    for (const compatible of compatibleCaches) try {
+      const partial = JSON.parse(await fs.readFile(`${compatible.path}.${input.id}.partial`, 'utf8'));
       if (stableJson(partial.creativeReference) !== stableJson(CREATIVE_REFERENCE)
-        || partial.model === 'deterministic-fallback' || partial.inputSha256 !== legacyInputSha256
+        || partial.model === 'deterministic-fallback' || partial.inputSha256 !== compatible.hash
         || partial.sceneSha256 !== sha256(Buffer.from(stableJson(partial.scene)))) continue;
       const scene = normalizeScene(partial.scene, input, plan, `${sourceContext || ''} ${plan.title || ''}`);
       await writeAtomic(destination, `${JSON.stringify({ ...partial, scene, inputSha256,
         sceneSha256: sha256(Buffer.from(stableJson(scene))) })}\n`);
       logger.info?.(`${input.id}: cache anterior validado e preservado`);
+      break;
     } catch { /* Incompatible legacy entries are never reused. */ }
   }
   const escalationPath = `${cachePath}.escalation.json`;
@@ -763,6 +774,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
         body: {
           model: attemptModel, stream: false, max_tokens: Math.min(16000, Math.max(5000, chapterInputs.length * 1800)),
           temperature: 0.2,
+          response_format: sceneResponseFormat(attemptModel, chapterInputs),
           ...sceneInferenceOptions(attemptModel),
           messages: [{ role: 'user', content: buildAdaptivePrompt({ plan, chapterInputs, sourceContext, retryErrors, visualCritique }) }]
         }
@@ -825,10 +837,12 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
         let chapterError = null;
         let parts = splitChapterInput(input);
         const partitionPath = `${chapterCachePath}.partition.json`;
-        const chapterSha256 = sha256(Buffer.from(stableJson(input)));
-        try {
-          const saved = JSON.parse(await fs.readFile(partitionPath, 'utf8'));
-          if (saved.inputSha256 === inputSha256 && saved.chapterSha256 === chapterSha256
+        const chapterSha256 = sha256(Buffer.from(stableJson({ ...input, assetId: null })));
+        const checkpointSources = [{ path: cachePath, hash: inputSha256, canonical: true }, ...compatibleCaches];
+        for (const checkpoint of checkpointSources) try {
+          const saved = JSON.parse(await fs.readFile(`${checkpoint.path}.${input.id}.partial.partition.json`, 'utf8'));
+          const sourceInput = checkpoint.canonical || checkpoint.emptyAssets ? { ...input, assetId: null } : input;
+          if (saved.inputSha256 === checkpoint.hash && saved.chapterSha256 === sha256(Buffer.from(stableJson(sourceInput)))
             && Array.isArray(saved.partitions) && saved.partitions.every(ids => Array.isArray(ids) && ids.length > 0)
             && stableJson(saved.partitions.flat()) === stableJson(input.sentenceIds)) {
             let offset = 0;
@@ -839,6 +853,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
               return { ...input, narration, sentenceIds: ids, startFrame: narration[0].startFrame,
                 durationInFrames: narration.at(-1).endFrame - narration[0].startFrame, previousSentence };
             });
+            break;
           }
         } catch { /* Old checkpoints retain their original four-sentence parts. */ }
         const completedParts = [];
@@ -846,17 +861,19 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
         for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
           const part = parts[partIndex];
           const partPath = `${chapterCachePath}.part-${partIndex + 1}`;
-          const partSha256 = sha256(Buffer.from(stableJson(part)));
+          const partSha256 = sha256(Buffer.from(stableJson({ ...part, assetId: null })));
           let partScene = null;
           let partModel = 'unknown';
           let subdivide = false;
           let validationFailures = 0;
-          try {
-            const cachedPart = JSON.parse(await fs.readFile(partPath, 'utf8'));
-            if (cachedPart.inputSha256 === inputSha256 && cachedPart.partSha256 === partSha256
+          for (const checkpoint of checkpointSources) try {
+            const cachedPart = JSON.parse(await fs.readFile(`${checkpoint.path}.${input.id}.partial.part-${partIndex + 1}`, 'utf8'));
+            const sourcePart = checkpoint.canonical || checkpoint.emptyAssets ? { ...part, assetId: null } : part;
+            if (cachedPart.inputSha256 === checkpoint.hash && cachedPart.partSha256 === sha256(Buffer.from(stableJson(sourcePart)))
               && cachedPart.sceneSha256 === sha256(Buffer.from(stableJson(cachedPart.scene)))) {
               partScene = normalizeScene(cachedPart.scene, part, plan, `${sourceContext || ''} ${plan.title || ''}`);
               partModel = cachedPart.model;
+              break;
             }
           } catch { /* Only hash-matching, revalidated parts may be resumed. */ }
           if (!partScene) {
@@ -903,9 +920,10 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                   await reserve(provider, nvidiaDailyLimit(), {
                     jobId: plan.jobId, operation: 'narrative-scene-author'
                   });
-                  const response = await request({ apiKey: key, timeoutMs: 120000, body: {
+                  const response = await request({ apiKey: key,
+                    timeoutMs: /^(?:mistralai|stepfun-ai|minimaxai|deepseek-ai)\//.test(attemptModel) ? 45000 : 120000, body: {
                     model: attemptModel, stream: false, max_tokens: 16000, temperature: 0.2,
-                    response_format: { type: 'json_object' },
+                    response_format: sceneResponseFormat(attemptModel, [part]),
                     ...sceneInferenceOptions(attemptModel),
                     messages: [{ role: 'user', content: prompt }]
                   } });

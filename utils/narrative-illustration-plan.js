@@ -43,7 +43,7 @@ function normalizeIllustrations(raw, sentences, fps) {
       if (!/^[a-z][a-z0-9_-]{0,39}$/i.test(node.id || '') || ids.has(node.id) || node.id === 'camera') fail('ID inválido ou repetido');
       ids.add(node.id);
       const evidenceSentence = node.evidenceSentenceId ? sentences.find(cue => cue.id === node.evidenceSentenceId) : sentence;
-      if (!evidenceSentence || !node.evidence || !clean(evidenceSentence.text).includes(clean(node.evidence))) fail('parte sem trecho literal da fala');
+      if (!evidenceSentence || !node.evidence || !clean(evidenceSentence.text).includes(clean(node.evidence))) fail(`parte sem trecho literal da fala em ${sentence.id}/${node.id}; evidence deve ser trecho exato da frase ${evidenceSentence?.id || sentence.id}, com evidenceSentenceId válido neste bloco`);
       const label = String(node.label || '');
       if (label.length > 36 || label && !clean(evidenceSentence.text).includes(clean(label))) fail(`rótulo não narrado em ${sentence.id}/${node.id}; use literalLabels da frase ou vazio, máximo 36 caracteres`);
       const shapes = (node.shapes || []).map(shape => {

@@ -9,6 +9,7 @@ const CAPABLE_MODELS = Object.freeze([
   'nvidia/nemotron-3.5-super-vl-120b-a12b',
   'nvidia/nemotron-3-super-120b-a12b',
   'nvidia/nemotron-3-ultra-550b-a55b',
+  'z-ai/glm-5.3-flash',
   'mistralai/mistral-large-4-1t-a52b',
   'stepfun-ai/step-5-preview',
   'minimaxai/minimax-m3.1-flash',

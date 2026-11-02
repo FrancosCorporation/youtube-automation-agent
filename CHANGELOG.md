@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.24.0 — 2026-11-02
+
+- Constrain the viable NVIDIA scene endpoint with a typed, narration-bound JSON schema while retaining local visual validation.
+- Preserve geometry checkpoints across optional image availability changes and rebind asset references.
+- Give exact evidence, collision-reference and timeline diagnostics; bound slow alternate-route requests.
+
 ## v2.23.0 — 2026-11-02
 
 - Preserve approved scene blocks while subdividing truncated or invalid pending requests, and disable Nemotron thinking to reserve output for scene JSON.

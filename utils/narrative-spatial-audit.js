@@ -25,7 +25,9 @@ function normalizeSpatialChecks(raw, nodes) {
     const meshIndex = value?.meshIndex;
     if (!node) fail('spatialChecks sem objeto válido');
     if (node.actorId && meshIndex == null) return { nodeId: node.id };
-    if (!Number.isInteger(meshIndex) || !node.meshes[meshIndex]) fail('spatialChecks sem malha válida');
+    if (!Number.isInteger(meshIndex) || !node.meshes[meshIndex]) {
+      fail(`spatialChecks sem malha válida em ${node.id}; ${node.actorId ? 'humano actorId requer referência sem meshIndex' : `informe meshIndex inteiro entre 0 e ${node.meshes.length - 1}`}`);
+    }
     if (!['sphere', 'box', 'cylinder'].includes(node.meshes[meshIndex].type)) fail('spatialChecks requer sphere, box ou cylinder; decomponha o sólido');
     return { nodeId: node.id, meshIndex };
   };

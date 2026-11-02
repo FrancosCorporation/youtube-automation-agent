@@ -895,6 +895,46 @@ test('reparo recebe rascunho defeituoso e diagnóstico local sem aceitar erro pr
   assert.equal(result.scenes.length, 1);
 });
 
+test('optional image availability does not invalidate approved geometry or stale-bind asset IDs', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-geometry-image-independent-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.now();
+  let blocked = true;
+  const calls = [];
+  const plan = longScenePlan();
+  const options = { plan, cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', routeId: 'opencode:test:large', model: 'large' }], reserve: async () => {},
+    externalRequest: async ({ prompt }) => {
+      const scene = adaptiveSceneForPrompt(prompt);
+      calls.push(scene.illustrations.map(item => item.cueSentenceId));
+      if (blocked && calls.at(-1).includes('cue-5')) throw Object.assign(new Error('offline'), { status: 404 });
+      return JSON.stringify({ scenes: [scene] });
+    } };
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  plan.assets = [{ id: 'scene-image-0-a', groupIndex: 0, variant: 'a', managedPath: 'data/images/optional.png',
+    sha256: 'a'.repeat(64), kind: 'illustration', illustrative: true }];
+  plan.inputSha256 = narrativePlanInputSha256(plan);
+  now += 30 * 60 * 1000 + 1;
+  calls.length = 0;
+  blocked = false;
+  const restored = await authorNarrativeScenes(options);
+  assert.deepEqual(calls, [['cue-5']], 'restoring images must not regenerate the four approved sentences');
+  assert.equal(restored.scenes[0].assetId, 'scene-image-0-a');
+  plan.assets = [];
+  plan.inputSha256 = narrativePlanInputSha256(plan);
+  calls.length = 0;
+  const offline = await authorNarrativeScenes(options);
+  assert.equal(offline.cached, true);
+  assert.deepEqual(calls, []);
+  assert.equal(offline.scenes[0].assetId, undefined);
+  assert.equal(validateNarrativeEpisodePlan(offline).valid, true);
+});
+
 test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-adaptive-parts-'));
   const previousKey = process.env.NVIDIA_API_KEY;
