@@ -43,12 +43,10 @@ function illustrationSchema(sentenceIds, sentence) {
     evidence: choice([sentence.text, ...fragments]), evidenceSentenceId: choice([null, sentence.id]),
     label: choice(['', ...fragments.filter(value => value.length <= 36)]) }) : node;
   const motionBase = { targetId: id(), cueText: fragments.length ? choice([sentence.text, ...fragments]) : string(300), durationSeconds: number(.15, 6), delaySeconds: number(0, 2) };
-  const motion = { anyOf: [
-    object({ ...motionBase, kind: choice(['move']), to: layout }),
-    object({ ...motionBase, kind: choice(['draw', 'reveal']) }),
-    object({ ...motionBase, kind: choice(['rotate']), amount: number(-360, 360) }),
-    object({ ...motionBase, kind: choice(['scale']), amount: number(.05, 3) })
-  ] };
+  // In this 3D contract, all translation/rotation/scaling uses tracks, which
+  // the collision auditor evaluates. Legacy 2D motions on checked solids
+  // conflict with those tracks and are rejected by the same auditor.
+  const motion = object({ ...motionBase, kind: choice(['draw', 'reveal']) });
   const track = (properties, value) => object({
     targetId: id(), meshIndex: ref.properties.meshIndex, property: choice(properties),
     keyframes: array(object({ cueSentenceId: choice(sentenceIds), boundary: choice(['start', 'end', 'word']),

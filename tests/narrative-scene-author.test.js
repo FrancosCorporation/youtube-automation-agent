@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { AUTHOR_REVISION, authorNarrativeScenes: realAuthorNarrativeScenes, buildChapterInputs, buildDeterministicScene, buildPrompt, literalLabelChoices, sceneFailureTag, validateAuthoredPlan } = require('../utils/narrative-scene-author');
+const { AUTHOR_REVISION, authorNarrativeScenes: realAuthorNarrativeScenes, buildChapterInputs, buildDeterministicScene, buildPrompt, buildAdaptivePrompt, normalizeScene, literalLabelChoices, sceneFailureTag, validateAuthoredPlan } = require('../utils/narrative-scene-author');
 
 test('known rhythm and route validation failures get bounded repair feedback', () => {
   assert.equal(sceneFailureTag(new Error('scene-02: frase sentence-04 acima de 12 segundos precisa mudar o foco visual')), 'invalid_visual_rhythm');
@@ -833,6 +833,29 @@ function adaptiveSceneForPrompt(prompt) {
     })) };
 }
 
+test('authoring supplies missing known-solid checks; publication and unsafe geometry remain strict', () => {
+  const plan = longScenePlan(1), input = buildChapterInputs(plan)[0];
+  const scene = adaptiveSceneForPrompt(buildAdaptivePrompt({ plan, chapterInputs: [input] }));
+  const drawing = scene.illustrations[0];drawing.dimension = '3d';drawing.motions = [];
+  for (const node of drawing.nodes) { delete node.shapes;node.meshes = [{ type: 'box', color: '#95d7bc', size: [.2, .2, .2] }]; }
+  drawing.tracks = [{ targetId: 'signal', property: 'position3d', keyframes: [
+    { cueSentenceId: input.sentenceIds[0], boundary: 'end', value: [.2, 0, 0] },
+    { cueSentenceId: input.sentenceIds[0], boundary: 'start', value: [0, 0, 0] }
+  ] }];
+  assert.throws(() => normalizeScene(scene, input, plan, ''), /spatialChecks ausente/);
+  const repairLayout = require('../utils/narrative-idle-layout').repairIdleActorLayout;
+  const normalized = normalizeScene(scene, input, plan, '', { repairLayout });
+  assert(normalized.illustrations[0].spatialChecks.length);
+  assert.deepEqual(normalizeScene(normalized, input, plan, ''), normalized);
+  const conflicting = globalThis.structuredClone(normalized);
+  conflicting.illustrations[0].tracks[0].keyframes.reverse();
+  assert.throws(() => normalizeScene(conflicting, input, plan, ''), /tempos estritamente crescentes/);
+  drawing.nodes[1].layout = drawing.nodes[0].layout;
+  assert.throws(() => normalizeScene(scene, input, plan, '', { repairLayout }), /colisão/);
+  drawing.nodes[1].meshes[0].type = 'torus';
+  assert.throws(() => normalizeScene(scene, input, plan, '', { repairLayout }), /spatialChecks ausente/);
+});
+
 test('capítulo longo retoma apenas bloco pendente com modelo maior e mantém a timeline', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-parts-resume-'));
   const previousKey = process.env.NVIDIA_API_KEY;
@@ -933,6 +956,70 @@ test('optional image availability does not invalidate approved geometry or stale
   assert.deepEqual(calls, []);
   assert.equal(offline.scenes[0].assetId, undefined);
   assert.equal(validateNarrativeEpisodePlan(offline).valid, true);
+});
+
+test('a validated fallback writes subsequent parts first while earlier semantic failures remain retryable', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-successful-route-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const plan = longScenePlan();
+  plan.chapters = plan.sentences.map((sentence, index) => {
+    const id = index ? `section-${index}` : 'hook';
+    sentence.groupId = id;
+    return { id, kind: index ? 'section' : 'hook', title: 'O sinal parte', startFrame: sentence.startFrame,
+      durationInFrames: sentence.endFrame - sentence.startFrame, sentenceIds: [sentence.id] };
+  });
+  plan.inputSha256 = narrativePlanInputSha256(plan);
+  const calls = [];
+  await authorNarrativeScenes({ plan, cacheDir, logger: {}, geminiEnabled: false, reserve: async () => {},
+    externalProviders: ['first', 'validated'].map(id => ({ id, model: 'large', routeId: `opencode:${id}:large` })),
+    externalRequest: async ({ provider, prompt }) => {
+      calls.push(provider.id);
+      const scene = adaptiveSceneForPrompt(prompt);
+      if (provider.id === 'first') scene.objects = [];
+      return JSON.stringify({ scenes: [scene] });
+    } });
+  assert.deepEqual(calls, ['first', 'first', ...Array(5).fill('validated')]);
+});
+
+test('a hash-bound saved draft is revalidated locally before another provider request', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-local-revalidation-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.now();
+  let pendingPrompt;
+  const options = { plan: longScenePlan(), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', model: 'large', routeId: 'opencode:test:large' }], reserve: async () => {},
+    externalRequest: async ({ prompt }) => { pendingPrompt = prompt; throw Object.assign(new Error('offline'), { status: 404 }); } };
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  const retryPath = path.join(cacheDir, (await fs.readdir(cacheDir)).find(name => name.endsWith('.part-1.retry.json')));
+  const saved = JSON.parse(await fs.readFile(retryPath, 'utf8'));
+  saved.draft = adaptiveSceneForPrompt(pendingPrompt);
+  saved.draft.illustrations[0].tracks = [{ targetId: 'signal', property: 'opacity', keyframes: [
+    { cueSentenceId: 'cue-1', boundary: 'start', value: 0 },
+    { cueSentenceId: 'cue-4', boundary: 'end', value: 1 },
+    { cueSentenceId: 'cue-4', boundary: 'end', offsetSeconds: 1, value: 1 }
+  ] }];
+  saved.draftSha256 = sha256(Buffer.from(stableJson(saved.draft)));
+  await fs.writeFile(retryPath, JSON.stringify(saved));
+  now += 30 * 60 * 1000 + 1;
+  const calls = [];
+  const result = await authorNarrativeScenes({ ...options, externalRequest: async ({ prompt }) => {
+    const scene = adaptiveSceneForPrompt(prompt);
+    calls.push(scene.illustrations.map(item => item.cueSentenceId));
+    return JSON.stringify({ scenes: [scene] });
+  } });
+  assert.deepEqual(calls, [['cue-5']]);
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+  assert(result.author.modelsByScene['scene-01'].includes('previous-author-unrecorded'));
 });
 
 test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {

@@ -7,6 +7,7 @@ const sharp = require('sharp');
 const { Logger } = require('./logger');
 const { createAndroidEmulatorControl } = require('./android-emulator-control');
 const { withAndroidDeviceLock } = require('./android-device-lock');
+const { ensureAndroidChromeCdpForward } = require('./android-chrome-cdp');
 const { safeErrorTag } = require('./safe-error-tag');
 const socialDevices = require('../config/android-social-devices.json');
 
@@ -159,7 +160,12 @@ class GeminiAndroidImageGenerator {
   }
 
   async _ensureChromeCdp() {
-    if (!this.autoCdp || this.cdpUrl || this.browserPackage !== 'com.android.chrome') return;
+    if (!this.autoCdp || this.browserPackage !== 'com.android.chrome') return;
+    if (this.cdpUrl) {
+      ensureAndroidChromeCdpForward({ cdpUrl: this.cdpUrl, device: this.device,
+        runAdb: (_device, args) => this.control.run(args, { timeout: 10000 }) });
+      return;
+    }
     const port = String(this.control.run(['forward', 'tcp:0', 'localabstract:chrome_devtools_remote'], { timeout: 10000 })).trim();
     if (!/^\d{4,5}$/.test(port) || Number(port) > 65535) throw new Error('GEMINI_ANDROID_CDP_UNAVAILABLE');
     this._forwardedPort = port;
@@ -192,6 +198,22 @@ class GeminiAndroidImageGenerator {
         return;
       }
       if (this.sharedSocialDevice) throw new Error('GEMINI_ANDROID_SHARED_BROWSER_IN_USE');
+    }
+    if (this.browserPackage === 'com.android.chrome' && this.control.openApp) {
+      // Bringing Chrome back from Instagram with a VIEW intent opens another
+      // tab each time (51 accumulated in production). Reuse its current tab
+      // when it is already Gemini; never navigate a different user's page.
+      this.control.openApp(this.browserPackage);
+      const nodes = await this.control.dumpUi({ timeout: 15000 });
+      const url = nodes.find(node => node.resourceId === 'com.android.chrome:id/url_bar')?.text || '';
+      if (/gemini\.google\.com/i.test(url) || findEditor(nodes)) {
+        this.activeGeminiUrl = url || this.activeGeminiUrl;
+        await this._ensureChromeCdp();
+        return;
+      }
+      if (this.sharedSocialDevice && url && !/^(?:chrome:\/\/newtab|about:blank)$/i.test(url)) {
+        throw new Error('GEMINI_ANDROID_SHARED_BROWSER_IN_USE');
+      }
     }
     this.control.run(['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', GEMINI_URL, '-p', this.browserPackage], {
       timeout: 30000

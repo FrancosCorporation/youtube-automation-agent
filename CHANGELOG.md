@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.25.0 — 2026-11-02
+
+- Repair bounded idle-actor staging during authorship, then recheck all supported solids with strict publication validation unchanged.
+- Preserve animation poses when removing identical end holds; avoid resampling constant bounds while retaining swept checks for changing transforms.
+- Supply measured word times to scene authors, revalidate saved drafts before spending another request, and prefer the last successful model.
+- Reuse the existing Gemini Android browser tab when returning from a social app.
+- Restore the configured Android Chrome CDP forward before Studio connections, without rebinding another device's port; the configured channel session was verified in a read-only live check.
+- During authorship, order measured time/value pairs, derive missing checks for known solids, and align level actor paths to supported flat floors while preserving strict swept collision validation.
+- Production resumed the blocked scene draft and validated the following part in 13 seconds; a new complete episode and upload remain unconfirmed.
+
 ## v2.24.0 — 2026-11-02
 
 - Constrain the viable NVIDIA scene endpoint with a typed, narration-bound JSON schema while retaining local visual validation.

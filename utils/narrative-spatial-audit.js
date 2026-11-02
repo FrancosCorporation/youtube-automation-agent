@@ -102,17 +102,32 @@ function auditSpatialChecks(illustration, sentence) {
   for (const aspect of ['landscape', 'portrait']) {
     for (const check of illustration.spatialChecks) for (const obstacle of check.obstacles) {
       let hit = false;
+      // Constant tracks are holds, not trajectories. Their conservative bounds
+      // are identical at every sub-frame, so checking them once is exact.
+      const stationary = ref => !(illustration.tracks || []).some(track => track.targetId === ref.nodeId
+        && (track.meshIndex == null || track.meshIndex === ref.meshIndex)
+        && track.keyframes.some(key => JSON.stringify(key.value) !== JSON.stringify(track.keyframes[0].value)));
+      const fixedA = stationary(check.subject) ? bodyAt(illustration, check.subject, aspect, sentence.startFrame) : null;
+      const fixedB = stationary(obstacle) ? bodyAt(illustration, obstacle, aspect, sentence.startFrame) : null;
+      const subjectAt = frame => fixedA || bodyAt(illustration, check.subject, aspect, frame);
+      const obstacleAt = frame => fixedB || bodyAt(illustration, obstacle, aspect, frame);
       const inspect = (frame, a, b) => {
         samples++;
         // Small tolerance for rounded primitives and ellipsoid bounding spheres.
-        if (a.opacity > .05 && b.opacity > .05 && penetration(a, b) > .025) {
-          collisions.push({ aspect, frame: Number(frame.toFixed(3)), subject: check.subject, obstacle }); hit = true;
+        const overlap = a.opacity > .05 && b.opacity > .05 ? penetration(a, b) : 0;
+        if (overlap > .025) {
+          collisions.push({ aspect, frame: Number(frame.toFixed(3)), penetrationMeters: overlap, subject: check.subject, obstacle }); hit = true;
         }
       };
+      if (fixedA && fixedB) {
+        inspect(sentence.startFrame, fixedA, fixedB);
+        if (collisions.length >= 8) return { status: 'collision', collisions, samples };
+        continue;
+      }
       for (let frame = sentence.startFrame; frame < sentence.endFrame && !hit; frame++) {
         const next = Math.min(frame + 1, sentence.endFrame);
-        const a = bodyAt(illustration, check.subject, aspect, frame), b = bodyAt(illustration, obstacle, aspect, frame);
-        const an = bodyAt(illustration, check.subject, aspect, next), bn = bodyAt(illustration, obstacle, aspect, next);
+        const a = subjectAt(frame), b = obstacleAt(frame);
+        const an = subjectAt(next), bn = obstacleAt(next);
         const travel = (p, q) => length(sub(p.center, q.center)) + length(sub(p.half, q.half))
           + length(sub(p.rotation, q.rotation)) * length(p.half);
         const clearance = Math.max(.025, Math.min(...a.half, ...b.half) * .5);
@@ -121,7 +136,7 @@ function auditSpatialChecks(illustration, sentence) {
         if (steps > 256) fail(`spatialChecks: movimento rápido demais em ${check.subject.nodeId}; aumente duração/espaço`);
         for (let step = 0; step < steps && !hit; step++) {
           const t = frame + step / steps;
-          inspect(t, step ? bodyAt(illustration, check.subject, aspect, t) : a, step ? bodyAt(illustration, obstacle, aspect, t) : b);
+          inspect(t, step ? subjectAt(t) : a, step ? obstacleAt(t) : b);
         }
       }
       if (collisions.length >= 8) return { status: 'collision', collisions, samples };

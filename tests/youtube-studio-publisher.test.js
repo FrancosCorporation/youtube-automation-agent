@@ -46,7 +46,9 @@ test('Studio reconnects by starting headless Android Chrome only when local CDP 
   assert.equal(result, browser);
   const foreground = ['emulator-5560', 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
     '-c', 'android.intent.category.LAUNCHER', '-p', 'com.android.chrome'];
-  assert.deepEqual(calls, [foreground, 'wait', 'connect', foreground, 'wait', 'connect']);
+  assert.deepEqual(calls, [['emulator-5560', 'forward', '--list'],
+    ['emulator-5560', 'forward', '--no-rebind', 'tcp:9223', 'localabstract:chrome_devtools_remote'],
+    foreground, 'wait', 'connect', foreground, 'wait', 'connect']);
   let started = false;
   await assert.rejects(connectStudioBrowser({ cdpUrl: 'https://remote.example', device: 'emulator-5560',
     connect: async () => { throw new Error('closed'); }, runAdb: () => { started = true; } }), /closed/);
@@ -76,8 +78,8 @@ test('Studio ativa a rede do Chrome Android mesmo se o CDP já estiver disponív
   const calls = [];
   await connectStudioBrowser({ cdpUrl: 'http://127.0.0.1:9223', device: 'emulator-5560',
     runAdb: (_device, args) => calls.push(args), wait: async () => {}, connect: async () => { calls.push('connected'); return {}; } });
-  assert.equal(calls[0][4], 'android.intent.action.MAIN');
-  assert.equal(calls[1], 'connected');
+  assert.equal(calls[2][4], 'android.intent.action.MAIN');
+  assert.equal(calls[3], 'connected');
 });
 
 test('YouTube links parse stable video IDs and reject malformed IDs', () => {

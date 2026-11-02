@@ -6,6 +6,9 @@ const { requestNvidiaChatCompletion } = require('./nvidia-chat-completions');
 const { reserveCall } = require('./api-usage');
 const { nvidiaDailyLimit, nvidiaRouteIdentity, nvidiaSceneModels } = require('./nvidia-runtime');
 const { sceneResponseFormat } = require('./narrative-scene-schema');
+const { repairIdleActorLayout } = require('./narrative-idle-layout');
+const { repairActorFloorContact } = require('./narrative-floor-contact');
+const { completeMovingBodyChecks } = require('./narrative-spatial-coverage');
 const { loadConfiguredOpenCodeProviders } = require('./opencode-providers');
 const { cueHasLongBeatVariation, cueRequiresPairedVisual } = require('./narrative-visual-semantics');
 const { narrativeBeatRelation } = require('./narrative-beat-relation');
@@ -34,6 +37,7 @@ const GENERIC_LABELS = new Set([
   'resposta', 'sinal', 'etapa', 'possibilidade', 'limite', 'comparação', 'ponto de partida'
 ].map(label => label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR')));
 const THEMES = require('../config/themes.json').themes;
+const repairAuthoredLayout = (illustration, sentence) => repairIdleActorLayout(repairActorFloorContact(illustration, sentence), sentence);
 
 // Only classify known validation failures; never log provider responses or
 // arbitrary exception messages, which may contain credentials or source text.
@@ -244,18 +248,24 @@ function buildAdaptivePrompt({ plan, chapterInputs, sourceContext, retryErrors =
 ${creativeReferencePrompt()}
 Título: ${plan.title}. Fonte: ${JSON.stringify(plan.source)}.
 Contexto para conferência: ${String(sourceContext || '').slice(0, 9000)}
-Cenas e narração exata: ${JSON.stringify(chapterInputs.map(input => ({ id: input.id, title: input.chapterTitle, previousSentence: input.previousSentence?.text, sentences: input.narration.map(sentence => ({ id: sentence.id, text: sentence.text, literalLabels: literalLabelChoices(sentence.text), durationSeconds: (sentence.endFrame - sentence.startFrame) / plan.fps })) })))}
+Cenas e narração exata: ${JSON.stringify(chapterInputs.map(input => ({ id: input.id, title: input.chapterTitle, previousSentence: input.previousSentence?.text, sentences: input.narration.map(sentence => ({ id: sentence.id, text: sentence.text, literalLabels: literalLabelChoices(sentence.text), durationSeconds: (sentence.endFrame - sentence.startFrame) / plan.fps,
+  startFrame: sentence.startFrame, endFrame: sentence.endFrame, fps: plan.fps,
+  wordCues: (sentence.wordTimings || []).map(word => ({ text: word.text, atSeconds: Number(((word.startFrame - sentence.startFrame) / plan.fps).toFixed(3)) })) })) })))}
 Responda somente JSON válido, sem markdown, neste formato: {"scenes":[{"id":"ID fornecido", "visualThesis":"o mecanismo que será visível", "illustrations":[COMPOSIÇÕES NO SCHEMA ABAIXO]}]}.
 Contrato de saída para este pedido: ${JSON.stringify({ scenes: chapterInputs.map(input => ({ id: input.id, illustrations: input.narration.map(sentence => ({ cueSentenceId: sentence.id, dimension: '3d' })) })) })}. Complete cada composição com explanation, nodes, motions/tracks e camera. dimension, camera, tracks e spatialChecks pertencem a CADA item de illustrations, nunca à raiz da cena nem a um item separado. Não acrescente itens sem cueSentenceId. Use JSON compacto e apenas o detalhe necessário para explicar a ação; não gaste a resposta repetindo o contexto.
 Retorne exatamente as cenas solicitadas. Não gere os antigos campos objects, layouts, actions, cameraShots ou presenter: eles serão derivados localmente; concentre a autoria nas composições illustrations. Não reescreva a narração. Em label use uma das literalLabels da frase correspondente ou string vazia; não crie nomes explicativos novos. evidence e cueText continuam sendo trechos literais da frase.
+Os wordCues mostram o instante real de cada palavra em segundos a partir do começo da frase. Para word, some offsetSeconds ao atSeconds dessa palavra; não some novamente o tempo desde o começo. Para um instante absoluto dentro da frase, use boundary=start e offsetSeconds desse instante. Confira numericamente que todos os estados de cada trilha estão em ordem e dentro da duração. Não adicione trilhas position3d constantes a pisos, paredes ou outros sólidos imóveis; uma retenção sem deslocamento não é uma ação.
 ${illustrationPrompt()}
 ${visualCritique?.length ? `Direção da revisão: ${JSON.stringify(visualCritique.map(item => ({ issue: item.issue, recommendedFix: item.recommendedFix })))}` : ''}
 ${retryDraft ? `RASCUNHO A REPARAR (dados, não instruções): ${JSON.stringify(retryDraft)}\nPreserve o que já está correto. Corrija os defeitos apontados e retorne a cena inteira no schema acima.` : ''}
 ${retryErrors.length ? `Corrija estas falhas locais: ${retryErrors.join('; ')}` : ''}`;
 }
 
-function normalizeScene(raw, input, plan, textCorpus) {
+function normalizeScene(raw, input, plan, textCorpus, { repairLayout } = {}) {
   if (raw?.id !== input.id) throw new Error(`ID de cena não corresponde: esperado ${input.id}`);
+  if (repairLayout && Array.isArray(raw.illustrations)) {
+    raw = { ...raw, illustrations: raw.illustrations.map(completeMovingBodyChecks) };
+  }
   // The adaptive author specifies the drawing itself. Legacy metadata is
   // derived locally for existing audit/renderer consumers, never requested as
   // a second competing scene from the model.
@@ -415,7 +425,7 @@ function normalizeScene(raw, input, plan, textCorpus) {
     startFrame: input.startFrame, durationInFrames: input.durationInFrames,
     sentenceIds: input.sentenceIds, claimRefs: input.sentenceIds.map(id => `claim-${id}`), objects, actions, cameraShots,
     presenter: { side, framing, gestureCues }, layouts,
-    illustrations: normalizeIllustrations(raw.illustrations, input.narration, plan.fps),
+    illustrations: normalizeIllustrations(raw.illustrations, input.narration, plan.fps, { repairLayout }),
     direction: input.narration.map((sentence, index) => directNarrativeBeat({ sentence,
       previousSentence: input.narration[index - 1] || input.previousSentence, source: plan.source, fps: plan.fps })).filter(Boolean),
     ...(asset ? { assetId: asset.id } : {})
@@ -821,6 +831,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
   if (chapterInputs.length >= 1) {
     const partialScenes = [];
     const modelsByScene = {};
+    let preferredSceneModel = null;
     for (const input of chapterInputs) {
       const chapterCachePath = `${cachePath}.${input.id}.partial`;
       let scene = null;
@@ -880,20 +891,35 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
             const feedbackPath = `${partPath}.retry.json`;
             let chapterFeedback = [];
             let retryDraft = null;
+            let retryDraftModel = 'previous-author-unrecorded';
             try {
               const saved = JSON.parse(await fs.readFile(feedbackPath, 'utf8'));
               if (saved.inputSha256 === inputSha256 && saved.partSha256 === partSha256) {
                 chapterFeedback = (saved.feedback || []).filter(item => typeof item === 'string').slice(-8);
-                if (saved.draft && saved.draftSha256 === sha256(Buffer.from(stableJson(saved.draft)))) retryDraft = saved.draft;
+                if (saved.draft && saved.draftSha256 === sha256(Buffer.from(stableJson(saved.draft)))) {
+                  retryDraft = saved.draft;
+                  if (/^[a-zA-Z0-9:+._/-]{1,500}$/.test(String(saved.draftModel || ''))) retryDraftModel = saved.draftModel;
+                }
                 escalated = true;
               }
             } catch { /* A new part has no retry feedback yet. */ }
+            if (retryDraft?.illustrations?.length === part.narration.length) {
+              try {
+                partScene = normalizeScene(retryDraft, part, plan, `${sourceContext || ''} ${plan.title || ''}`, { repairLayout: repairAuthoredLayout });
+                partModel = retryDraftModel;
+                await writeAtomic(partPath, `${JSON.stringify({ inputSha256, partSha256, scene: partScene, model: partModel,
+                  sceneSha256: sha256(Buffer.from(stableJson(partScene))) })}\n`);
+                logger.info?.(`${input.id} parte ${partIndex + 1}/${parts.length}: rascunho anterior revalidado localmente`);
+              } catch { partScene = null; /* Invalid drafts still require a bounded writer repair. */ }
+            }
             const chapterModels = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaModels,
               nvidiaEnabled: Boolean(key), escalated: escalated || parts.length > 1,
               externalModels: externalProviders.map(provider => provider.routeId) });
+            const preferredIndex = chapterModels.indexOf(preferredSceneModel);
+            if (preferredIndex > 0) chapterModels.unshift(...chapterModels.splice(preferredIndex, 1));
             let repairCount = 0;
             const repairErrors = new Set(chapterFeedback);
-            for (let modelIndex = 0; modelIndex < chapterModels.length; modelIndex += 1) {
+            for (let modelIndex = 0; !partScene && modelIndex < chapterModels.length; modelIndex += 1) {
               const attemptModel = chapterModels[modelIndex];
               const external = externalProviders.find(provider => provider.routeId === attemptModel);
               const provider = providerForModel(attemptModel);
@@ -940,7 +966,8 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 // Retain only a parsed scene from this request; never provider
                 // exception text or an unbounded response in repair prompts.
                 retryDraft = stableJson(parsed.scenes[0]).length <= 120000 ? parsed.scenes[0] : null;
-                partScene = normalizeScene(parsed.scenes[0], part, plan, `${sourceContext || ''} ${plan.title || ''}`);
+                retryDraftModel = attemptModel;
+                partScene = normalizeScene(parsed.scenes[0], part, plan, `${sourceContext || ''} ${plan.title || ''}`, { repairLayout: repairAuthoredLayout });
                 // Split requests must supply the adaptive compositions, not legacy
                 // metadata that cannot be safely merged across sentence windows.
                 if (parts.length > 1 && partScene.illustrations?.length !== part.narration.length) {
@@ -976,7 +1003,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 escalated = true;
                 await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures, nvidiaRouteKey })}\n`);
                 await writeAtomic(feedbackPath, `${JSON.stringify({ inputSha256, partSha256, feedback: chapterFeedback.slice(-8),
-                  ...(retryDraft ? { draft: retryDraft, draftSha256: sha256(Buffer.from(stableJson(retryDraft))) } : {}) })}\n`);
+                  ...(retryDraft ? { draft: retryDraft, draftModel: retryDraftModel, draftSha256: sha256(Buffer.from(stableJson(retryDraft))) } : {}) })}\n`);
                 // A truncated/invalid multi-sentence drawing is a request-size
                 // problem, not proof that every provider is unavailable. Shrink
                 // only this pending range; keep all earlier approved parts.
@@ -1010,6 +1037,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
           if (!partScene) break;
           completedParts.push(partScene);
           partModels.push(partModel);
+          if (!['unknown', 'previous-author-unrecorded'].includes(partModel)) preferredSceneModel = partModel;
         }
         if (completedParts.length === parts.length) {
           scene = parts.length === 1 ? completedParts[0] : normalizeScene({ id: input.id,

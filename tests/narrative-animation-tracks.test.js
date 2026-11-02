@@ -37,6 +37,34 @@ test('re-normalization binds to changed spoken cues instead of using stale cache
   changed[0].wordTimings[0].startFrame = 40;
   assert.equal(normalizeAnimationTracks(tracks, nodes, changed, 20)[0].keyframes[0].frame, 40);
 });
+test('authorship can order explicit measured cues without retiming or changing their values', () => {
+  const [expected] = normalizeAnimationTracks(raw(), nodes, sentences, 20);
+  const data = raw();data[0].keyframes.reverse();
+  const snapshot = globalThis.structuredClone(data);
+  assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /tempos estritamente crescentes/);
+  const [ordered] = normalizeAnimationTracks(data, nodes, sentences, 20, { orderByTime: true });
+  assert.deepEqual(data, snapshot);
+  assert.deepEqual(ordered, expected);
+  for (const frame of [0, 20, 75, 150, 200, 110, 0]) assert.deepEqual(evaluateAnimationTrack(ordered, frame), evaluateAnimationTrack(expected, frame));
+  data[0].keyframes.push({ ...data[0].keyframes[0], value: [1, 2, 3] });
+  assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20, { orderByTime: true }), /tempos estritamente crescentes/);
+});
+
+test('a redundant clamped end hold preserves every pose and backward seek; conflicts remain rejected', () => {
+  const [reference] = normalizeAnimationTracks(raw(), nodes, sentences, 20);
+  const data = raw();
+  data[0].keyframes.push({ ...data[0].keyframes[1], offsetSeconds: 3 });
+  const [normalized] = normalizeAnimationTracks(data, nodes, sentences, 20);
+  assert.equal(normalized.keyframes.length, 2);
+  for (const frame of [...Array(202).keys(), 180, 10, 150, 0]) {
+    assert.deepEqual(evaluateAnimationTrack(normalized, frame), evaluateAnimationTrack(reference, frame));
+  }
+  data[0].keyframes[2].value = [0, 0, 35];
+  assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /tempos estritamente crescentes/);
+  data[0].keyframes[2].value = [0, 0, 36];
+  data[0].keyframes[2].easing = 'ease-out';
+  assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /tempos estritamente crescentes/);
+});
 test('unknown targets, duplicate properties, reversed time and non-finite geometry are rejected', () => {
   for (const modify of [
     t => { t[0].targetId = 'missing'; }, t => { t[0].meshIndex = 2; },

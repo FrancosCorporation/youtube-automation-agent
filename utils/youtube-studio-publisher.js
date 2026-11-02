@@ -8,6 +8,7 @@ const { chromium } = require('playwright');
 const { withAndroidDeviceLock } = require('./android-device-lock');
 const { socialAndroidTarget } = require('./android-social-target');
 const { createAndroidEmulatorControl } = require('./android-emulator-control');
+const { ensureAndroidChromeCdpForward } = require('./android-chrome-cdp');
 const { createPublicationResult } = require('./publication-status');
 const { reconcileClickedStudioPublication } = require('./youtube-studio-reconciliation');
 const studioConfig = require('../config/youtube-studio.json');
@@ -348,6 +349,7 @@ async function connectStudioBrowser({ cdpUrl, device, adbPath, connect, runAdb, 
   const foregroundChrome = () => runAdb(device, ['shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
     '-c', 'android.intent.category.LAUNCHER', '-p', 'com.android.chrome'], { adbPath });
   if (!local) return connect(cdpUrl, { timeout: 10000 });
+  ensureAndroidChromeCdpForward({ cdpUrl, device, adbPath, runAdb });
   let lastError;
   for (const delayMs of [2000, 3500, 5000]) {
     try {

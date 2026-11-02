@@ -32,6 +32,7 @@ test('provider schema rejects production type/enum/range/ID failures before loca
     value => { value.scenes[0].illustrations[0].tracks[0].keyframes[0].value = [0.1, 0, 0]; },
     value => { value.scenes[0].illustrations[0].nodes[0].meshes[0].size[0] = 14; },
     value => { value.scenes[0].illustrations[0].motions.push({ targetId: 'signal', kind: 'opacity' }); },
+    value => { value.scenes[0].illustrations[0].motions.push({ targetId: 'signal', kind: 'move', cueText: 'sinal', durationSeconds: 1, delaySeconds: 0 }); },
     value => { value.scenes[0].illustrations[0].cueSentenceId = 'wrong-cue'; },
     value => { value.scenes[0].illustrations.push(value.scenes[0].illustrations[0]); },
     value => { value.scenes[0].dimension = '3d'; },

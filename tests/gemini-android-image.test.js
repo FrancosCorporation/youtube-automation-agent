@@ -205,6 +205,21 @@ test('reuses the active Chrome Gemini tab instead of opening another browser tab
   assert.equal(launches, 0);
 });
 
+test('returning to background Chrome reuses Gemini without another VIEW intent', async () => {
+  const control = makeControl();
+  const opened = [];
+  let views = 0;
+  control.getResumedActivity = () => 'com.google.android.apps.nexuslauncher/.NexusLauncherActivity';
+  control.openApp = name => opened.push(name);
+  control.dumpUi = async () => [makeNode({ resourceId: 'com.android.chrome:id/url_bar', text: 'gemini.google.com/app' })];
+  control.run = args => { if (args.includes('android.intent.action.VIEW')) views++; };
+  const provider = new GeminiAndroidImageGenerator({ control, autoCdp: false,
+    env: { GEMINI_ANDROID_DEVICE: 'emulator-5560', GEMINI_ANDROID_BROWSER_PACKAGE: 'com.android.chrome' } });
+  await provider._openGemini();
+  assert.deepEqual(opened, ['com.android.chrome']);
+  assert.equal(views, 0);
+});
+
 test('shared Android device preserves a social login or unrelated browser page', async () => {
   const control = makeControl();
   let launches = 0;

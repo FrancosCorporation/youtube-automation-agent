@@ -7,7 +7,7 @@ const fold = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f
 
 // Keyframes reference the chapter's spoken timeline, not the active sentence.
 // This preserves object identity and motion across cuts and caption changes.
-function normalizeAnimationTracks(raw, nodes, sentences, fps) {
+function normalizeAnimationTracks(raw, nodes, sentences, fps, { orderByTime = false } = {}) {
   if (raw == null) return [];
   if (!Array.isArray(raw) || raw.length > 128) fail('trilhas excessivas');
   const start = Math.min(...sentences.map(s => s.startFrame));
@@ -23,8 +23,7 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps) {
     if (seen.has(id)) fail('trilhas concorrentes para a mesma propriedade');
     seen.add(id);
     if (!Array.isArray(track.keyframes) || track.keyframes.length < 2 || track.keyframes.length > 64) fail('trilha precisa de 2–64 estados');
-    let lastFrame = -Infinity;
-    const keyframes = track.keyframes.map(key => {
+    const parsed = track.keyframes.map(key => {
       const sentence = sentences.find(item => item.id === key.cueSentenceId);
       if (!sentence) fail('trilha sem frase válida');
       const boundary = key.boundary || 'word';
@@ -34,8 +33,6 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps) {
       if (!Number.isFinite(offsetSeconds) || Math.abs(offsetSeconds) > 12) fail('offset de trilha inválido');
       const anchor = boundary === 'start' ? sentence.startFrame : boundary === 'end' ? sentence.endFrame : narrativeLabelCueFrame(key.cueText, sentence) ?? sentence.startFrame;
       const frame = Math.max(start, Math.min(end, anchor + Math.round(offsetSeconds * fps)));
-      if (frame <= lastFrame) fail(`trilha precisa de tempos estritamente crescentes em ${node.id}.${track.property}; frame ${frame} não supera ${lastFrame}; ajuste boundary/cueText/offsetSeconds sem sair da frase`);
-      lastFrame = frame;
       const easing = key.easing || 'linear';
       if (!EASINGS.has(easing)) fail('curva da trilha inválida');
       const scalar = track.property === 'opacity';
@@ -49,6 +46,27 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps) {
       return { cueSentenceId: sentence.id, boundary, ...(key.cueText ? { cueText: key.cueText } : {}), offsetSeconds,
         frame, value: scalar ? values[0] : [...values], easing };
     });
+    // An author may list measured cues in object order instead of time order.
+    // Order the explicit time/value pairs only during authorship. Publication
+    // remains strict; neither cues, values nor their easing are retimed.
+    if (orderByTime) parsed.sort((a, b) => a.frame - b.frame);
+    let lastFrame = -Infinity;
+    let lastValue;
+    let lastEasing;
+    const keyframes = parsed.filter(key => {
+      const { frame, easing } = key;
+      const values = Array.isArray(key.value) ? key.value : [key.value];
+      const identical = lastValue && values.every((value, index) => value === lastValue[index]) && easing === lastEasing;
+      // A word offset and an end hold can clamp to the same final frame. An
+      // identical value/curve adds no motion; remove only that redundant hold.
+      if (frame === lastFrame && identical) return false;
+      if (frame <= lastFrame) fail(`trilha precisa de tempos estritamente crescentes em ${node.id}.${track.property}; frame ${frame} não supera ${lastFrame}; ajuste boundary/cueText/offsetSeconds sem sair da frase`);
+      lastFrame = frame;
+      lastValue = values;
+      lastEasing = easing;
+      return true;
+    });
+    if (keyframes.length < 2) fail('trilha precisa de 2–64 estados distintos no tempo');
     return { targetId: node.id, property: track.property, ...(meshIndex == null ? {} : { meshIndex }), keyframes };
   });
 }

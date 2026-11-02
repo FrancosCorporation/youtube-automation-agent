@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { normalizeIllustrations } = require('../utils/narrative-illustration-plan');
-const { bodyAt, penetration } = require('../utils/narrative-spatial-audit');
+const { bodyAt, penetration, auditSpatialChecks } = require('../utils/narrative-spatial-audit');
 const { buildAdaptivePrompt, sceneFailureTag } = require('../utils/narrative-scene-author');
 const { CREATIVE_REFERENCE } = require('../utils/narrative-creative-reference');
 const sentence = { id: 's1', text: 'A esfera passa ao lado do suporte.', startFrame: 0, endFrame: 24 };
@@ -30,6 +30,27 @@ test('fast passage through a thin obstacle cannot pass just because integer fram
   const raw = drawing();
   raw[0].tracks[0].keyframes[1].offsetSeconds = -23 / 24;
   assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /colisão|rápido demais/);
+});
+test('constant transforms are checked once while hidden or displaced intermediate states remain sampled', () => {
+  const [illustration] = normalizeIllustrations(drawing(.8), [sentence], 24);
+  illustration.tracks = [];
+  const held = auditSpatialChecks(illustration, sentence);
+  assert.equal(held.status, 'pass');
+  assert.equal(held.samples, 2);
+  for (const aspect of ['landscape', 'portrait']) for (let frame = 0; frame <= 24; frame += .25) {
+    assert.deepEqual(bodyAt(illustration, { nodeId: 'ball', meshIndex: 0 }, aspect, frame),
+      bodyAt(illustration, { nodeId: 'ball', meshIndex: 0 }, aspect, 0));
+  }
+  illustration.tracks = [{ targetId: 'ball', property: 'position3d', keyframes: [
+    { frame: 0, value: [0, 0, 0] }, { frame: 12, value: [.8, 0, 0] }, { frame: 24, value: [0, 0, 0] }
+  ] }];
+  assert.equal(auditSpatialChecks(illustration, sentence).status, 'collision');
+  illustration.tracks = [{ targetId: 'ball', property: 'position3d', keyframes: [
+    { frame: 0, value: [.8, 0, 0] }, { frame: 24, value: [.8, 0, 0] }
+  ] }, { targetId: 'ball', property: 'opacity', keyframes: [
+    { frame: 0, value: 0 }, { frame: 12, value: 1 }, { frame: 24, value: 0 }
+  ] }];
+  assert.equal(auditSpatialChecks(illustration, sentence).status, 'collision');
 });
 test('contact is permitted but penetration is not; rotated boxes respect their actual axes', () => {
   const basis = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -73,4 +94,11 @@ test('approved creative direction is injected on first authorship and repair req
     assert.match(prompt, /person-a/);
   }
   assert.equal(sceneFailureTag(new Error('illustration: colisão ball[0] atravessa post[0]')), 'invalid_adaptive_illustration');
+});
+test('author receives measured word times so offsets are not mistaken for elapsed sentence time', () => {
+  const spoken = { ...sentence, startFrame: 240, endFrame: 480, wordTimings: [{ text: 'esfera', startFrame: 276 }] };
+  const prompt = buildAdaptivePrompt({ plan: { title: 'Movimento', fps: 24 }, chapterInputs: [{ id: 'scene-1', narration: [spoken] }] });
+  assert.match(prompt, /"startFrame":240,"endFrame":480,"fps":24/);
+  assert.match(prompt, /"wordCues":\[\{"text":"esfera","atSeconds":1\.5\}\]/);
+  assert.match(prompt, /não some novamente o tempo desde o começo/);
 });
