@@ -58,7 +58,10 @@
     "undici": "^6.29.1",
     "@google-cloud/local-auth": {
       "google-auth-library": "^10.9.0"
-    }
+    },
+    "follow-redirects": "^1.16.2",
+    "qs": "^6.16.1",
+    "body-parser": "^1.20.9"
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.2.0"
