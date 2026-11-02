@@ -1097,29 +1097,39 @@ HOOK: ${String(script.hook).slice(0, 300)}
 PRIMEIRA SEÇÃO: ${String(script.mainContent?.sections?.[0]?.content || '').slice(0, 400)}
 A capa deve ser específica desta pauta e deste nicho: inclua o nome exato do modelo/produto quando ele for o assunto central, junto do tema ou novidade abordada, sem trocar por uma chamada genérica. Exemplo de estrutura, não de conteúdo a copiar: NOME DO MODELO + ASSUNTO. Desperte curiosidade sem prometer algo que o vídeo não entrega.
 A chamada da thumbnail é apenas texto da imagem, não muda roteiro nem vídeo. Se não der para escrever uma chamada curta e fiel usando as palavras do conteúdo, use null.`;
-  try {
-    await reserveCall('nvidia', nvidiaLimit, { jobId: JOB_ID, operation: 'seo-metadata' });
-    const res = await fetchWithTimeout('https://integrate.api.nvidia.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: modelo, messages: [{ role: 'user', content: prompt }], max_tokens: 500, temperature: 0.4 })
-    }, 45_000);
-    if (!res.ok) throw new Error(`NVIDIA HTTP ${res.status}`);
-    const data = await res.json();
-    const seo = parseScriptJson(data.choices?.[0]?.message?.content || '');
-    // Sanity: título válido em PT-BR (não vazio, não inglês) — senão usa o do roteiro.
-    if (!seo.youtubeTitle || isEnglish(seo.youtubeTitle)) seo.youtubeTitle = script.title;
-    if (typeof seo.description !== 'string' || seo.description.length < 20) seo.description = null;
-    if (typeof seo.hashtags !== 'string' || !/#/.test(seo.hashtags)) seo.hashtags = null;
-    return seo;
-  } catch (error) {
-    if (error.code === 'BUDGET_EXHAUSTED') {
-      console.log('      SEO pulado: orçamento diário da NVIDIA esgotado');
-      return null;
+  const { cachedOptionalMetadata } = require('../utils/optional-metadata-cache');
+  return cachedOptionalMetadata({
+    cacheDir: path.join(__dirname, '..', 'data', 'cache', 'seo-metadata'),
+    // Feed age changes each retry. Only crossing into stale-source guidance
+    // changes this identity; the same reviewed content must not spend hourly.
+    identity: { revision: 1, jobId: JOB_ID, sourceUrl: article?.link || '',
+      prompt: freshnessGuidance ? prompt.replace(freshnessGuidance, '\nSOURCE_IS_STALE') : prompt },
+    generate: async () => {
+      try {
+        await reserveCall('nvidia', nvidiaLimit, { jobId: JOB_ID, operation: 'seo-metadata' });
+        const res = await fetchWithTimeout('https://integrate.api.nvidia.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelo, messages: [{ role: 'user', content: prompt }], max_tokens: 500, temperature: 0.4 })
+        }, 45_000);
+        if (!res.ok) throw new Error(`NVIDIA HTTP ${res.status}`);
+        const data = await res.json();
+        const seo = parseScriptJson(data.choices?.[0]?.message?.content || '');
+        // Sanity: título válido em PT-BR (não vazio, não inglês) — senão usa o do roteiro.
+        if (!seo.youtubeTitle || isEnglish(seo.youtubeTitle)) seo.youtubeTitle = script.title;
+        if (typeof seo.description !== 'string' || seo.description.length < 20) seo.description = null;
+        if (typeof seo.hashtags !== 'string' || !/#/.test(seo.hashtags)) seo.hashtags = null;
+        return seo;
+      } catch (error) {
+        if (error.code === 'BUDGET_EXHAUSTED') {
+          console.log('      SEO pulado: orçamento diário da NVIDIA esgotado');
+          return null;
+        }
+        console.warn(`      SEO dinâmico falhou (usando fallback): ${safeErrorTag(error)}`);
+        return null;
+      }
     }
-    console.warn(`      SEO dinâmico falhou (usando fallback): ${safeErrorTag(error)}`);
-    return null;
-  }
+  });
 }
 
 async function loadOrWriteScript({
@@ -2880,7 +2890,9 @@ if (require.main === module) {
       ...(error.code ? { stage: error.code } : {})
     });
     console.error('FALHA: geração interrompida', safeErrorTag(error),
-      error.causeFailureCode ? `(causa ${error.causeFailureCode})` : '');
+      error.causeFailureCode ? `(causa ${error.causeFailureCode})` : '',
+      typeof error.retryAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(error.retryAt)
+        && Number.isFinite(Date.parse(error.retryAt)) ? `retryAt=${error.retryAt}` : '');
     process.exit(1);
   });
 }

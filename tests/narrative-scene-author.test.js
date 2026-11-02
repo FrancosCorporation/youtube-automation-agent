@@ -477,7 +477,7 @@ test('fallback Gemini também rejeita cena que não passa na validação', async
     reserve: async () => {},
     geminiRequest: async () => { calls++; return JSON.stringify({ scenes: [authoredScene({ objects: [] })] }); }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.equal(calls, 4);
+  assert.equal(calls, 5);
 });
 
 test('cena sem cobertura de uma frase é rejeitada antes do cache e mantém falha recuperável', async t => {
@@ -576,7 +576,8 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
     for (const gesture of scene.presenter.gestureCues) gesture.cueSentenceId = cue;
     return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify({ scenes: [scene] }) } }] }) };
   };
-  const options = { plan, sourceContext: 'Contexto da fonte aprovada.', cacheDir, logger: {}, reserve: async () => {}, request };
+  let now = Date.now();
+  const options = { now: () => now, plan, sourceContext: 'Contexto da fonte aprovada.', cacheDir, logger: {}, reserve: async () => {}, request };
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert.deepEqual(calls, ['batch', 'batch', 'scene-01', 'scene-02', 'scene-02']);
   const partialPath = path.join(cacheDir, (await fs.readdir(cacheDir)).find(name => name.endsWith('.scene-01.partial')));
@@ -589,6 +590,7 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
   await fs.unlink(partialPath);
   await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
+  now += 1800001;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert(calls.includes('scene-01'), 'a corrupt legacy scene must be regenerated');
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash,
@@ -596,15 +598,18 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
   await fs.unlink(partialPath);
   await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
+  now += 1800001;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert(calls.includes('scene-01'), 'legacy scenes made before the owner feedback must be regenerated');
   await fs.writeFile(legacyPath, JSON.stringify({ ...partial, inputSha256: legacyHash }));
   await fs.unlink(partialPath);
   await fs.unlink(`${partialPath}.part-1`).catch(() => {});
   calls.length = 0;
+  now += 1800001;
   await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
   assert.deepEqual(calls, ['scene-02', 'scene-02'], 'a valid exact legacy chapter survives the cache-key upgrade');
   calls.length = 0;
+  now += 1800001;
   failSecond = false;
   plan.scriptSha256 = 'b'.repeat(64); // A new collection timestamp changes the full script hash.
   plan.inputSha256 = narrativePlanInputSha256(plan);
@@ -613,6 +618,7 @@ test('fallback por capítulo reaproveita capítulo validado depois de interrupç
   assert.equal(result.author.model, 'chapter-fallback');
   assert.equal(result.scenes.length, 2);
   calls.length = 0;
+  now += 1800001;
   plan.scriptSha256 = 'c'.repeat(64);
   plan.inputSha256 = narrativePlanInputSha256(plan);
   const cached = await authorNarrativeScenes(options);
@@ -787,7 +793,7 @@ test('escalada persiste: retomada não reinicia pelo modelo pequeno', async t =>
     calls.push(model);
     throw Object.assign(new Error('provider down'), { status: 503 });
   } }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.deepEqual(calls, ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-pro-preview']);
+  assert.deepEqual(calls, ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-pro']);
   calls.length = 0;
   now += 60001;
   const result = await authorNarrativeScenes({ ...options, geminiRequest: async ({ model }) => {
@@ -906,8 +912,60 @@ test('prompt adaptativo oferece rótulos literais para evitar afirmações novas
 test('espera automática classifica erros e respeita Retry-After sem expor mensagens', () => {
   const { sceneProviderStatus, sceneProviderRetryAt } = require('../utils/narrative-scene-author');
   assert.equal(sceneProviderStatus(new Error('Retryable HTTP Error: Too Many Requests')), 429);
+  assert.equal(sceneProviderStatus({ code: 404 }), 404);
+  assert.equal(sceneProviderRetryAt({ code: 'insufficient_quota', status: 429 }, 1000), 1801000);
   assert.equal(sceneProviderRetryAt({ status: 429 }, 1000), 301000);
   assert.equal(sceneProviderRetryAt({ code: 'NVIDIA_HTTP_404' }, 1000), 1801000);
   assert.equal(sceneProviderRetryAt({ status: 503, retryAfter: '720' }, 1000), 721000);
   assert.equal(sceneProviderRetryAt(new Error('illustration: rótulo não narrado'), 1000), null);
+});
+
+test('orçamento NVIDIA bloqueia todos os seus modelos até UTC e sobrevive à retomada', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-budget-retry-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  process.env.NVIDIA_API_KEY = 'test-only';
+  t.after(async () => {
+    if (previousKey === undefined) delete process.env.NVIDIA_API_KEY;
+    else process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.parse('2026-11-02T18:00:00.000Z');
+  let reservations = 0;
+  const options = { plan: longScenePlan(), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    reserve: async () => { reservations++; throw Object.assign(new Error('local budget'), { code: 'BUDGET_EXHAUSTED' }); },
+    request: async () => { assert.fail('a cota local impede a chamada de rede'); } };
+  const check = error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE'
+    && error.retryAt === '2026-11-03T00:00:01.000Z';
+  await assert.rejects(authorNarrativeScenes(options), check);
+  assert.equal(reservations, 1, 'um limite compartilhado, não uma tentativa por modelo');
+  now += 30000;
+  await assert.rejects(authorNarrativeScenes(options), check);
+  assert.equal(reservations, 1, 'a retomada nem reserva chamadas enquanto a cota não virou');
+  now = Date.parse('2026-11-03T00:00:02.000Z');
+  await assert.rejects(authorNarrativeScenes(options), error => error.retryAt === '2026-11-04T00:00:01.000Z');
+  assert.equal(reservations, 2, 'reavalia automaticamente após a virada UTC');
+});
+
+test('indisponibilidade repetida aumenta a espera; sucesso zera o circuito', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-outage-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.parse('2026-11-02T18:00:00.000Z');
+  let calls = 0;
+  const options = { plan: basePlan(), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', routeId: 'opencode:test:large', model: 'large' }],
+    reserve: async () => {}, externalRequest: async () => { calls++; throw new Error('Connection error.'); } };
+  await assert.rejects(authorNarrativeScenes(options), error => Date.parse(error.retryAt) === now + 60000);
+  now += 30000;
+  await assert.rejects(authorNarrativeScenes(options));
+  assert.equal(calls, 1);
+  now += 30001;
+  await assert.rejects(authorNarrativeScenes(options), error => Date.parse(error.retryAt) === now + 120000);
+  now += 120001;
+  const result = await authorNarrativeScenes({ ...options, externalRequest: async () => JSON.stringify({ scenes: [authoredScene()] }) });
+  assert.equal(result.scenes.length, 1);
 });

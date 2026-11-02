@@ -43,7 +43,7 @@ const { advanceThemeRotation, validateSchedulerSettings } = require('../utils/th
 const { isPlatformTargeted, isShortsTargeted } = require('../utils/platform-video-policy');
 const { createGenerationAttemptStore, isCompletedGenerationAttempt, refreshGenerationAttempt } = require('../utils/generation-attempt');
 const { createDeferredGenerationQueue, sameAttempt } = require('../utils/deferred-generation-queue');
-const { generationFailureCodeFromLog } = require('../utils/generation-errors');
+const { generationFailureCodeFromLog, generationRetryAtFromLog } = require('../utils/generation-errors');
 const { discardTechnicallyRejectedGeneration } = require('../utils/rejected-generation-cleanup');
 const { formatGenerationRetryDelay, generationRetryDelayMs, isRetryableGenerationFailure, shouldBypassDailyBudgetBackoff } = require('../utils/generation-retry');
 const { createSchedulerRuntimeWriter, readPersistedGenerationRetryState } = require('../utils/scheduler-runtime-health');
@@ -853,13 +853,18 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
     return { ok: true, outPath: finalOutPath, jobId, videoId };
   }
   let failureCode = null;
-  try { failureCode = childResult.timedOut ? 'generation_worker_timeout' : generationFailureCodeFromLog(await fsp.readFile(logFile, 'utf8')); }
+  let retryAt = null;
+  try {
+    const failureLog = await fsp.readFile(logFile, 'utf8');
+    failureCode = childResult.timedOut ? 'generation_worker_timeout' : generationFailureCodeFromLog(failureLog);
+    if (!childResult.timedOut) retryAt = generationRetryAtFromLog(failureLog);
+  }
   catch (_error) { /* o código da falha permanece desconhecido */ }
   log(`❌ falhou (code ${childResult.code}${failureCode ? `; ${failureCode}` : ''}) — log: ${logFile}`);
   if (failureCode !== 'no_fresh_topic_candidates') {
     await notifyFailure('Geração de vídeo falhou', `motivo: ${failureCode || childResult.spawnError || 'erro_desconhecido'}\nexit code ${childResult.code}\nlog: ${logFile}`);
   }
-  return { ok: false, outPath: finalOutPath, jobId, videoId, failureCode, seed,
+  return { ok: false, outPath: finalOutPath, jobId, videoId, failureCode, seed, retryAt,
     retryable: isRetryableGenerationFailure(failureCode) };
 }
 
@@ -1292,7 +1297,8 @@ async function producer() {
           ? `🗑️ QA técnico reprovou; ${cleanup.removed.length} artefato(s) da geração removido(s), nova geração seguirá após o backoff`
           : `⚠️ QA técnico reprovou; mídia mantida porque a exclusão não foi comprovada (${cleanup.reason})`);
       }
-      const retryDelayMs = migrationCanaryRetryDelayMs(video.failureCode, generationRetryDelayMs(video.failureCode), canRunMigrationCanary());
+      const retryDelayMs = migrationCanaryRetryDelayMs(video.failureCode,
+        generationRetryDelayMs(video.failureCode, new Date(), { retryAt: video.retryAt }), canRunMigrationCanary());
       const retryLabel = formatGenerationRetryDelay(retryDelayMs);
       lastGenerationFailure = { at: new Date().toISOString(), code: video.failureCode || 'generation_failed' };
       nextGenerationRetryAt = new Date(Date.now() + retryDelayMs).toISOString();

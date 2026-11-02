@@ -22,11 +22,22 @@ test('generation retry delay validates its clock and format input', () => {
   assert.throws(() => formatGenerationRetryDelay(Number.NaN), /atraso de retry inválido/);
 });
 
-test('recursos e autoria de cenas retomam sem o backoff genérico de cinco minutos', () => {
+test('recursos retomam cedo e autoria indisponível evita repetir preparação a cada 30 s', () => {
   assert.equal(generationRetryDelayMs('host_resource_gate'), 10000);
-  assert.equal(generationRetryDelayMs('narrative_scene_provider_unavailable'), 30000);
+  assert.equal(generationRetryDelayMs('narrative_scene_provider_unavailable'), 300000);
   assert.equal(generationRetryDelayMs('narration_provider_unavailable'), 30000);
   assert.equal(isRetryableGenerationFailure('narration_provider_unavailable'), true);
+});
+
+test('scheduler respeita o prazo do autor, rejeita datas inválidas e limita espera', () => {
+  const now = new Date('2026-11-02T18:00:00.000Z');
+  const code = 'narrative_scene_provider_unavailable';
+  assert.equal(generationRetryDelayMs(code, now, { retryAt: '2026-11-02T18:30:00.000Z' }), 1800000);
+  assert.equal(generationRetryDelayMs(code, now, { retryAt: '2026-11-02T18:00:01.000Z' }), 30000);
+  assert.equal(generationRetryDelayMs(code, now, { retryAt: '2026-11-01T18:00:00.000Z' }), 300000);
+  assert.equal(generationRetryDelayMs(code, now, { retryAt: 'invalid' }), 300000);
+  assert.equal(generationRetryDelayMs(code, now, { retryAt: '2036-11-02T18:00:00.000Z' }), 86401000);
+  assert.equal(generationRetryDelayMs('source_context_too_short', now, { retryAt: '2036-11-02T18:00:00.000Z' }), 30000);
 });
 
 test('fonte curta rejeitada troca de pauta após 30 s, sem repetir o mesmo roteiro nem aguardar a cota diária', () => {

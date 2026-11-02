@@ -29,8 +29,12 @@ function delayUntilNextUtcDay(now) {
   return nextUtcDay - now.getTime() + BUDGET_RESET_GRACE_MS;
 }
 
-function generationRetryDelayMs(failureCode, now = new Date()) {
+function generationRetryDelayMs(failureCode, now = new Date(), { retryAt } = {}) {
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) throw new TypeError('data inválida para retry da geração');
+  const providerDelay = Date.parse(retryAt || '') - now.getTime();
+  if (failureCode === 'narrative_scene_provider_unavailable' && Number.isFinite(providerDelay) && providerDelay > 0) {
+    return Math.max(30000, Math.min(providerDelay, 24 * 60 * 60 * 1000 + BUDGET_RESET_GRACE_MS));
+  }
   if (failureCode === 'no_fresh_topic_candidates') return NO_FRESH_TOPIC_RETRY_DELAY_MS;
   // A source rejected before writing/rendering should advance the theme
   // rotation promptly, without relaxing the minimum factual context.
@@ -38,7 +42,7 @@ function generationRetryDelayMs(failureCode, now = new Date()) {
     'youtube_longform_narrative_too_short', 'youtube_longform_narration_too_short'].includes(failureCode)) return 30000;
   if (failureCode === 'source_claims_unverified' && process.env.PULSO_PIPELINED_PRODUCTION === '1') return 30000;
   if (failureCode === 'host_resource_gate') return 10000;
-  if (failureCode === 'narrative_scene_provider_unavailable') return 30000;
+  if (failureCode === 'narrative_scene_provider_unavailable') return DEFAULT_RETRY_DELAY_MS;
   if (failureCode === 'narration_provider_unavailable') return 30000;
   if (DAILY_RETRY_FAILURE_CODES.has(failureCode)) return delayUntilNextUtcDay(now);
   return DEFAULT_RETRY_DELAY_MS;

@@ -24,6 +24,7 @@ const FALLBACK_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
 const GEMINI_SCENE_MODEL = 'gemini:gemini-3.5-flash-lite';
 const GEMINI_FULL_MODEL = 'gemini:gemini-3.5-flash';
 const GEMINI_STRONG_MODEL = 'gemini:gemini-3.1-pro-preview';
+const GEMINI_STABLE_PRO_MODEL = 'gemini:gemini-2.5-pro';
 const NVIDIA_STRONG_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
 const NVIDIA_LARGEST_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b';
 const GENERIC_LABELS = new Set([
@@ -35,7 +36,8 @@ const THEMES = require('../config/themes.json').themes;
 // Only classify known validation failures; never log provider responses or
 // arbitrary exception messages, which may contain credentials or source text.
 function sceneProviderStatus(error) {
-  const explicit = Number(error?.status || String(error?.code || '').match(/HTTP_(\d{3})$/)?.[1]);
+  const explicit = Number(error?.status || (Number.isInteger(error?.code) ? error.code : null)
+    || String(error?.code || '').match(/HTTP_(\d{3})$/)?.[1]);
   if (explicit >= 400 && explicit <= 599) return explicit;
   const message = String(error?.message || '');
   if (/too many requests|resource.?exhausted|rate.?limit/i.test(message)) return 429;
@@ -45,14 +47,20 @@ function sceneProviderStatus(error) {
 }
 
 function sceneProviderRetryAt(error, now = Date.now()) {
+  if (error?.code === 'BUDGET_EXHAUSTED') {
+    const date = new Date(now);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1) + 1000;
+  }
   const status = sceneProviderStatus(error);
   const retryAfter = error?.retryAfter || error?.headers?.get?.('retry-after') || error?.headers?.['retry-after'];
   const explicit = /^\d+(?:\.\d+)?$/.test(String(retryAfter || ''))
     ? now + Number(retryAfter) * 1000 : Date.parse(retryAfter || '');
   if (Number.isFinite(explicit) && explicit > now) return explicit;
+  if (error?.code === 'insufficient_quota') return now + 30 * 60 * 1000;
   if ([401, 402, 403, 404].includes(status)) return now + 30 * 60 * 1000;
   if (status === 429) return now + 5 * 60 * 1000;
-  if (status >= 500 || /connection error|fetch failed/i.test(String(error?.message || ''))) return now + 60 * 1000;
+  if (status >= 500 || error?.name === 'TimeoutError'
+    || /timeout|connection error|fetch failed/i.test(String(error?.message || ''))) return now + 60 * 1000;
   return null;
 }
 
@@ -556,7 +564,7 @@ async function readCache(cachePath, inputSha256) {
 
 function sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled, escalated = false, externalModels = [] }) {
   const primary = geminiEnabled && geminiFirst ? GEMINI_SCENE_MODEL : nvidiaEnabled ? model : geminiEnabled ? GEMINI_SCENE_MODEL : null;
-  const strong = [...(geminiEnabled ? [GEMINI_FULL_MODEL, GEMINI_STRONG_MODEL] : []), ...externalModels,
+  const strong = [...(geminiEnabled ? [GEMINI_FULL_MODEL, GEMINI_STRONG_MODEL, GEMINI_STABLE_PRO_MODEL] : []), ...externalModels,
     ...(nvidiaEnabled ? [NVIDIA_STRONG_MODEL, NVIDIA_LARGEST_MODEL] : [])];
   return [...(!escalated ? [primary] : []), ...strong].filter((item, index, all) => item && all.indexOf(item) === index);
 }
@@ -574,7 +582,7 @@ function splitChapterInput(input) {
 }
 
 function configuredSceneProviders() {
-  const preferred = { lebang: ['gpt-6.1-sol', 'gpt-6-astra'], mwapi: ['claude-opus-5-5', 'claude-opus-5'] };
+  const preferred = { lebang: ['gpt-6.1-sol', 'gpt-6-astra'], mwapi: ['claude-opus-5-5', 'claude-opus-5'], atria: ['Atria-Dawn'] };
   return loadConfiguredOpenCodeProviders().flatMap(provider => {
     const model = (preferred[provider.id] || []).find(candidate => provider.models.includes(candidate));
     return model ? [{ ...provider, model, routeId: `opencode:${provider.id}:${model}` }] : [];
@@ -673,12 +681,36 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
   const unavailableProviders = new Set();
   const unavailableModels = new Set();
   let modelCooldowns = {};
+  let modelFailures = {};
+  const providerForModel = id => {
+    const external = externalProviders.find(provider => provider.routeId === id);
+    return external ? `script-opencode-${external.id}` : id.startsWith('gemini:') ? 'script-gemini' : 'nvidia';
+  };
+  const recordCooldown = (id, error) => {
+    const failedAt = now();
+    const failures = Math.min(10, (modelFailures[id] || 0) + 1);
+    modelFailures[id] = failures;
+    const suggestedAt = sceneProviderRetryAt(error, failedAt) || failedAt + 5 * 60 * 1000;
+    // Honor Retry-After and daily rollover, but exponentially slow repeated
+    // short outages. A dead gateway must not relaunch preparation each minute.
+    const retryAt = Math.max(suggestedAt,
+      failedAt + Math.min(30 * 60 * 1000, (suggestedAt - failedAt) * 2 ** (failures - 1)));
+    const ids = error?.code === 'BUDGET_EXHAUSTED'
+      ? sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled: Boolean(key),
+        externalModels: externalProviders.map(provider => provider.routeId) }).filter(candidate => providerForModel(candidate) === providerForModel(id))
+      : [id];
+    for (const candidate of ids) modelCooldowns[candidate] = retryAt;
+  };
   try {
     const state = JSON.parse(await fs.readFile(escalationPath, 'utf8'));
     escalated = state.inputSha256 === inputSha256 && state.escalated === true;
     if (state.inputSha256 === inputSha256 && state.modelCooldowns && typeof state.modelCooldowns === 'object') {
       modelCooldowns = Object.fromEntries(Object.entries(state.modelCooldowns)
         .filter(([id, until]) => /^[a-zA-Z0-9:._/-]{1,200}$/.test(id) && Number.isFinite(until) && until > now()));
+    }
+    if (state.inputSha256 === inputSha256 && state.modelFailures && typeof state.modelFailures === 'object') {
+      modelFailures = Object.fromEntries(Object.entries(state.modelFailures)
+        .filter(([id, count]) => /^[a-zA-Z0-9:._/-]{1,200}$/.test(id) && Number.isSafeInteger(count) && count > 0 && count <= 10));
     }
   } catch { /* No failed small-model attempt for these exact inputs yet. */ }
   let hasValidPartial = false;
@@ -699,6 +731,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     // the exact same validation and per-chapter cache.
     if (!key || resumedEscalation || hasValidPartial || (geminiEnabled && geminiFirst) || chapterInputs.length >= CHAPTER_FIRST_THRESHOLD || plan.sentences.length > MAX_SENTENCES_PER_REQUEST) break;
     const attemptModel = models[attempt - 1];
+    if (modelCooldowns[attemptModel] > now()) continue;
     try {
       await reserve('nvidia', Number(process.env.NVIDIA_CALLS_PER_DAY || 200), {
         jobId: plan.jobId, operation: 'narrative-scene-author'
@@ -744,7 +777,9 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
           ? [cleanText(error.message, 300)] : [];
       logger.warn?.(`autoria de cenas ${attempt}/${MAX_MODEL_ATTEMPTS} (${attemptModel}) falhou (${failureTag})`);
       escalated = true;
-      await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns })}\n`);
+      // A timed-out batch may still succeed as smaller scene requests.
+      if (!retryErrors.length && error?.name !== 'TimeoutError') recordCooldown(attemptModel, error);
+      await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures })}\n`);
       if (attempt === MAX_MODEL_ATTEMPTS || error?.code === 'BUDGET_EXHAUSTED') break;
     }
   }
@@ -805,7 +840,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
             for (let modelIndex = 0; modelIndex < chapterModels.length; modelIndex += 1) {
               const attemptModel = chapterModels[modelIndex];
               const external = externalProviders.find(provider => provider.routeId === attemptModel);
-              const provider = external ? `script-opencode-${external.id}` : attemptModel.startsWith('gemini:') ? 'script-gemini' : 'nvidia';
+              const provider = providerForModel(attemptModel);
               if (unavailableProviders.has(provider) || unavailableModels.has(attemptModel)) continue;
               if (modelCooldowns[attemptModel] > now()) {
                 logger.info?.(`${attemptModel}: aguardando disponibilidade por ${Math.ceil((modelCooldowns[attemptModel] - now()) / 1000)}s`);
@@ -841,6 +876,8 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                   if (body.choices?.[0]?.finish_reason === 'length') throw Object.assign(new Error('resposta de cena truncada'), { code: 'NARRATIVE_SCENE_RESPONSE_TRUNCATED' });
                   content = body.choices?.[0]?.message?.content;
                 }
+                delete modelFailures[attemptModel];
+                delete modelCooldowns[attemptModel];
                 localValidation = true;
                 const parsed = parseJson(content);
                 if (!Array.isArray(parsed.scenes) || parsed.scenes.length !== 1) throw new Error('resposta não contém exatamente uma cena');
@@ -875,13 +912,12 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 // this run. A subsequent scheduler attempt may retry the route.
                 if (!repairable) {
                   unavailableModels.add(attemptModel);
-                  const retryAt = sceneProviderRetryAt(error, now());
-                  if (retryAt) modelCooldowns[attemptModel] = retryAt;
+                  recordCooldown(attemptModel, error);
                 }
                 // Escalate immediately. Persist this decision before another API
                 // call so scheduler retries never restart the small-model loop.
                 escalated = true;
-                await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns })}\n`);
+                await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures })}\n`);
                 await writeAtomic(feedbackPath, `${JSON.stringify({ inputSha256, partSha256, feedback: chapterFeedback.slice(-8),
                   ...(retryDraft ? { draft: retryDraft, draftSha256: sha256(Buffer.from(stableJson(retryDraft))) } : {}) })}\n`);
                 // Small models escalate immediately. Capable models get one repair
@@ -937,8 +973,16 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
   // parts even when the last route returned 401/404/budget: a terminal code here
   // used to discard the episode after another provider made useful progress.
   logger.warn?.(`autoria pendente; retomada preservada (${sceneFailureTag(lastError)})`);
+  // Report the earliest usable route, including providers blocked by the
+  // shared local budget. The parent must not restart all media preparation
+  // every 30 seconds while every author route is cooling down.
+  const retryNow = now();
+  const routes = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled: Boolean(key), escalated: true,
+    externalModels: externalProviders.map(provider => provider.routeId) });
+  const retryAt = new Date(Math.min(...routes.map(id => modelCooldowns[id] > retryNow
+    ? modelCooldowns[id] : retryNow + 5 * 60 * 1000), retryNow + 24 * 60 * 60 * 1000)).toISOString();
   throw Object.assign(new Error('não foi possível criar um plano visual validado: NARRATIVE_SCENE_PROVIDER_UNAVAILABLE'), {
-    code: 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE'
+    code: 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE', retryAt
   });
 }
 
