@@ -62,3 +62,37 @@ test('narrated people cannot fall back to procedural person glyphs', () => {
   raw[0].nodes[0].evidence = 'pessoa';
   assert.throws(() => normalizeIllustrations(raw, [spoken], 24), /não desenhe pessoas com pictogramas/);
 });
+
+test('geometry repair identifies the exact mesh axis and numeric bounds', () => {
+  const data = drawing(); data[0].dimension = '3d';
+  for (const node of data[0].nodes) {
+    node.shapes = [];
+    node.meshes = [{ type: 'box', color: '#75baca', size: [3, .3, 2] }];
+  }
+  data[0].nodes[0].meshes[0].size[1] = -0.3;
+  assert.throws(() => normalizeIllustrations(data, [sentence], 24), error =>
+    error.message.includes('s1/wave.meshes[0].size[1]')
+    && error.message.includes('recebido -0.3') && error.message.includes('permitido 0.01–12'));
+  data[0].nodes[0].meshes[0].size[1] = .3;
+  assert.equal(normalizeIllustrations(data, [sentence], 24)[0].nodes[0].meshes[0].size[1], .3);
+});
+
+test('missing scale amount has an actionable diagnostic without echoing arbitrary values', () => {
+  const data = drawing(); data[0].motions[0].kind = 'scale';
+  assert.throws(() => normalizeIllustrations(data, [sentence], 24), error =>
+    error.message.includes('s1/wave.scale') && error.message.includes('tipo undefined')
+    && error.message.includes('permitido 0.05–3'));
+  data[0].motions[0].amount = 'private-token-example';
+  assert.throws(() => normalizeIllustrations(data, [sentence], 24), error =>
+    error.message.includes('tipo string') && !error.message.includes('private-token-example'));
+  data[0].motions[0].amount = 1.5;
+  assert.equal(normalizeIllustrations(data, [sentence], 24)[0].motions[0].amount, 1.5);
+});
+
+test('author prompt declares required scale and rotation limits used by the validator', () => {
+  const { illustrationPrompt } = require('../utils/narrative-illustration-plan');
+  const prompt = illustrationPrompt();
+  assert.match(prompt, /scale exige amount numérico entre \.05 e 3/);
+  assert.match(prompt, /rotate exige amount numérico em graus entre -360 e 360/);
+  assert.match(prompt, /rotation em radianos entre -6\.3 e 6\.3/);
+});
