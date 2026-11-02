@@ -266,6 +266,7 @@ function normalizeScene(raw, input, plan, textCorpus, { repairLayout } = {}) {
   if (repairLayout && Array.isArray(raw.illustrations)) {
     raw = { ...raw, illustrations: raw.illustrations.map(completeMovingBodyChecks) };
   }
+  const authoredDraft = raw;
   // The adaptive author specifies the drawing itself. Legacy metadata is
   // derived locally for existing audit/renderer consumers, never requested as
   // a second competing scene from the model.
@@ -419,13 +420,22 @@ function normalizeScene(raw, input, plan, textCorpus, { repairLayout } = {}) {
   });
   if (!gestureCues.length || gestureCues.length > 6) throw new Error(`${input.id}: gestos narrativos ausentes ou excessivos`);
   const asset = plan.assets.find(item => item.id === input.assetId);
+  let illustrations;
+  try { illustrations = normalizeIllustrations(raw.illustrations, input.narration, plan.fps, { repairLayout }); }
+  catch (error) {
+    if (repairLayout && Array.isArray(error.illustrationDrafts)) {
+      const drafts = new Map(error.illustrationDrafts.map(item => [item.cueSentenceId, item]));
+      error.sceneDraft = { ...authoredDraft, illustrations: authoredDraft.illustrations.map(item => drafts.get(item.cueSentenceId) || item) };
+    }
+    throw error;
+  }
   return {
     id: input.id, chapterId: input.chapterId, title: input.chapterTitle,
     visualThesis,
     startFrame: input.startFrame, durationInFrames: input.durationInFrames,
     sentenceIds: input.sentenceIds, claimRefs: input.sentenceIds.map(id => `claim-${id}`), objects, actions, cameraShots,
     presenter: { side, framing, gestureCues }, layouts,
-    illustrations: normalizeIllustrations(raw.illustrations, input.narration, plan.fps, { repairLayout }),
+    illustrations,
     direction: input.narration.map((sentence, index) => directNarrativeBeat({ sentence,
       previousSentence: input.narration[index - 1] || input.previousSentence, source: plan.source, fps: plan.fps })).filter(Boolean),
     ...(asset ? { assetId: asset.id } : {})
@@ -910,7 +920,16 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 await writeAtomic(partPath, `${JSON.stringify({ inputSha256, partSha256, scene: partScene, model: partModel,
                   sceneSha256: sha256(Buffer.from(stableJson(partScene))) })}\n`);
                 logger.info?.(`${input.id} parte ${partIndex + 1}/${parts.length}: rascunho anterior revalidado localmente`);
-              } catch { partScene = null; /* Invalid drafts still require a bounded writer repair. */ }
+              } catch (error) {
+                partScene = null;
+                if (error.sceneDraft && stableJson(error.sceneDraft).length <= 120000) {
+                  retryDraft = error.sceneDraft;
+                  const feedback = cleanText(error.message, 300);
+                  if (feedback && !chapterFeedback.includes(feedback)) chapterFeedback.push(feedback);
+                  chapterFeedback = chapterFeedback.slice(-8);
+                }
+                // Invalid drafts still require a bounded writer repair.
+              }
             }
             const chapterModels = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaModels,
               nvidiaEnabled: Boolean(key), escalated: escalated || parts.length > 1,
@@ -986,6 +1005,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                   || (localValidation && /^NARRATIVE_SCENE_(?:JSON_MISSING|JSON_INVALID)$/.test(failureTag))
                   || failureTag === 'NARRATIVE_SCENE_RESPONSE_TRUNCATED';
                 if (repairable) validationFailures += 1;
+                if (repairable && error.sceneDraft && stableJson(error.sceneDraft).length <= 120000) retryDraft = error.sceneDraft;
                 const localDetail = repairable && !error?.code && /^(?:scene-\d+: |illustration:)/.test(String(error?.message || ''))
                   ? cleanText(error.message, 300) : '';
                 logger.warn?.(`autoria de ${input.id} (${attemptModel}) falhou (${failureTag})${localDetail ? `: ${localDetail}` : ''}`);

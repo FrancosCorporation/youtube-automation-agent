@@ -31,6 +31,7 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
   if (raw == null || Array.isArray(raw) && raw.length === 0) return [];
   if (!Array.isArray(raw) || raw.length !== sentences.length) fail('uma composição por frase é obrigatória');
   const seen = new Set();
+  const completed = [];
   return raw.map(item => {
     const sentence = sentences.find(cue => cue.id === item.cueSentenceId);
     if (!sentence || seen.has(sentence.id)) fail('frase ausente ou repetida');
@@ -130,7 +131,14 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
     if (spatialChecks.length && dimension !== '3d') fail('spatialChecks requer cena 3D');
     let illustration = { version: 3, dimension, cueSentenceId: sentence.id, explanation: item.explanation, nodes, motions, tracks, camera: cameras, spatialChecks };
     if (repairLayout) illustration = repairLayout(illustration, sentence);
-    assertSpatialChecks(illustration, sentence);
+    try { assertSpatialChecks(illustration, sentence); }
+    catch (error) {
+      // Feed the writer the geometry actually audited after local repairs,
+      // while retaining the rejection. No invalid plan becomes a checkpoint.
+      if (repairLayout) error.illustrationDrafts = [...completed, illustration];
+      throw error;
+    }
+    completed.push(illustration);
     return illustration;
   });
 }

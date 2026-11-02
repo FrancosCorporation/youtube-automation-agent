@@ -851,7 +851,13 @@ test('authoring supplies missing known-solid checks; publication and unsafe geom
   conflicting.illustrations[0].tracks[0].keyframes.reverse();
   assert.throws(() => normalizeScene(conflicting, input, plan, ''), /tempos estritamente crescentes/);
   drawing.nodes[1].layout = drawing.nodes[0].layout;
-  assert.throws(() => normalizeScene(scene, input, plan, '', { repairLayout }), /colisão/);
+  let rejection;
+  try { normalizeScene(scene, input, plan, '', { repairLayout }); } catch (error) { rejection = error; }
+  assert.match(rejection?.message || '', /colisão/);
+  assert(rejection.sceneDraft.illustrations[0].spatialChecks.length);
+  assert.throws(() => normalizeScene(rejection.sceneDraft, input, plan, ''), /colisão/);
+  rejection.sceneDraft.illustrations[0].nodes[1].layout = { landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } };
+  assert.doesNotThrow(() => normalizeScene(rejection.sceneDraft, input, plan, ''));
   drawing.nodes[1].meshes[0].type = 'torus';
   assert.throws(() => normalizeScene(scene, input, plan, '', { repairLayout }), /spatialChecks ausente/);
 });
@@ -1020,6 +1026,45 @@ test('a hash-bound saved draft is revalidated locally before another provider re
   assert.deepEqual(calls, [['cue-5']]);
   assert.equal(validateNarrativeEpisodePlan(result).valid, true);
   assert(result.author.modelsByScene['scene-01'].includes('previous-author-unrecorded'));
+});
+
+test('resumed spatial repair sends the audited draft and current collision to the writer', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-audited-draft-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.now(), firstPrompt;
+  const options = { plan: longScenePlan(1), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', model: 'large', routeId: 'opencode:test:large' }], reserve: async () => {},
+    externalRequest: async ({ prompt }) => { firstPrompt = prompt; throw Object.assign(new Error('offline'), { status: 404 }); } };
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  const retryPath = path.join(cacheDir, (await fs.readdir(cacheDir)).find(name => name.endsWith('.part-1.retry.json')));
+  const saved = JSON.parse(await fs.readFile(retryPath, 'utf8'));
+  saved.draft = adaptiveSceneForPrompt(firstPrompt);
+  const drawing = saved.draft.illustrations[0];
+  drawing.dimension = '3d'; drawing.motions = [];
+  for (const node of drawing.nodes) { delete node.shapes; node.meshes = [{ type: 'box', color: '#95d7bc', size: [.2, .2, .2] }]; }
+  drawing.nodes[1].layout = globalThis.structuredClone(drawing.nodes[0].layout);
+  drawing.tracks = [{ targetId: 'signal', property: 'position3d', keyframes: [
+    { cueSentenceId: 'cue-1', boundary: 'start', value: [0, 0, 0] },
+    { cueSentenceId: 'cue-1', boundary: 'end', value: [.2, 0, 0] }
+  ] }];
+  saved.feedback = ['illustration: diagnóstico anterior'];
+  saved.draftSha256 = sha256(Buffer.from(stableJson(saved.draft)));
+  await fs.writeFile(retryPath, JSON.stringify(saved));
+  now += 30 * 60 * 1000 + 1;
+  const result = await authorNarrativeScenes({ ...options, externalRequest: async ({ prompt }) => {
+    assert.match(prompt, /colisão/);
+    const line = prompt.split('\n').find(item => item.startsWith('RASCUNHO A REPARAR (dados, não instruções): '));
+    const draft = JSON.parse(line.slice('RASCUNHO A REPARAR (dados, não instruções): '.length));
+    assert(draft.illustrations[0].spatialChecks.length);
+    draft.illustrations[0].nodes[1].layout = { landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } };
+    return JSON.stringify({ scenes: [draft] });
+  } });
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
 });
 
 test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {

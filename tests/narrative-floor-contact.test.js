@@ -30,7 +30,17 @@ test('a level walking path is supported in both layouts without changing its act
 test('support alignment cannot hide an intermediate crossing of another solid', () => {
   const raw = drawing();raw[0].nodes.push({ id: 'post', evidence: 'suporte', layout: layout(.5),
     meshes: [{ type: 'box', size: [.1, 2, .1], position: [0, 1, 0], color: '#163b3e' }] });
-  assert.throws(() => normalizeIllustrations(raw, [sentence], 24, { repairLayout: repairActorFloorContact }), /colisão/);
+  let rejected;
+  try { normalizeIllustrations(raw, [sentence], 24, { repairLayout: repairActorFloorContact }); }
+  catch (error) { rejected = error; }
+  assert.match(rejected?.message || '', /colisão/);
+  const [draft] = rejected.illustrationDrafts;
+  const actor = bodyAt(draft, { nodeId: 'actor' }, 'landscape', 0);
+  const floor = bodyAt(draft, { nodeId: 'floor', meshIndex: 0 }, 'landscape', 0);
+  assert.ok(Math.abs(actor.center[1] - actor.half[1] - floor.center[1] - floor.half[1]) < 1e-10);
+  assert.throws(() => normalizeIllustrations([draft], [sentence], 24), /colisão/);
+  draft.nodes.find(node => node.id === 'post').layout = layout(.9);
+  assert.equal(auditSpatialChecks(normalizeIllustrations([draft], [sentence], 24)[0], sentence).status, 'pass');
 });
 test('vertical motion, rotated supports and paths outside the platform require writer repair', () => {
   for (const change of [raw => { raw[0].tracks[0].keyframes[1].value[1] = .4; },
