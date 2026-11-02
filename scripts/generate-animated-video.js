@@ -23,12 +23,11 @@ const { NarrativeEpisodeRenderer, assertRenderCapacity } = require('../utils/nar
 const { createNarrativeEpisodePlan, sha256: sha256Buffer, stableJson } = require('../utils/narrative-episode-plan');
 const { authorNarrativeScenes } = require('../utils/narrative-scene-author');
 const { loadPinnedNarrativePlan, savePinnedNarrativePlan } = require('../utils/narrative-resume-plan');
-const { fetchSourceCoverImage } = require('../utils/source-cover-image');
 const { assertSafeVisualRebuildOutput } = require('../utils/hyperframes-video-renderer');
 const { GeminiImageProvider } = require('../utils/gemini-image-provider');
-const { buildThumbnailHtml, buildPortraitThumbnailHtml, chooseLocalizedThumbnailHeadline, selectThumbnailHeroImage,
+const { buildThumbnailHtml, buildPortraitThumbnailHtml, chooseLocalizedThumbnailHeadline,
   THUMBNAIL_CANVAS, THUMBNAIL_RENDER_POLICY, PORTRAIT_THUMBNAIL_CANVAS, PORTRAIT_THUMBNAIL_RENDER_POLICY } = require('../utils/thumbnail-design');
-const { buildGroundedThumbnailArtInput, generateThumbnailArt } = require('../utils/thumbnail-art');
+const { NANO_BANANA_PRO_MODEL_ID, buildGroundedThumbnailArtInput, generateThumbnailArt } = require('../utils/thumbnail-art');
 const { selectThemePalette } = require('../utils/theme-visuals');
 const { getMediaDuration, checkFFmpeg, probeVideoHealth } = require('../utils/ffmpeg');
 const { updateTopicLedger } = require('../utils/topic-ledger');
@@ -40,6 +39,7 @@ const { collectUsedTopicSignals } = require('../utils/topic-history');
 const { resolveEditorialFormat, editorialFormatPrompt } = require('../utils/editorial-formats');
 const { fetchWithTimeout } = require('../utils/fetch-with-timeout');
 const { requestNvidiaChatCompletion } = require('../utils/nvidia-chat-completions');
+const { initializeNvidiaRuntime, nvidiaDailyLimit } = require('../utils/nvidia-runtime');
 const { AITextService, PROVIDERS, GEMINI_MODELS } = require('../utils/ai-text-service');
 const {
   getConfiguredMimoCodeProvider,
@@ -98,6 +98,8 @@ const SCRIPT_GENERATION_MODELS = Object.freeze([
   Object.freeze({ id: 'openai/gpt-oss-20b', timeoutMs: 120_000, maxTokens: 4096, reasoningEffort: 'low' }),
   Object.freeze({ id: 'z-ai/glm-5.3-flash', timeoutMs: 90_000, reasoningEffort: 'low' }),
   Object.freeze({ id: 'nvidia/nemotron-3.5-lightning-30b-a3b', timeoutMs: 60_000, reasoningBudget: 1024 }),
+  Object.freeze({ id: 'moonshotai/kimi-k2.6', timeoutMs: 120_000, maxTokens: 16000 }),
+  Object.freeze({ id: 'deepseek-ai/deepseek-v4.1-flash', timeoutMs: 120_000, maxTokens: 16000 }),
   Object.freeze({ id: 'nvidia/nemotron-3-super-120b-a12b', timeoutMs: 90_000, reasoningEffort: 'low' }),
   Object.freeze({ id: 'nvidia/nemotron-3-ultra-550b-a55b', timeoutMs: 120_000 })
 ]);
@@ -358,6 +360,7 @@ function scriptGenerationRequestOptions(model, targetWords) {
   return {
     stream: false,
     max_tokens: Math.min(configuredCap, requestedTokens),
+    ...(model?.id?.startsWith('moonshotai/kimi') ? { chat_template_kwargs: { thinking: false } } : {}),
     ...(model?.reasoningEffort ? { reasoning_effort: model.reasoningEffort } : {}),
     ...(Number.isSafeInteger(model?.reasoningBudget) ? { reasoning_budget: model.reasoningBudget } : {})
   };
@@ -644,10 +647,9 @@ function productionMotionVisualGuidance() {
 async function writeScriptWithNvidia({ topic, targetWords, context, extraFeedback, theme, sourceAgeHours, formatId, excludeModels = [], attemptedModels = new Set(), draft = null, preferredModel = process.env.SCRIPT_WRITER_PREFERRED_MODEL || null, callBudget = { remaining: SCRIPT_GENERATION_MAX_CALLS } }) {
   // Cada episódio tem no máximo 11 chamadas reais: a inicial e até 10 fallbacks.
   const { reserveCall, usedToday } = require('../utils/api-usage');
-  const configuredNvidiaLimit = Number(process.env.NVIDIA_CALLS_PER_DAY || 200);
-  const nvidiaLimit = Number.isSafeInteger(configuredNvidiaLimit) && configuredNvidiaLimit > 0 ? configuredNvidiaLimit : 200;
+  const nvidiaLimit = nvidiaDailyLimit();
   const disabledProviders = new Set();
-  if (process.env.NVIDIA_API_KEY && await usedToday('nvidia') >= nvidiaLimit) disabledProviders.add('nvidia');
+  if (process.env.NVIDIA_API_KEY && nvidiaLimit !== null && await usedToday('nvidia') >= nvidiaLimit) disabledProviders.add('nvidia');
   const externalProviders = loadConfiguredOpenCodeProviders();
   if (!process.env.MIMO_API_KEY) {
     const mimoCodeProvider = loadConfiguredMimoCodeProvider();
@@ -969,10 +971,9 @@ async function critiqueScript(script, topic, sourceTitle, sourceUrl, sourceConte
   if (process.env.NO_SCRIPT_CRITIC === '1') return null;
   // Sem revisão disponível o roteiro continua como rascunho e não pode ser publicado.
   const { reserveCall, usedToday } = require('../utils/api-usage');
-  const nvidiaLimitRaw = Number(process.env.NVIDIA_CALLS_PER_DAY || 200);
-  const nvidiaLimit = Number.isSafeInteger(nvidiaLimitRaw) && nvidiaLimitRaw > 0 ? nvidiaLimitRaw : 200;
+  const nvidiaLimit = nvidiaDailyLimit();
   const nvidiaRemaining = process.env.NVIDIA_API_KEY
-    ? nvidiaLimit - await usedToday('nvidia')
+    ? (nvidiaLimit === null ? Infinity : nvidiaLimit - await usedToday('nvidia'))
     : 0;
   // The consensus requires two successful reviewers. Avoid starting NVIDIA
   // calls when its local daily budget cannot cover both approvals.
@@ -1083,7 +1084,7 @@ async function generateSEO({ script, topic, article, theme, sourceAgeHours }) {
   if (!key || process.env.NO_SEO === '1') return null;
   // SEO é opcional: sem orçamento sobrando, usa fallback (não bloqueia).
   const { reserveCall } = require('../utils/api-usage');
-  const nvidiaLimit = Number(process.env.NVIDIA_CALLS_PER_DAY || 200);
+  const nvidiaLimit = nvidiaDailyLimit();
   const freshnessGuidance = buildSourceFreshnessGuidance(sourceAgeHours);
   const modelo = 'nvidia/nemotron-3.5-lightning-30b-a3b';
   // Persona do SEO também segue o tema da instância (réplica).
@@ -1690,6 +1691,56 @@ async function generateSceneImages(script, slug, topic, options = {}) {
   });
 }
 
+async function generateNanoBananaProCoverPair({ cacheDirectory, topic, sourceTitle, sourceContext } = {}) {
+  // The owner uses Gemini in Android. Its Chrome/CDP session is acquired
+  // through the same device lock used by social uploads; no host profile.
+  const provider = new GeminiImageProvider({
+    preferred: 'android', webEnabled: false, androidEnabled: true
+  });
+  let thumbnailImage = '';
+  let portraitThumbnailImage = '';
+  let landscape = null;
+  let portrait = null;
+  try {
+    // The artifact cache is usable even when Android is busy/offline. Only a
+    // cache miss should acquire/probe the shared browser via generateImage.
+    const sourceArtInput = buildGroundedThumbnailArtInput({ topic, sourceTitle, sourceContext });
+    try {
+      const generated = await generateThumbnailArt({
+        web: provider, cacheDirectory, aspectRatio: '16:9', returnDetails: true, ...sourceArtInput
+      });
+      thumbnailImage = generated.imageDataUrl;
+      landscape = generated.provenance;
+      console.log('      capa horizontal fotorealista gerada; Nano Banana Pro solicitado no prompt');
+    } catch (error) {
+      console.warn(`      capa horizontal Nano Banana Pro falhou; publicação ficará retida: ${safeErrorTag(error)}`);
+    }
+    try {
+      const generated = await generateThumbnailArt({
+        web: provider,
+        cacheDirectory,
+        aspectRatio: '9:16',
+        returnDetails: true,
+        sceneDirection: 'Compose a dedicated portrait 9:16 editorial photograph. Keep the main subject large in the upper two thirds and leave the lower third calm and dark for a separate Portuguese headline. Recompose for portrait; do not crop or extend a horizontal scene.',
+        ...sourceArtInput
+      });
+      portraitThumbnailImage = generated.imageDataUrl;
+      portrait = generated.provenance;
+      console.log('      capa vertical fotorealista gerada; Nano Banana Pro solicitado no prompt');
+    } catch (error) {
+      console.warn(`      capa vertical Nano Banana Pro falhou; publicação ficará retida: ${safeErrorTag(error)}`);
+    }
+  } catch (error) {
+    console.warn(`      perfil Gemini Nano Banana Pro indisponível; publicação ficará retida: ${safeErrorTag(error)}`);
+  } finally {
+    await provider.close().catch(() => {});
+  }
+  const thumbnailArtProvenance = landscape && portrait
+    ? { modelId: NANO_BANANA_PRO_MODEL_ID, modelName: 'Nano Banana Pro', landscape, portrait }
+    : null;
+  return { thumbnailImage, portraitThumbnailImage, thumbnailArtProvenance };
+}
+
 async function generateSceneImagesUnlocked(script, slug, topic, {
   sourceTitle = '',
   sourceUrl = '',
@@ -1710,17 +1761,6 @@ async function generateSceneImagesUnlocked(script, slug, topic, {
     { title: 'Conclusão', text: script.conclusion.finalThought || '', imagePrompt: script.conclusion?.imagePrompt || '', emotion: script.conclusion.emotion }
   ];
 
-  let available = reuseOnly;
-  if (!reuseOnly) {
-    try { available = await web.isAvailable(); }
-    catch (error) { console.warn(`      verificação Gemini falhou (${safeErrorTag(error)}); seguindo com fontes e gráficos`); }
-  }
-  if (!available) {
-    await web.close?.();
-    console.warn('      Gemini indisponível; usando prints das fontes e gráficos do roteiro, sem inserir imagens fictícias');
-    return { scenes: {}, thumbnailImage: '', portraitThumbnailImage: '', visualMode: 'graphics-and-source-prints' };
-  }
-
   const imageStyleId = crypto.createHash('sha1').update(`${SCRIPT_REVISION}:${RENDERER_ID}:narrative-scenes-v3`).digest('hex').slice(0, 8);
   const shots = {
     a: 'wide 3D editorial establishing shot with one clear focal object and layered depth',
@@ -1740,8 +1780,8 @@ async function generateSceneImagesUnlocked(script, slug, topic, {
   let libraryReady = false;
   let libraryFailed = false;
   let consecutiveFails = 0;
-  let providerCircuitOpen = false;
-  outer:
+  let generationUnavailable = false;
+  let availabilityChecked = false;
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
     const durationMs = Number(script.timings?.[i]?.durationMs);
@@ -1791,6 +1831,13 @@ async function generateSceneImagesUnlocked(script, slug, topic, {
               code: 'visual_rebuild_image_cache_missing'
             });
           }
+          if (generationUnavailable) continue;
+          if (!availabilityChecked) {
+            availabilityChecked = true;
+            try { generationUnavailable = !await web.isAvailable(); }
+            catch (error) { generationUnavailable = true; throw error; }
+            if (generationUnavailable) continue;
+          }
           await web.generateImage(prompt, pngPath);
         }
         consecutiveFails = 0;
@@ -1823,9 +1870,8 @@ async function generateSceneImagesUnlocked(script, slug, topic, {
         consecutiveFails++;
         console.warn(`      imagem ${i + 1}.${variant}/${groups.length} falhou (${safeErrorTag(error)})`);
         if (shouldStopSceneImageAttempts(error, consecutiveFails)) {
-          providerCircuitOpen = true;
-          console.warn('      Gemini sem condição de entregar imagens; encerrando tentativas deste job e seguindo com fontes e gráficos');
-          break outer;
+          console.warn('      Gemini indisponível; preservando imagens em cache e suspendendo apenas novas gerações');
+          generationUnavailable = true;
         }
       }
     }
@@ -1835,39 +1881,14 @@ async function generateSceneImagesUnlocked(script, slug, topic, {
   if (missingGroups.length) {
     console.warn(`      ${missingGroups.length}/${groups.length} seção(ões) sem imagem Gemini; essas cenas usarão prints disponíveis e gráficos do roteiro`);
   }
-  let thumbnailImage = '';
-  let portraitThumbnailImage = '';
-  if (!reuseOnly && !process.argv.includes('--no-thumb') && !providerCircuitOpen) {
-    try {
-      const sourceArtInput = buildGroundedThumbnailArtInput({ topic, sourceTitle, sourceContext });
-      thumbnailImage = await generateThumbnailArt({
-        web,
-        cacheDirectory: cacheDir,
-        aspectRatio: '16:9',
-        ...sourceArtInput
-      });
-      console.log('      arte horizontal exclusiva da capa pronta (não usada nas cenas do vídeo)');
-    } catch (error) {
-      console.warn(`      arte horizontal da capa falhou; usando fallback contextual: ${safeErrorTag(error)}`);
-    }
-    try {
-      const sourceArtInput = buildGroundedThumbnailArtInput({ topic, sourceTitle, sourceContext });
-      portraitThumbnailImage = await generateThumbnailArt({
-        web,
-        cacheDirectory: cacheDir,
-        aspectRatio: '9:16',
-        sceneDirection: 'Compose a dedicated portrait 9:16 editorial photograph. Keep the main subject large in the upper two thirds and leave the lower third calm and dark for a separate Portuguese headline. Recompose for portrait; do not crop or extend a horizontal scene.',
-        ...sourceArtInput
-      });
-      console.log('      arte vertical exclusiva da capa pronta (com composição própria)');
-    } catch (error) {
-      console.warn(`      arte vertical da capa falhou; usando fallback contextual: ${safeErrorTag(error)}`);
-    }
-  }
   try { await web?.close?.(); }
   finally { await library?.close().catch(error => console.warn(`      banco de imagens: ${safeErrorTag(error)}`)); }
+  const covers = !reuseOnly && !process.argv.includes('--no-thumb')
+    ? await generateNanoBananaProCoverPair({ cacheDirectory: cacheDir, topic, sourceTitle, sourceContext })
+    : { thumbnailImage: '', portraitThumbnailImage: '', thumbnailArtProvenance: null };
   console.log(`      ${Object.keys(images).length}/${groups.length} grupos, ${Object.values(images).reduce((n, g) => n + g.sources.length, 0)} imagens no total`);
-  return { scenes: images, thumbnailImage, portraitThumbnailImage, visualMode: sceneVisualMode(images, groups.length), sceneImageAssets };
+  return { scenes: images, ...covers,
+    visualMode: sceneVisualMode(images, groups.length), sceneImageAssets };
 }
 
 /* ---------------- referências reais (Google News RSS) ---------------- */
@@ -2026,6 +2047,7 @@ async function renderThumbnail({ title, headline, accent, brand, heroImage, topi
 /* ---------------- main ---------------- */
 
 async function main() {
+  await initializeNvidiaRuntime();
   assertRenderCapacity();
   const visualCritiqueManifestPath = arg('visual-critique-manifest', null);
   const visualCritiqueManifestSha256 = arg('visual-critique-sha256', null);
@@ -2576,6 +2598,7 @@ async function main() {
   const images = imagesResult.scenes;
   const thumbnailArt = imagesResult.thumbnailImage;
   const portraitThumbnailArt = imagesResult.portraitThumbnailImage;
+  const thumbnailArtProvenance = imagesResult.thumbnailArtProvenance;
   script.visualMode = imagesResult.visualMode || sceneVisualMode(images, script.mainContent.sections.length + 2);
   script.prints = refsResult.prints;
   if (visualRebuild && !['narrative-episode-v1', 'narrative-episode-v2'].includes(visualRebuild.sourceEditorial.visualMode)
@@ -2681,8 +2704,19 @@ async function main() {
   let thumbnailSource = null;
   if (!process.argv.includes('--no-thumb')) {
     const thumbnailStartedAt = Date.now();
+    let thumbOut = null;
+    let portraitThumbOut = null;
     try {
-      const thumbOut = path.join(path.dirname(out), `thumb_${path.basename(out, '.mp4')}.png`);
+      if (!thumbnailArt || !portraitThumbnailArt
+        || thumbnailArtProvenance?.modelId !== NANO_BANANA_PRO_MODEL_ID
+        || thumbnailArtProvenance?.landscape?.aspectRatio !== '16:9'
+        || thumbnailArtProvenance?.portrait?.aspectRatio !== '9:16') {
+        throw Object.assign(new Error('par de capas fotorealistas solicitado ao Gemini está incompleto'), {
+          code: 'NANO_BANANA_PRO_THUMBNAIL_PAIR_REQUIRED'
+        });
+      }
+      thumbOut = path.join(path.dirname(out), `thumb_${path.basename(out, '.mp4')}.png`);
+      portraitThumbOut = path.join(path.dirname(out), `thumb_${path.basename(out, '.mp4')}-portrait.png`);
       const palette = selectThemePalette(script.visualPalettes, script.seed);
       const thumbnailHeadline = chooseLocalizedThumbnailHeadline({
         candidate: seo?.thumbnailHeadline,
@@ -2691,37 +2725,22 @@ async function main() {
         sourceTitle,
         script
       });
-      const generatedHero = selectThumbnailHeroImage(images[0], thumbnailArt);
-      const sourceCover = (!generatedHero || !portraitThumbnailArt) && article?.link
-        ? await fetchSourceCoverImage(article.link) : null;
-      if (sourceCover) {
-        const imageSha256 = sha256Buffer(sourceCover.bytes);
-        await fs.mkdir(cacheDir, { recursive: true });
-        const sourceImagePath = path.join(cacheDir, `cover-source-${imageSha256}.img`);
-        try { await fs.writeFile(sourceImagePath, sourceCover.bytes, { flag: 'wx', mode: 0o600 }); }
-        catch (error) {
-          if (error.code !== 'EEXIST' || sha256Buffer(await fs.readFile(sourceImagePath)) !== imageSha256) throw error;
-        }
-        thumbnailSource = { articleUrl: sourceCover.articleUrl, imageUrl: sourceCover.sourceUrl,
-          imageSha256, imagePath: path.relative(projectRoot, sourceImagePath), ...(sourceCover.credit ? { credit: sourceCover.credit } : {}) };
-      }
       await renderThumbnail({
         title: displayTitle,
         headline: thumbnailHeadline,
         accent: palette?.accents?.[0] || script.background?.accent,
         brand: script.channel,
-        heroImage: generatedHero || sourceCover?.dataUrl || '',
+        heroImage: thumbnailArt,
         topic: displayTitle || theme.name,
         hook: thumbnailHeadline,
         outPath: thumbOut
       });
-      const portraitThumbOut = path.join(path.dirname(out), `thumb_${path.basename(out, '.mp4')}-portrait.png`);
       await renderThumbnail({
         title: displayTitle,
         headline: thumbnailHeadline,
         accent: palette?.accents?.[0] || script.background?.accent,
         brand: script.channel,
-        heroImage: portraitThumbnailArt || sourceCover?.dataUrl || '',
+        heroImage: portraitThumbnailArt,
         topic: displayTitle || theme.name,
         hook: thumbnailHeadline,
         outPath: portraitThumbOut,
@@ -2737,7 +2756,8 @@ async function main() {
         jobId: JOB_ID, destination: 'cover_art', durationMs: Date.now() - thumbnailStartedAt,
         errorCode: error.code || error.name || 'thumbnail_error'
       });
-      console.warn(`      par de capas incompleto; publicação permanece retida (vídeo mantido): ${safeErrorTag(error)}`);
+      await Promise.all([thumbOut, portraitThumbOut].filter(Boolean).map(file => fs.unlink(file).catch(() => {})));
+      console.warn(`      par Nano Banana Pro incompleto; publicação permanece retida (vídeo mantido): ${safeErrorTag(error)}`);
     }
   }
 
@@ -2791,6 +2811,7 @@ async function main() {
     thumbnailPath: thumbPath ? path.join(__dirname, '..', thumbPath) : null,
     portraitThumbnailPath: portraitThumbPath ? path.join(__dirname, '..', portraitThumbPath) : null,
     thumbnailSource,
+    thumbnailArtProvenance: thumbPath && portraitThumbPath ? thumbnailArtProvenance : null,
     sourceEvidence,
     sourceName: article?.source || '',
     sourceTimeLabel: article?.time || '',
@@ -2807,6 +2828,10 @@ async function main() {
   }
   console.log(`      QA técnico por hash: aprovado (${qa.manifest.assets.length} artefato(s))`);
 
+  const thumbnailArtReady = Boolean(thumbPath && portraitThumbPath
+    && thumbnailArtProvenance?.modelId === NANO_BANANA_PRO_MODEL_ID
+    && thumbnailArtProvenance.landscape?.aspectRatio === '16:9'
+    && thumbnailArtProvenance.portrait?.aspectRatio === '9:16');
   await recordTopic({
     jobId: JOB_ID,
     videoId: activeVideoId,
@@ -2824,12 +2849,15 @@ async function main() {
     qaManifestSha256: qa.manifestSha256,
     publicationEligible: sourceEvidence.eligible
       && publicationReview?.status === 'approved'
-      && publicationReview?.sourceHash === sourceEvidence.contextHash,
+      && publicationReview?.sourceHash === sourceEvidence.contextHash
+      && thumbnailArtReady,
+    thumbnailArtPolicy: { requiredModelId: NANO_BANANA_PRO_MODEL_ID, formats: ['16:9', '9:16'] },
     publicationReview,
     ...(!(sourceEvidence.eligible && publicationReview?.status === 'approved'
       && publicationReview?.sourceHash === sourceEvidence.contextHash)
       ? { publicationHold: { reason: sourceEvidence.reason || (publicationReview?.status === 'rejected'
-        ? 'source_claims_unverified' : 'publication_review_unverified') } } : {}),
+        ? 'source_claims_unverified' : 'publication_review_unverified') } }
+      : (!thumbnailArtReady ? { publicationHold: { reason: 'required_nano_banana_pro_thumbnail_pair_missing' } } : {})),
     originTitle, originUrl,
     videoPath: out,
     portraitVideoPath: portraitOut,

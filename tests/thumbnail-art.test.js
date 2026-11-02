@@ -57,6 +57,7 @@ test('dedicated cover art is cached and returned as an image without joining vid
         create: { width: 64, height: 36, channels: 3, background: '#cc3300' }
       }).png().toBuffer();
       await fs.writeFile(outputPath, png);
+      return { modelId: 'gemini-3-pro-image', provider: 'gemini-android', modelVerification: 'requested-not-verified', selectedMode: 'Gemini Pro', aspectRatio: '16:9' };
     }
   };
   const input = {
@@ -76,7 +77,7 @@ test('dedicated cover art is cached and returned as an image without joining vid
     assert.match(first, /^data:image\/jpeg;base64,/);
     assert.equal(second, first);
     assert.equal(generationCount, 1);
-    assert.equal(files.length, 1);
+    assert.equal(files.length, 2);
     assert.match(files[0], /^thumbnail-art-[a-f0-9]{16}\.png$/);
   } finally {
     await fs.rm(cacheDirectory, { recursive: true, force: true });

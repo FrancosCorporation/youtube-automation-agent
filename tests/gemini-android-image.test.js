@@ -265,6 +265,7 @@ test('uses Gemini-specific Android device and browser overrides without changing
   const provider = new GeminiAndroidImageGenerator({
     env,
     stateDir: '/tmp/gemini-locks',
+    autoCdp: false,
     androidOptions: {
       runner: (_exe, args) => {
         calls.push(args);

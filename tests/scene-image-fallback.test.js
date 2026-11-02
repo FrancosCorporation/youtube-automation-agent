@@ -5,7 +5,12 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { generateSceneImages, sceneVisualMode, shouldStopSceneImageAttempts } = require('../scripts/generate-animated-video');
+const { generateSceneImages: realGenerateSceneImages, sceneVisualMode, shouldStopSceneImageAttempts } = require('../scripts/generate-animated-video');
+const generateSceneImages = (script, slug, topic, options) => realGenerateSceneImages(script, slug, topic,
+  { ...options, browserSessionLockHeld: true });
+const noThumbWasSet = process.argv.includes('--no-thumb');
+test.before(() => { if (!noThumbWasSet) process.argv.push('--no-thumb'); });
+test.after(() => { if (!noThumbWasSet) process.argv.splice(process.argv.lastIndexOf('--no-thumb'), 1); });
 
 test('uses source-led graphics when Gemini is unavailable without making an image request', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-image-fallback-'));
@@ -27,6 +32,8 @@ test('uses source-led graphics when Gemini is unavailable without making an imag
       scenes: {},
       thumbnailImage: '',
       portraitThumbnailImage: '',
+      thumbnailArtProvenance: null,
+      sceneImageAssets: [],
       visualMode: 'graphics-and-source-prints'
     });
     assert.equal(closeCalled, true);
@@ -34,6 +41,32 @@ test('uses source-led graphics when Gemini is unavailable without making an imag
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
+});
+
+test('cached scene images survive an offline provider, including caches after a missing image', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-cache-offline-'));
+  const sharp = require('sharp');
+  const script = { themeId: 'ia', hook: 'O sinal parte.', mainContent: { sections: [] },
+    conclusion: { finalThought: 'O sinal chega.' } };
+  const provider = { isAvailable: async () => true, close: async () => {},
+    generateImage: async (_prompt, output) => sharp({ create: {
+      width: 96, height: 64, channels: 3, background: '#95d7bc'
+    } }).png().toFile(output) };
+  const options = { cacheDirectory: path.join(root, 'cache'), imageLibraryDirectory: path.join(root, 'library'), provider };
+  try {
+    const first = await generateSceneImages(script, 'offline', 'Um sinal', options);
+    assert.equal(first.sceneImageAssets.length, 2);
+    let probes = 0;
+    provider.isAvailable = async () => { probes++; return false; };
+    provider.generateImage = async () => assert.fail('não gerar imagens com o provedor indisponível');
+    const cached = await generateSceneImages(script, 'offline', 'Um sinal', options);
+    assert.deepEqual(cached.sceneImageAssets, first.sceneImageAssets);
+    assert.equal(probes, 0, 'cache completo não exige abrir o navegador');
+    await fs.unlink(path.resolve(__dirname, '..', first.sceneImageAssets[0].path));
+    const partial = await generateSceneImages(script, 'offline', 'Um sinal', options);
+    assert.deepEqual(partial.sceneImageAssets, [first.sceneImageAssets[1]]);
+    assert.equal(probes, 1, 'somente o cache ausente exige verificar o provedor');
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
 test('records whether generated scene images are complete, partial or absent', () => {

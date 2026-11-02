@@ -7,6 +7,8 @@ const { isPublicationEligible } = require('./publication-status');
 const { verifyVideoQaManifest } = require('./video-qa-manifest');
 const { recordVideoVisualReview } = require('./video-qa-review');
 
+const NANO_BANANA_PRO_MODEL_ID = 'gemini-3-pro-image';
+
 // Owner-authorized automatic release is recorded separately from human aesthetic
 // review. Uploaders still require the exact approved paths/hashes in the manifest.
 async function applyDelegatedPublicationReview({
@@ -46,6 +48,16 @@ async function applyDelegatedPublicationReview({
   });
   if (verified.status !== 'verified') throw new Error(`automatic review QA failed: ${verified.reason}`);
   const manifest = JSON.parse(await fs.readFile(resolvedManifestPath, 'utf8'));
+  if (entry.thumbnailArtPolicy) {
+    const requiredModelId = entry.thumbnailArtPolicy.requiredModelId;
+    const requiredFormats = [...(entry.thumbnailArtPolicy.formats || [])].sort();
+    if (requiredModelId !== NANO_BANANA_PRO_MODEL_ID
+      || requiredFormats.join(',') !== '16:9,9:16'
+      || verified.thumbnailArt?.modelId !== requiredModelId
+      || !verified.thumbnailArt.landscape || !verified.thumbnailArt.portrait) {
+      throw new Error('automatic review requires both hash-bound Nano Banana Pro covers');
+    }
+  }
   // An explicit, hash-bound rejection of a rendered master must win over the
   // owner's standing authorization for automatic review. A replacement
   // with different bytes can be reviewed independently.

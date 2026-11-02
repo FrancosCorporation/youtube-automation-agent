@@ -74,6 +74,18 @@ function imageAspectRatio(value) {
   return String(value || '16:9') === '9:16' ? '9:16' : '16:9';
 }
 
+function canBorrowInstagramScreen(activity, nodes) {
+  if (!String(activity).startsWith('com.instagram.android/')) return false;
+  const visible = nodes.filter(node => node.visible !== false);
+  if (visible.some(node => /edittext|textbox/i.test(node.className || '')
+    || /uploading|publicando|compartilhando|sending|finish posting/i.test(uiText(node)))) return false;
+  const has = id => visible.some(node => node.resourceId === `com.instagram.android:id/${id}`);
+  // Only a known read-only profile/feed/posts screen may be borrowed while
+  // holding the uploader's device lock. Login/composer/unknown screens stay put.
+  return (has('profile_tab') && has('feed_tab')) || (has('row_feed_photo_profile_name')
+    && visible.some(node => node.resourceId === 'com.instagram.android:id/action_bar_title' && /^(posts|publicacoes)$/i.test(normalized(node.text))));
+}
+
 function defaultGeminiLockPath(device, stateDir, env) {
   const kwaiDevice = env.ANDROID_DEVICE_KWAI || env.ANDROID_DEVICE || socialDevices.platforms.kwai.device;
   const sharesKwaiRedroid = socialDevices.platforms.kwai.runtime === 'redroid' && device === kwaiDevice;
@@ -94,6 +106,7 @@ class GeminiAndroidImageGenerator {
     this.sharedSocialDevice = Object.entries(socialDevices.platforms).some(([platform, config]) =>
       this.device === (this.env[`ANDROID_DEVICE_${platform.toUpperCase()}`] || this.env.ANDROID_DEVICE || config.device));
     this.control = options.control || createAndroidEmulatorControl(androidOptions);
+    this.autoCdp = options.autoCdp ?? !options.control;
     this.browserPackage = String(options.browserPackage || this.env.GEMINI_ANDROID_BROWSER_PACKAGE || FIREFOX_PACKAGE).trim();
     this.cdpUrl = String(options.cdpUrl || this.env.GEMINI_ANDROID_CDP_URL || '').trim();
     this._cdpBrowser = null;
@@ -118,7 +131,11 @@ class GeminiAndroidImageGenerator {
 
   async _withDevice(callback, timeoutMs = this.timeoutMs) {
     if (this._deviceSessionLockHeld) return callback();
-    return this.withLock(callback, {
+    return this.withLock(async () => {
+      this._deviceSessionLockHeld = true;
+      try { return await callback(); }
+      finally { this._restoreForeground(); this._deviceSessionLockHeld = false; }
+    }, {
       lockPath: this.lockPath,
       owner: 'gemini-image-generation',
       timeoutMs
@@ -130,8 +147,23 @@ class GeminiAndroidImageGenerator {
     return this.withLock(async () => {
       this._deviceSessionLockHeld = true;
       try { return await callback(); }
-      finally { this._deviceSessionLockHeld = false; }
+      finally { this._restoreForeground(); this._deviceSessionLockHeld = false; }
     }, { lockPath: this.lockPath, owner: 'gemini-image-generation-batch', timeoutMs: this.timeoutMs });
+  }
+
+  _restoreForeground() {
+    if (!this._returnActivity) return;
+    const activity = this._returnActivity;
+    this._returnActivity = null;
+    this.control.run(['shell', 'am', 'start', '--activity-reorder-to-front', '-n', activity], { timeout: 15000, allowFailure: true });
+  }
+
+  async _ensureChromeCdp() {
+    if (!this.autoCdp || this.cdpUrl || this.browserPackage !== 'com.android.chrome') return;
+    const port = String(this.control.run(['forward', 'tcp:0', 'localabstract:chrome_devtools_remote'], { timeout: 10000 })).trim();
+    if (!/^\d{4,5}$/.test(port) || Number(port) > 65535) throw new Error('GEMINI_ANDROID_CDP_UNAVAILABLE');
+    this._forwardedPort = port;
+    this.cdpUrl = `http://127.0.0.1:${port}`;
   }
 
   async _openGemini() {
@@ -145,7 +177,9 @@ class GeminiAndroidImageGenerator {
     if (this.sharedSocialDevice && !activity) throw new Error('GEMINI_ANDROID_FOREGROUND_UNKNOWN');
     if (this.sharedSocialDevice && activity && packageName !== this.browserPackage
       && !['com.google.android.apps.nexuslauncher', 'com.android.launcher3'].includes(packageName)) {
-      throw new Error('GEMINI_ANDROID_SHARED_DEVICE_IN_USE');
+      const nodes = this._deviceSessionLockHeld ? await this.control.dumpUi({ timeout: 15000 }) : [];
+      if (!this._deviceSessionLockHeld || !canBorrowInstagramScreen(activity, nodes)) throw new Error('GEMINI_ANDROID_SHARED_DEVICE_IN_USE');
+      this._returnActivity = activity;
     }
     if (activity.startsWith(`${this.browserPackage}/`)) {
       const nodes = await this.control.dumpUi({ timeout: 15000 });
@@ -153,12 +187,16 @@ class GeminiAndroidImageGenerator {
       const urlBar = nodes.find(node => node.resourceId === 'com.android.chrome:id/url_bar'
         && /gemini\.google\.com/i.test(node.text || ''));
       if (urlBar) this.activeGeminiUrl = urlBar.text;
-      if (findEditor(nodes) || nodes.some(node => /gemini\.google\.com/i.test(uiText(node)))) return;
+      if (findEditor(nodes) || nodes.some(node => /gemini\.google\.com/i.test(uiText(node)))) {
+        await this._ensureChromeCdp();
+        return;
+      }
       if (this.sharedSocialDevice) throw new Error('GEMINI_ANDROID_SHARED_BROWSER_IN_USE');
     }
     this.control.run(['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', GEMINI_URL, '-p', this.browserPackage], {
       timeout: 30000
     });
+    await this._ensureChromeCdp();
   }
 
   async _getBrowserPage(pageUrl = this.activeGeminiUrl) {
@@ -442,12 +480,19 @@ class GeminiAndroidImageGenerator {
           : 'Create one high-quality horizontal 16:9 landscape editorial still, 1920x1080 widescreen composition. Keep the main subject fully visible within the central safe area.';
         const imagePrompt = `${compositionPrompt} No text, letters, logos, labels, signatures or watermark. ${String(prompt || '').trim()}`;
         const browserPage = editor.cdpPage || null;
+        let selectedMode = null;
+        if (options.requiredModel) {
+          if (options.requiredModel !== 'gemini-3-pro-image' || !browserPage) throw new Error('GEMINI_NANO_BANANA_PRO_UNAVAILABLE');
+          const { selectNanoBananaPro } = require('./gemini-image-model');
+          selectedMode = await selectNanoBananaPro(browserPage, this.logger);
+        }
         const previousBrowserImages = browserPage
           ? (await this._browserImageSources(browserPage)).map(image => image.src)
           : [];
         stage = 'PROMPT';
         if (browserPage && editor.cdpEditor) {
-          await this._submitBrowserPrompt(browserPage, editor.cdpEditor, imagePrompt);
+          await this._submitBrowserPrompt(browserPage, editor.cdpEditor,
+            `${selectedMode ? 'Use Nano Banana Pro to generate this image. ' : ''}${imagePrompt}`);
           this._hasConversation = true;
         } else {
           this.control.tap(editor.x, editor.y);
@@ -517,7 +562,8 @@ class GeminiAndroidImageGenerator {
           await fs.rm(stagedOutput, { force: true }).catch(() => {});
           await fs.rm(tempDirectory, { recursive: true, force: true }).catch(() => {});
         }
-        return outputPath;
+        return selectedMode ? { path: outputPath, provider: 'gemini-android', modelId: 'gemini-3-pro-image',
+          modelName: 'Nano Banana Pro', modelVerification: 'requested-not-verified', selectedMode, aspectRatio } : outputPath;
       } catch (error) {
         if (safeErrorTag(error) !== 'Error') throw error;
         const code = `GEMINI_ANDROID_${stage}_FAILED`;
@@ -531,10 +577,16 @@ class GeminiAndroidImageGenerator {
   async close() {
     await this._cdpBrowser?.close().catch(() => {});
     this._cdpBrowser = null;
+    if (this._forwardedPort) {
+      this.control.run(['forward', '--remove', `tcp:${this._forwardedPort}`], { allowFailure: true, timeout: 10000 });
+      this._forwardedPort = null;
+      this.cdpUrl = '';
+    }
   }
 }
 
 module.exports = {
+  canBorrowInstagramScreen,
   DOWNLOAD_CONFIRM_TEXT,
   EDITOR_TEXT,
   FIREFOX_PACKAGE,

@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { requestNvidiaChatCompletion } = require('./nvidia-chat-completions');
 const { reserveCall } = require('./api-usage');
+const { nvidiaDailyLimit, nvidiaRouteIdentity, nvidiaSceneModels } = require('./nvidia-runtime');
 const { loadConfiguredOpenCodeProviders } = require('./opencode-providers');
 const { cueHasLongBeatVariation, cueRequiresPairedVisual } = require('./narrative-visual-semantics');
 const { narrativeBeatRelation } = require('./narrative-beat-relation');
@@ -244,6 +245,7 @@ Título: ${plan.title}. Fonte: ${JSON.stringify(plan.source)}.
 Contexto para conferência: ${String(sourceContext || '').slice(0, 9000)}
 Cenas e narração exata: ${JSON.stringify(chapterInputs.map(input => ({ id: input.id, title: input.chapterTitle, previousSentence: input.previousSentence?.text, sentences: input.narration.map(sentence => ({ id: sentence.id, text: sentence.text, literalLabels: literalLabelChoices(sentence.text), durationSeconds: (sentence.endFrame - sentence.startFrame) / plan.fps })) })))}
 Responda somente JSON válido, sem markdown, neste formato: {"scenes":[{"id":"ID fornecido", "visualThesis":"o mecanismo que será visível", "illustrations":[COMPOSIÇÕES NO SCHEMA ABAIXO]}]}.
+Contrato de saída para este pedido: ${JSON.stringify({ scenes: chapterInputs.map(input => ({ id: input.id, illustrations: input.narration.map(sentence => ({ cueSentenceId: sentence.id, dimension: '3d' })) })) })}. Complete cada composição com explanation, nodes, motions/tracks e camera. dimension, camera, tracks e spatialChecks pertencem a CADA item de illustrations, nunca à raiz da cena nem a um item separado. Não acrescente itens sem cueSentenceId. Use JSON compacto e apenas o detalhe necessário para explicar a ação; não gaste a resposta repetindo o contexto.
 Retorne exatamente as cenas solicitadas. Não gere os antigos campos objects, layouts, actions, cameraShots ou presenter: eles serão derivados localmente; concentre a autoria nas composições illustrations. Não reescreva a narração. Em label use uma das literalLabels da frase correspondente ou string vazia; não crie nomes explicativos novos. evidence e cueText continuam sendo trechos literais da frase.
 ${illustrationPrompt()}
 ${visualCritique?.length ? `Direção da revisão: ${JSON.stringify(visualCritique.map(item => ({ issue: item.issue, recommendedFix: item.recommendedFix })))}` : ''}
@@ -562,23 +564,34 @@ async function readCache(cachePath, inputSha256) {
   return null;
 }
 
-function sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled, escalated = false, externalModels = [] }) {
+function sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled, escalated = false, externalModels = [], nvidiaModels = nvidiaSceneModels() }) {
   const primary = geminiEnabled && geminiFirst ? GEMINI_SCENE_MODEL : nvidiaEnabled ? model : geminiEnabled ? GEMINI_SCENE_MODEL : null;
-  const strong = [...(geminiEnabled ? [GEMINI_FULL_MODEL, GEMINI_STRONG_MODEL, GEMINI_STABLE_PRO_MODEL] : []), ...externalModels,
-    ...(nvidiaEnabled ? [NVIDIA_STRONG_MODEL, NVIDIA_LARGEST_MODEL] : [])];
+  const strong = [...(nvidiaEnabled ? nvidiaModels : []),
+    ...(geminiEnabled ? [GEMINI_FULL_MODEL, GEMINI_STRONG_MODEL, GEMINI_STABLE_PRO_MODEL] : []), ...externalModels];
   return [...(!escalated ? [primary] : []), ...strong].filter((item, index, all) => item && all.indexOf(item) === index);
 }
 
-function splitChapterInput(input) {
+function splitChapterInput(input, limit = MAX_SENTENCES_PER_REQUEST) {
   const parts = [];
-  for (let offset = 0; offset < input.narration.length; offset += MAX_SENTENCES_PER_REQUEST) {
-    const narration = input.narration.slice(offset, offset + MAX_SENTENCES_PER_REQUEST);
+  for (let offset = 0; offset < input.narration.length; offset += limit) {
+    const narration = input.narration.slice(offset, offset + limit);
     parts.push({ ...input, narration, sentenceIds: narration.map(sentence => sentence.id),
       startFrame: narration[0].startFrame,
       durationInFrames: narration.at(-1).endFrame - narration[0].startFrame,
       previousSentence: offset ? input.narration[offset - 1] : input.previousSentence });
   }
   return parts;
+}
+
+function sceneInferenceOptions(model) {
+  if (/^nvidia\/(?:nemotron-3|nemotron-nano-3)/.test(model)) {
+    // NVIDIA documents enable_thinking=false for these models. Thinking used
+    // to consume the output allowance before the scene JSON was complete.
+    return { chat_template_kwargs: { enable_thinking: false } };
+  }
+  if (model.startsWith('z-ai/glm')) return { reasoning_effort: 'low', chat_template_kwargs: { clear_thinking: true } };
+  if (model.startsWith('moonshotai/kimi')) return { chat_template_kwargs: { thinking: false } };
+  return {};
 }
 
 function configuredSceneProviders() {
@@ -614,8 +627,9 @@ async function requestGeminiScene({ prompt, model, timeoutMs = 120000 }) {
 async function authorNarrativeScenes({ plan, sourceContext = '', model = process.env.NARRATIVE_ILLUSTRATION_MODEL || process.env.NARRATIVE_SCENE_MODEL || 'z-ai/glm-5.3-flash',
   visualCritique = null, cacheDir = path.join(ROOT, 'data', 'cache', 'narrative-scenes'), logger = console,
   reserve = reserveCall, request = requestNvidiaChatCompletion,
-  geminiEnabled = Boolean(process.env.GEMINI_API_KEY), geminiFirst = true, geminiRequest = requestGeminiScene,
-  externalProviders = configuredSceneProviders(), externalRequest = requestExternalScene, now = Date.now } = {}) {
+  geminiEnabled = Boolean(process.env.GEMINI_API_KEY), geminiFirst = false, geminiRequest = requestGeminiScene,
+  externalProviders = configuredSceneProviders(), externalRequest = requestExternalScene, now = Date.now,
+  nvidiaModels = nvidiaSceneModels() } = {}) {
   if (!plan || plan.schemaVersion !== SCHEMA_VERSION) throw new TypeError('plano-base narrativo inválido');
   if (plan.chapters?.length < 1 || plan.sentences?.length < 1
     || plan.claims?.length !== plan.sentences.length
@@ -682,6 +696,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
   const unavailableModels = new Set();
   let modelCooldowns = {};
   let modelFailures = {};
+  const nvidiaRouteKey = nvidiaRouteIdentity();
   const providerForModel = id => {
     const external = externalProviders.find(provider => provider.routeId === id);
     return external ? `script-opencode-${external.id}` : id.startsWith('gemini:') ? 'script-gemini' : 'nvidia';
@@ -696,7 +711,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     const retryAt = Math.max(suggestedAt,
       failedAt + Math.min(30 * 60 * 1000, (suggestedAt - failedAt) * 2 ** (failures - 1)));
     const ids = error?.code === 'BUDGET_EXHAUSTED'
-      ? sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled: Boolean(key),
+      ? sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaModels, nvidiaEnabled: Boolean(key),
         externalModels: externalProviders.map(provider => provider.routeId) }).filter(candidate => providerForModel(candidate) === providerForModel(id))
       : [id];
     for (const candidate of ids) modelCooldowns[candidate] = retryAt;
@@ -711,6 +726,12 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     if (state.inputSha256 === inputSha256 && state.modelFailures && typeof state.modelFailures === 'object') {
       modelFailures = Object.fromEntries(Object.entries(state.modelFailures)
         .filter(([id, count]) => /^[a-zA-Z0-9:._/-]{1,200}$/.test(id) && Number.isSafeInteger(count) && count > 0 && count <= 10));
+    }
+    // A new credential/budget policy must not inherit a denial recorded for
+    // the old .env route. Other providers keep their own circuit state.
+    if (state.nvidiaRouteKey !== nvidiaRouteKey) {
+      for (const id of Object.keys(modelCooldowns)) if (providerForModel(id) === 'nvidia') delete modelCooldowns[id];
+      for (const id of Object.keys(modelFailures)) if (providerForModel(id) === 'nvidia') delete modelFailures[id];
     }
   } catch { /* No failed small-model attempt for these exact inputs yet. */ }
   let hasValidPartial = false;
@@ -733,7 +754,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     const attemptModel = models[attempt - 1];
     if (modelCooldowns[attemptModel] > now()) continue;
     try {
-      await reserve('nvidia', Number(process.env.NVIDIA_CALLS_PER_DAY || 200), {
+      await reserve('nvidia', nvidiaDailyLimit(), {
         jobId: plan.jobId, operation: 'narrative-scene-author'
       });
       const response = await request({
@@ -742,8 +763,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
         body: {
           model: attemptModel, stream: false, max_tokens: Math.min(16000, Math.max(5000, chapterInputs.length * 1800)),
           temperature: 0.2,
-          ...(attemptModel.startsWith('z-ai/glm') ? { reasoning_effort: 'low', chat_template_kwargs: { clear_thinking: true } }
-            : attemptModel === FALLBACK_MODEL ? { reasoning_budget: 1024 } : {}),
+          ...sceneInferenceOptions(attemptModel),
           messages: [{ role: 'user', content: buildAdaptivePrompt({ plan, chapterInputs, sourceContext, retryErrors, visualCritique }) }]
         }
       });
@@ -779,7 +799,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
       escalated = true;
       // A timed-out batch may still succeed as smaller scene requests.
       if (!retryErrors.length && error?.name !== 'TimeoutError') recordCooldown(attemptModel, error);
-      await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures })}\n`);
+      await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures, nvidiaRouteKey })}\n`);
       if (attempt === MAX_MODEL_ATTEMPTS || error?.code === 'BUDGET_EXHAUSTED') break;
     }
   }
@@ -803,7 +823,24 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
       } catch { /* invalid or missing partial is regenerated */ }
       if (!scene) {
         let chapterError = null;
-        const parts = splitChapterInput(input);
+        let parts = splitChapterInput(input);
+        const partitionPath = `${chapterCachePath}.partition.json`;
+        const chapterSha256 = sha256(Buffer.from(stableJson(input)));
+        try {
+          const saved = JSON.parse(await fs.readFile(partitionPath, 'utf8'));
+          if (saved.inputSha256 === inputSha256 && saved.chapterSha256 === chapterSha256
+            && Array.isArray(saved.partitions) && saved.partitions.every(ids => Array.isArray(ids) && ids.length > 0)
+            && stableJson(saved.partitions.flat()) === stableJson(input.sentenceIds)) {
+            let offset = 0;
+            parts = saved.partitions.map(ids => {
+              const narration = input.narration.slice(offset, offset + ids.length);
+              const previousSentence = offset ? input.narration[offset - 1] : input.previousSentence;
+              offset += ids.length;
+              return { ...input, narration, sentenceIds: ids, startFrame: narration[0].startFrame,
+                durationInFrames: narration.at(-1).endFrame - narration[0].startFrame, previousSentence };
+            });
+          }
+        } catch { /* Old checkpoints retain their original four-sentence parts. */ }
         const completedParts = [];
         const partModels = [];
         for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
@@ -812,6 +849,8 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
           const partSha256 = sha256(Buffer.from(stableJson(part)));
           let partScene = null;
           let partModel = 'unknown';
+          let subdivide = false;
+          let validationFailures = 0;
           try {
             const cachedPart = JSON.parse(await fs.readFile(partPath, 'utf8'));
             if (cachedPart.inputSha256 === inputSha256 && cachedPart.partSha256 === partSha256
@@ -832,7 +871,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 escalated = true;
               }
             } catch { /* A new part has no retry feedback yet. */ }
-            const chapterModels = sceneModelLadder({ model, geminiEnabled, geminiFirst,
+            const chapterModels = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaModels,
               nvidiaEnabled: Boolean(key), escalated: escalated || parts.length > 1,
               externalModels: externalProviders.map(provider => provider.routeId) });
             let repairCount = 0;
@@ -861,14 +900,13 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                     { jobId: plan.jobId, operation: 'narrative-scene-author' });
                   content = await geminiRequest({ prompt, model: attemptModel.slice('gemini:'.length), timeoutMs: 120000 });
                 } else {
-                  await reserve(provider, Number(process.env.NVIDIA_CALLS_PER_DAY || 200), {
+                  await reserve(provider, nvidiaDailyLimit(), {
                     jobId: plan.jobId, operation: 'narrative-scene-author'
                   });
                   const response = await request({ apiKey: key, timeoutMs: 120000, body: {
                     model: attemptModel, stream: false, max_tokens: 16000, temperature: 0.2,
                     response_format: { type: 'json_object' },
-                    ...(attemptModel.startsWith('z-ai/glm') ? { reasoning_effort: 'low', chat_template_kwargs: { clear_thinking: true } }
-                      : attemptModel === FALLBACK_MODEL ? { reasoning_budget: 1024 } : {}),
+                    ...sceneInferenceOptions(attemptModel),
                     messages: [{ role: 'user', content: prompt }]
                   } });
                   if (!response.ok) throw Object.assign(new Error(`NVIDIA scene author HTTP ${response.status}`), { code: `NVIDIA_HTTP_${response.status}`, status: response.status, retryAfter: response.headers?.get?.('retry-after') });
@@ -902,6 +940,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 const repairable = (localValidation && /^invalid_|^unsupported_literal_label$/.test(failureTag))
                   || (localValidation && /^NARRATIVE_SCENE_(?:JSON_MISSING|JSON_INVALID)$/.test(failureTag))
                   || failureTag === 'NARRATIVE_SCENE_RESPONSE_TRUNCATED';
+                if (repairable) validationFailures += 1;
                 const localDetail = repairable && !error?.code && /^(?:scene-\d+: |illustration:)/.test(String(error?.message || ''))
                   ? cleanText(error.message, 300) : '';
                 logger.warn?.(`autoria de ${input.id} (${attemptModel}) falhou (${failureTag})${localDetail ? `: ${localDetail}` : ''}`);
@@ -917,9 +956,17 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 // Escalate immediately. Persist this decision before another API
                 // call so scheduler retries never restart the small-model loop.
                 escalated = true;
-                await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures })}\n`);
+                await writeAtomic(escalationPath, `${JSON.stringify({ inputSha256, escalated: true, modelCooldowns, modelFailures, nvidiaRouteKey })}\n`);
                 await writeAtomic(feedbackPath, `${JSON.stringify({ inputSha256, partSha256, feedback: chapterFeedback.slice(-8),
                   ...(retryDraft ? { draft: retryDraft, draftSha256: sha256(Buffer.from(stableJson(retryDraft))) } : {}) })}\n`);
+                // A truncated/invalid multi-sentence drawing is a request-size
+                // problem, not proof that every provider is unavailable. Shrink
+                // only this pending range; keep all earlier approved parts.
+                if (part.narration.length > 1 && repairable
+                  && (failureTag === 'NARRATIVE_SCENE_RESPONSE_TRUNCATED' || validationFailures >= 2)) {
+                  subdivide = true;
+                  break;
+                }
                 // Small models escalate immediately. Capable models get one repair
                 // per distinct defect within the shared bounded part budget.
                 const isSmall = attemptModel === GEMINI_SCENE_MODEL || attemptModel === FALLBACK_MODEL
@@ -933,6 +980,15 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
               }
             }
           } else logger.info?.(`${input.id} parte ${partIndex + 1}/${parts.length} reutilizada por hash`);
+          if (!partScene && part.narration.length > 1 && (subdivide || validationFailures > 0)) {
+            const smaller = splitChapterInput(part, Math.ceil(part.narration.length / 2));
+            parts.splice(partIndex, 1, ...smaller);
+            await writeAtomic(partitionPath, `${JSON.stringify({ inputSha256, chapterSha256,
+              partitions: parts.map(item => item.sentenceIds) })}\n`);
+            logger.info?.(`${input.id}: bloco pendente reduzido para até ${smaller[0].narration.length} frase(s); partes aprovadas preservadas`);
+            partIndex -= 1;
+            continue;
+          }
           if (!partScene) break;
           completedParts.push(partScene);
           partModels.push(partModel);
@@ -977,7 +1033,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
   // shared local budget. The parent must not restart all media preparation
   // every 30 seconds while every author route is cooling down.
   const retryNow = now();
-  const routes = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaEnabled: Boolean(key), escalated: true,
+  const routes = sceneModelLadder({ model, geminiEnabled, geminiFirst, nvidiaModels, nvidiaEnabled: Boolean(key), escalated: true,
     externalModels: externalProviders.map(provider => provider.routeId) });
   const retryAt = new Date(Math.min(...routes.map(id => modelCooldowns[id] > retryNow
     ? modelCooldowns[id] : retryNow + 5 * 60 * 1000), retryNow + 24 * 60 * 60 * 1000)).toISOString();
@@ -987,4 +1043,4 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
 }
 
 module.exports = { AUTHOR_REVISION, authorNarrativeScenes, buildChapterInputs, buildPrompt, buildAdaptivePrompt, buildDeterministicScene, normalizeScene,
-  literalLabelChoices, parseJson, sceneFailureTag, validateAuthoredPlan, sceneModelLadder, splitChapterInput, requestGeminiScene, configuredSceneProviders, requestExternalScene, sceneProviderStatus, sceneProviderRetryAt };
+  literalLabelChoices, parseJson, sceneFailureTag, validateAuthoredPlan, sceneModelLadder, splitChapterInput, sceneInferenceOptions, requestGeminiScene, configuredSceneProviders, requestExternalScene, sceneProviderStatus, sceneProviderRetryAt };

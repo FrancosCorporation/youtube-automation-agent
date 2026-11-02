@@ -4,6 +4,8 @@ const { GeminiAndroidImageGenerator } = require('./gemini-android-image');
 const { GeminiWebImageGenerator } = require('./gemini-web-image');
 const studioConfig = require('../config/youtube-studio.json');
 
+const NANO_BANANA_PRO_MODEL_ID = 'gemini-3-pro-image';
+
 function sameCdpEndpoint(first, second) {
   if (!first || !second) return false;
   try {
@@ -20,17 +22,19 @@ class GeminiImageProvider {
   constructor(options = {}) {
     const env = options.env || process.env;
     const androidEnabled = options.androidEnabled ?? env.GEMINI_ANDROID_FALLBACK !== '0';
-    this.android = options.android || (androidEnabled ? new GeminiAndroidImageGenerator(options.androidOptions) : null);
-    this.web = options.web || new GeminiWebImageGenerator(options.webOptions || {});
+    this.android = options.android || (androidEnabled ? new GeminiAndroidImageGenerator({ env, ...options.androidOptions }) : null);
+    this.web = options.webEnabled === false ? null : options.web || new GeminiWebImageGenerator(options.webOptions || {});
     const preferred = String(options.preferred || env.GEMINI_IMAGE_PROVIDER || 'web').toLowerCase();
     // The web provider has no Android device lock and can navigate the shared
     // Chrome while Studio is uploading. The Android provider already owns that
     // lock and checks the foreground screen; use it for this endpoint instead.
-    const sharedStudioBrowser = sameCdpEndpoint(this.web.cdpUrl, env.YOUTUBE_STUDIO_CDP_URL || studioConfig.cdpUrl);
+    const sharedStudioBrowser = sameCdpEndpoint(this.web?.cdpUrl, env.YOUTUBE_STUDIO_CDP_URL || studioConfig.cdpUrl);
     const safeWeb = sharedStudioBrowser ? null : this.web;
+    this.webAllowed = Boolean(safeWeb);
     this.providers = preferred === 'android' ? [this.android, safeWeb] : [safeWeb, this.android];
     this.providers = this.providers.filter(Boolean);
     this.active = null;
+    this.requiresVerifiedImageModel = true;
   }
 
   async isAvailable() {
@@ -47,6 +51,7 @@ class GeminiImageProvider {
   }
 
   async generateImage(prompt, outputPath, options = {}) {
+    if (options.requiredModel && options.requiredModel !== NANO_BANANA_PRO_MODEL_ID) throw new Error('GEMINI_IMAGE_MODEL_UNSUPPORTED');
     if (!this.active && !await this.isAvailable()) throw new Error('visual_image_provider_unavailable');
     const attempted = new Set();
     let lastError;

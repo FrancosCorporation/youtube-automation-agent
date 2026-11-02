@@ -262,12 +262,12 @@ function createUsageStore({ statePath = DEFAULT_STATE_PATH, now = () => new Date
   async function reserveCall(service, limitPerDay, attributionInput) {
     validateService(service);
     const attribution = validateAttribution(attributionInput);
-    if (!Number.isSafeInteger(limitPerDay) || limitPerDay < 1) {
+    if (limitPerDay !== null && (!Number.isSafeInteger(limitPerDay) || limitPerDay < 1)) {
       throw new TypeError('o limite diário deve ser um inteiro positivo');
     }
     const usage = await updateCounts(current => {
       const count = current.counts[service] || 0;
-      if (count >= limitPerDay) {
+      if (limitPerDay !== null && count >= limitPerDay) {
         const error = new Error(`orçamento diário de ${service} esgotado (${count}/${limitPerDay} chamadas hoje)`);
         error.code = 'BUDGET_EXHAUSTED';
         throw error;
@@ -290,11 +290,11 @@ function createUsageStore({ statePath = DEFAULT_STATE_PATH, now = () => new Date
 
   async function assertBudget(service, limitPerDay) {
     validateService(service);
-    if (!Number.isSafeInteger(limitPerDay) || limitPerDay < 1) {
+    if (limitPerDay !== null && (!Number.isSafeInteger(limitPerDay) || limitPerDay < 1)) {
       throw new TypeError('o limite diário deve ser um inteiro positivo');
     }
     const used = await usedToday(service);
-    if (used >= limitPerDay) {
+    if (limitPerDay !== null && used >= limitPerDay) {
       const error = new Error(`orçamento diário de ${service} esgotado (${used}/${limitPerDay} chamadas hoje)`);
       error.code = 'BUDGET_EXHAUSTED';
       throw error;

@@ -46,6 +46,17 @@ test('unknown targets, duplicate properties, reversed time and non-finite geomet
     t => { t[0].property = 'target3d'; },
   ]) { const data = raw(); modify(data); assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /illustration:/); }
 });
+test('opacity repair identifies the exact property and scalar type without relaxing validation', () => {
+  const data = raw();
+  data[0].property = 'opacity';
+  data[0].keyframes[0].value = [0.1, 0, 0];
+  assert.throws(() => normalizeAnimationTracks(data, nodes, sentences, 20), /wheel\.opacity; value deve ser um número, nunca vetor entre 0 e 1/);
+  data[0].keyframes[0].value = 0;
+  data[0].keyframes[1].value = 1;
+  const [track] = normalizeAnimationTracks(data, nodes, sentences, 20);
+  assert.equal(evaluateAnimationTrack(track, 20), 0);
+  assert.equal(evaluateAnimationTrack(track, 200), 1);
+});
 test('an impact accelerates, bounces and settles at a stable endpoint', () => {
   const track = { keyframes: [
     { frame: 0, value: [0, 2, 0] }, { frame: 20, value: [0, 0, 0], easing: 'ease-in' },

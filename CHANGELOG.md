@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.23.0 — 2026-11-02
+
+- Preserve approved scene blocks while subdividing truncated or invalid pending requests, and disable Nemotron thinking to reserve output for scene JSON.
+- Keep cached images and covers available when the shared Android browser is offline or busy.
+- Integrate Android cover generation for both formats, explicit model-verification provenance, and the authorized NVIDIA runtime configuration.
+- Production service validated its first formerly blocked scene part in 22 seconds; a complete new render/publication remains unconfirmed.
+
 ## v2.19.0 — 2026-11-01
 
 - Raised scheduled YouTube long-form scripts to a 950-word target, with an 850-word editorial floor and a measured six-minute narration gate.

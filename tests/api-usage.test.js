@@ -165,3 +165,15 @@ test('reserva troca o estado vencido no limite do dia UTC e cria arquivo privado
     assert.equal(stat.mode & 0o777, 0o600);
   });
 });
+
+test('sem limite local ainda contabiliza chamadas e atribuição', async () => {
+  await withTempState(async statePath => {
+    const store = createUsageStore({ statePath });
+    for (let i = 0; i < 3; i++) {
+      await store.reserveCall('nvidia', null, { jobId: 'video-job-20261102', operation: 'narrative-scene-author' });
+    }
+    const usage = JSON.parse(await fs.readFile(statePath, 'utf8'));
+    assert.equal(usage.counts.nvidia, 3);
+    assert.equal(usage.byJob['video-job-20261102']['narrative-scene-author'].nvidia, 3);
+  });
+});

@@ -3,6 +3,8 @@ const path = require('path');
 const sharp = require('sharp');
 const { Logger } = require('./logger');
 
+const NANO_BANANA_PRO_MODEL_ID = 'gemini-3-pro-image';
+
 /**
  * Gemini Web image provider — generates images through gemini.google.com using a
  * persistent Playwright/Chromium profile, for accounts whose Gemini API key has
@@ -137,6 +139,10 @@ class GeminiWebImageGenerator {
     } catch (_error) { /* keep whatever model is selected */ }
   }
 
+  async _forceNanoBananaProModel(page) {
+    return require('./gemini-image-model').selectNanoBananaPro(page, this.logger);
+  }
+
   async isAvailable() {
     if (this._available !== null) return this._available;
     if (!this.enabled) { this._available = false; return false; }
@@ -185,9 +191,16 @@ class GeminiWebImageGenerator {
         }
       }
       await this._waitForEditor(page);
-      // The account may default to the "Pro" (thinking) model, which takes
-      // minutes per image. Force "Flash" so each image takes ~20-40s.
-      await this._forceFlashModel(page);
+      let requiredModel = null;
+      if (options.requiredModel === NANO_BANANA_PRO_MODEL_ID) {
+        requiredModel = await this._forceNanoBananaProModel(page);
+      } else if (options.requiredModel) {
+        throw Object.assign(new Error('Unsupported required Gemini image model'), { code: 'GEMINI_IMAGE_MODEL_UNSUPPORTED' });
+      } else {
+        // Regular scene images use Flash for throughput. Cover art can demand
+        // Nano Banana Pro separately through requiredModel.
+        await this._forceFlashModel(page);
+      }
       await page.waitForTimeout(1000); // let the chat UI settle before typing
 
       // Snapshot existing images so we only accept NEW generated ones.
@@ -196,7 +209,7 @@ class GeminiWebImageGenerator {
       // Insert the prompt as text — the React/Quill editor re-renders on every
       // keystroke, so typing char-by-char would detach the element mid-typing.
       const aspectRatio = String(options.aspectRatio || '16:9') === '9:16' ? 'vertical 9:16 portrait' : 'horizontal 16:9 landscape';
-      const fullPrompt = `Create one high-quality ${aspectRatio} photorealistic cinematic editorial still, premium photography, believable natural lighting and materials, crisp subject focus, rich environmental detail. Match the topic and color direction in the prompt; do not add generic technology motifs unless requested. Absolutely NO text, NO letters, NO numbers, NO watermarks inside the image: ${prompt}`;
+      const fullPrompt = `${options.requiredModel === NANO_BANANA_PRO_MODEL_ID ? 'Use Nano Banana Pro to generate this image. ' : ''}Create one high-quality ${aspectRatio} photorealistic cinematic editorial still, premium photography, believable natural lighting and materials, crisp subject focus, rich environmental detail. Match the topic and color direction in the prompt; do not add generic technology motifs unless requested. Absolutely NO text, NO letters, NO numbers, NO watermarks inside the image: ${prompt}`;
       let typed = await page.evaluate(text => {
         const editorEl = document.querySelector('div.ql-editor[contenteditable="true"], rich-textarea div[contenteditable="true"], div[contenteditable="true"][role="textbox"], div[contenteditable="true"]');
         if (!editorEl) return false;
@@ -290,6 +303,17 @@ class GeminiWebImageGenerator {
 
       // Be polite with the consumer UI between generations.
       await page.waitForTimeout(1500);
+      if (options.requiredModel === NANO_BANANA_PRO_MODEL_ID) {
+        return {
+          path: outputPath,
+          modelId: NANO_BANANA_PRO_MODEL_ID,
+          modelName: 'Nano Banana Pro',
+          provider: 'gemini-web',
+          modelVerification: 'requested-not-verified',
+          selectedMode: requiredModel,
+          aspectRatio: String(options.aspectRatio || '16:9') === '9:16' ? '9:16' : '16:9'
+        };
+      }
       return outputPath;
     } catch (error) {
       // A failed generation may leave the chat in a bad state — drop the tab

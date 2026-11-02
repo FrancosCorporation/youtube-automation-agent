@@ -27,6 +27,9 @@ module.exports = [
       // Remotion exports contain generated webpack/vendor bundles. Their
       // authored source remains checked under src/ and scripts/.
       'experiments/remotion-motion-review/renders/**/bundle/**',
+      // Local benchmark webpack output contains vendor code. Keep checking the
+      // authored benchmark sources, excluding only their temporary build tree.
+      'benchmarks/video_3d/.work/**',
       // Variant asset JavaScript is generated/bundled output. Lint its source
       // in src/ and scripts/ once, not every checked-in copy of the bundles.
       'experiments/hyperframes-pulso-pilot/variants/**/assets/**/*.js'

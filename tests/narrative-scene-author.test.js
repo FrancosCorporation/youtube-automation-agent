@@ -13,7 +13,8 @@ test('known rhythm and route validation failures get bounded repair feedback', (
   assert.equal(sceneFailureTag(new Error('arbitrary provider response: acima de 12 segundos precisa mudar o foco visual')), 'error');
 });
 const { narrativePlanInputSha256, sha256, stableJson, validateNarrativeEpisodePlan } = require('../utils/narrative-episode-plan');
-const authorNarrativeScenes = options => realAuthorNarrativeScenes({ externalProviders: [], ...options });
+const authorNarrativeScenes = options => realAuthorNarrativeScenes({ externalProviders: [], geminiFirst: true,
+  nvidiaModels: ['nvidia/nemotron-3-super-120b-a12b', 'nvidia/nemotron-3-ultra-550b-a55b'], ...options });
 const { safeErrorTag } = require('../utils/safe-error-tag');
 const { isRetryableGenerationFailure } = require('../utils/generation-retry');
 
@@ -477,7 +478,7 @@ test('fallback Gemini também rejeita cena que não passa na validação', async
     reserve: async () => {},
     geminiRequest: async () => { calls++; return JSON.stringify({ scenes: [authoredScene({ objects: [] })] }); }
   }), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
-  assert.equal(calls, 5);
+  assert.equal(calls, 6, 'tentativas limitadas incluem a subdivisão do bloco inválido');
 });
 
 test('cena sem cobertura de uma frase é rejeitada antes do cache e mantém falha recuperável', async t => {
@@ -804,16 +805,16 @@ test('escalada persiste: retomada não reinicia pelo modelo pequeno', async t =>
   assert.equal(result.author.modelsByScene['scene-01'], 'gemini:gemini-3.5-flash');
 });
 
-function longScenePlan() {
+function longScenePlan(count = 5) {
   const plan = basePlan();
-  plan.durationMs = 10000;
-  plan.durationInFrames = 240;
-  plan.sentences = Array.from({ length: 5 }, (_, index) => ({ id: `cue-${index + 1}`, groupId: 'hook',
+  plan.durationMs = count * 2000;
+  plan.durationInFrames = count * 48;
+  plan.sentences = Array.from({ length: count }, (_, index) => ({ id: `cue-${index + 1}`, groupId: 'hook',
     text: 'O sinal parte.', startFrame: index * 48, endFrame: (index + 1) * 48 }));
-  plan.chapters[0] = { ...plan.chapters[0], durationInFrames: 240, sentenceIds: plan.sentences.map(s => s.id) };
+  plan.chapters[0] = { ...plan.chapters[0], durationInFrames: count * 48, sentenceIds: plan.sentences.map(s => s.id) };
   plan.claims = plan.sentences.map(sentence => ({ id: `claim-${sentence.id}`, sentenceId: sentence.id,
     text: sentence.text, sourceContextHash: plan.source.contextHash }));
-  plan.speechEnvelope.levels = Array(1000).fill(0.5);
+  plan.speechEnvelope.levels = Array(count * 200).fill(0.5);
   plan.speechEnvelopeSha256 = sha256(Buffer.from(stableJson(plan.speechEnvelope)));
   plan.inputSha256 = narrativePlanInputSha256(plan);
   return plan;
@@ -892,6 +893,61 @@ test('reparo recebe rascunho defeituoso e diagnóstico local sem aceitar erro pr
   });
   assert.deepEqual(models, ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.5-flash']);
   assert.equal(result.scenes.length, 1);
+});
+
+test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-adaptive-parts-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.parse('2026-11-02T21:00:00Z');
+  let unavailable = true;
+  const calls = [];
+  const options = { plan: longScenePlan(9), cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', routeId: 'opencode:test:large', model: 'large' }], reserve: async () => {},
+    externalRequest: async ({ prompt }) => {
+      const scene = adaptiveSceneForPrompt(prompt);
+      const ids = scene.illustrations.map(item => item.cueSentenceId);
+      calls.push(ids);
+      if (ids.length > 1 && ids.some(id => ['cue-5', 'cue-6', 'cue-7', 'cue-8'].includes(id))) {
+        throw Object.assign(new Error('truncated'), { code: 'NARRATIVE_SCENE_RESPONSE_TRUNCATED' });
+      }
+      if (unavailable && ids.includes('cue-6')) throw Object.assign(new Error('offline'), { status: 404 });
+      return JSON.stringify({ scenes: [scene] });
+    } };
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  assert.deepEqual(calls, [['cue-1', 'cue-2', 'cue-3', 'cue-4'], ['cue-5', 'cue-6', 'cue-7', 'cue-8'],
+    ['cue-5', 'cue-6'], ['cue-5'], ['cue-6']]);
+  calls.length = 0;
+  unavailable = false;
+  now += 30 * 60 * 1000 + 1;
+  const result = await authorNarrativeScenes(options);
+  assert.deepEqual(calls, [['cue-6'], ['cue-7', 'cue-8'], ['cue-7'], ['cue-8'], ['cue-9']]);
+  assert.deepEqual(result.scenes[0].illustrations.map(item => item.cueSentenceId), options.plan.sentences.map(item => item.id));
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+  assert.equal(result.scenes[0].illustrations.at(-1).motions[0].startFrame, 384);
+});
+
+test('autoria Nemotron reserva a saída para JSON sem consumir tokens de thinking', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-nemotron-json-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  process.env.NVIDIA_API_KEY = 'test-only';
+  t.after(async () => {
+    if (previousKey === undefined) delete process.env.NVIDIA_API_KEY;
+    else process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const result = await authorNarrativeScenes({ plan: longScenePlan(), cacheDir, logger: {}, geminiEnabled: false,
+    nvidiaModels: ['nvidia/nemotron-3.5-super-vl-120b-a12b'], reserve: async () => {},
+    request: async ({ body }) => {
+      assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
+      const scene = adaptiveSceneForPrompt(body.messages[0].content);
+      return { ok: true, json: async () => ({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ scenes: [scene] }) } }] }) };
+    } });
+  assert.equal(result.scenes[0].illustrations.length, 5);
 });
 
 

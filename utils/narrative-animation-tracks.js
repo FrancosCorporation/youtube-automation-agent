@@ -43,7 +43,9 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps) {
       const spatial = ['position3d', 'target3d'].includes(track.property);
       const min = scalar ? 0 : track.property === 'scale3d' ? .001 : spatial ? -24 : -1000;
       const max = scalar ? 1 : track.property === 'scale3d' ? 10 : spatial ? 24 : 1000;
-      if (!Array.isArray(values) || values.length !== (scalar ? 1 : 3) || values.some(value => !Number.isFinite(value) || value < min || value > max)) fail('estado da trilha inválido');
+      if (!Array.isArray(values) || values.length !== (scalar ? 1 : 3) || values.some(value => !Number.isFinite(value) || value < min || value > max)) {
+        fail(`estado da trilha inválido em ${node.id}.${track.property}; value deve ser ${scalar ? 'um número, nunca vetor' : 'vetor de três números [x,y,z]'} entre ${min} e ${max}`);
+      }
       return { cueSentenceId: sentence.id, boundary, ...(key.cueText ? { cueText: key.cueText } : {}), offsetSeconds,
         frame, value: scalar ? values[0] : [...values], easing };
     });

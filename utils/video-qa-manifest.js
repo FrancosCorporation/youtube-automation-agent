@@ -11,6 +11,8 @@ const { summarizeNarrationTimings, narrationProviderContinuity } = require('./na
 const { isPublicationEligible } = require('./publication-status');
 const { hashSourceContext } = require('./source-evidence');
 
+const NANO_BANANA_PRO_MODEL_ID = 'gemini-3-pro-image';
+
 function sha256File(filePath) {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
@@ -317,6 +319,53 @@ async function inspectThumbnailArtifact({ root, filePath, variant = 'landscape' 
   };
 }
 
+async function inspectThumbnailArtProvenance({ root, value }) {
+  if (!value || value.modelId !== NANO_BANANA_PRO_MODEL_ID || value.modelName !== 'Nano Banana Pro'
+    || !value.landscape || !value.portrait) throw new TypeError('Nano Banana Pro cover provenance is incomplete');
+  const inspectVariant = async (candidate, aspectRatio) => {
+    if (!candidate || candidate.aspectRatio !== aspectRatio
+      || !/^[a-f0-9]{64}$/i.test(String(candidate.promptSha256 || ''))
+      || !/^[a-f0-9]{64}$/i.test(String(candidate.imageSha256 || ''))
+      || typeof candidate.imagePath !== 'string' || !['gemini-web', 'gemini-android'].includes(candidate.provider)
+      || candidate.modelVerification !== 'requested-not-verified') {
+      throw new TypeError('Nano Banana Pro cover variant metadata is invalid');
+    }
+    const imagePath = path.resolve(root, candidate.imagePath);
+    if (!isWithin(path.join(root, 'data', 'images'), imagePath)) throw new Error('cover art path is outside managed images');
+    const realPath = await fsp.realpath(imagePath);
+    const lstat = await fsp.lstat(imagePath);
+    if (!lstat.isFile() || lstat.isSymbolicLink()
+      || !isWithin(path.join(root, 'data', 'images'), realPath)) throw new Error('cover art is not a managed regular file');
+    const proof = await sha256StableRegularFile(imagePath);
+    if (proof.sha256 !== candidate.imageSha256) throw new Error('cover art source hash changed');
+    const metadata = await sharp(realPath).metadata();
+    const expectedRatio = aspectRatio === '9:16' ? 9 / 16 : 16 / 9;
+    if (!metadata.width || !metadata.height
+      || Math.abs((metadata.width / metadata.height) - expectedRatio) / expectedRatio > 0.04
+      || metadata.width !== candidate.width || metadata.height !== candidate.height) {
+      throw new Error('cover art source aspect ratio or dimensions changed');
+    }
+    return {
+      provider: candidate.provider,
+      modelVerification: candidate.modelVerification,
+      selectedMode: String(candidate.selectedMode).slice(0, 200),
+      aspectRatio,
+      imagePath: path.relative(root, realPath),
+      imageSha256: proof.sha256,
+      promptSha256: candidate.promptSha256,
+      width: metadata.width,
+      height: metadata.height
+    };
+  };
+
+  return {
+    modelId: NANO_BANANA_PRO_MODEL_ID,
+    modelName: 'Nano Banana Pro',
+    landscape: await inspectVariant(value.landscape, '16:9'),
+    portrait: await inspectVariant(value.portrait, '9:16')
+  };
+}
+
 async function writeVideoQaManifest({
   root,
   videoPath,
@@ -337,6 +386,7 @@ async function writeVideoQaManifest({
   thumbnailPath,
   portraitThumbnailPath,
   thumbnailSource = null,
+  thumbnailArtProvenance = null,
   sourceEvidence,
   sourceName = '',
   sourceTimeLabel = '',
@@ -378,6 +428,12 @@ async function writeVideoQaManifest({
   const portraitThumbnail = typeof portraitThumbnailPath === 'string' && portraitThumbnailPath
     ? await inspectThumbnailArtifact({ root: projectRoot, filePath: portraitThumbnailPath, variant: 'portrait' })
     : null;
+  const thumbnailArt = thumbnailArtProvenance
+    ? await inspectThumbnailArtProvenance({ root: projectRoot, value: thumbnailArtProvenance })
+    : null;
+  if (thumbnailArt && (!thumbnail || !portraitThumbnail)) {
+    throw new Error('Nano Banana Pro source art requires both rendered cover formats');
+  }
   if (thumbnailSource) {
     if (!/^https:\/\//.test(String(thumbnailSource.articleUrl || ''))
       || !/^https:\/\//.test(String(thumbnailSource.imageUrl || ''))
@@ -434,6 +490,7 @@ async function writeVideoQaManifest({
       ? 'passed' : 'failed',
     assets,
     thumbnail,
+    ...(thumbnailArt ? { thumbnailArt } : {}),
     ...(thumbnailSource ? { thumbnailSource } : {}),
     ...(portraitThumbnail ? {
       portraitThumbnail,
@@ -489,6 +546,17 @@ async function verifyVideoQaManifest({
   }
   if (manifestSha256 && crypto.createHash('sha256').update(manifestBytes).digest('hex') !== manifestSha256) {
     return { status: 'mismatch', reason: 'manifest_hash_changed' };
+  }
+  let verifiedThumbnailArt = null;
+  if (manifest.thumbnailArt != null) {
+    try {
+      verifiedThumbnailArt = await inspectThumbnailArtProvenance({ root: projectRoot, value: manifest.thumbnailArt });
+      if (!manifest.thumbnail || !manifest.portraitThumbnail) {
+        return { status: 'invalid', reason: 'nano_banana_pro_cover_pair_missing' };
+      }
+    } catch {
+      return { status: 'invalid', reason: 'nano_banana_pro_cover_provenance_invalid' };
+    }
   }
   if (manifest.narrationTiming && Number(manifest.narrationTiming.groupCount) > 0) {
     const continuity = narrationProviderContinuity(manifest.narrationTiming);
@@ -685,6 +753,7 @@ async function verifyVideoQaManifest({
     masterPath: masterAsset ? path.resolve(projectRoot, masterAsset.path) : null,
     thumbnail: verifiedThumbnail,
     portraitThumbnail: verifiedPortraitThumbnail,
+    thumbnailArt: verifiedThumbnailArt,
     coverVariants: { requiredFormats: requiredCoverFormats },
     formatId: manifest.editorial?.formatId || 'unknown',
     scriptRevision: manifest.editorial?.scriptRevision || null,
