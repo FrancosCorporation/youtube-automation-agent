@@ -1028,6 +1028,47 @@ test('a hash-bound saved draft is revalidated locally before another provider re
   assert(result.author.modelsByScene['scene-01'].includes('previous-author-unrecorded'));
 });
 
+test('resuming a grounded actor draft repairs a small floor shortage without another model call', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-support-resume-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const plan = longScenePlan(1);
+  plan.sentences[0].text = 'A pessoa caminha pelo piso.';
+  plan.claims[0].text = plan.sentences[0].text;
+  plan.inputSha256 = narrativePlanInputSha256(plan);
+  let now = Date.now();
+  const options = { plan, cacheDir, logger: {}, geminiEnabled: false, now: () => now,
+    externalProviders: [{ id: 'test', model: 'large', routeId: 'opencode:test:large' }], reserve: async () => {},
+    externalRequest: async () => { throw Object.assign(new Error('offline'), { status: 404 }); } };
+  await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+  const retryPath = path.join(cacheDir, (await fs.readdir(cacheDir)).find(name => name.endsWith('.part-1.retry.json')));
+  const saved = JSON.parse(await fs.readFile(retryPath, 'utf8'));
+  const pose = scale => ({ landscape: { x: .5, y: .85, scale }, portrait: { x: .5, y: .85, scale } });
+  saved.draft = { id: 'scene-01', illustrations: [{ dimension: '3d', cueSentenceId: 'cue-1',
+    explanation: 'A pessoa caminha apoiada no piso.', nodes: [
+      { id: 'adult', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', depth: 4, layout: pose(.9) },
+      { id: 'floor', evidence: 'piso', layout: pose(1), meshes: [{ type: 'box', size: [12, .1, 9], position: [0, -.05, 0], color: '#f3eee0' }] }
+    ], tracks: [{ targetId: 'adult', property: 'position3d', keyframes: [
+      { cueSentenceId: 'cue-1', boundary: 'start', value: [0, 0, 0] },
+      { cueSentenceId: 'cue-1', boundary: 'end', value: [0, 0, .4] }
+    ] }], spatialChecks: [{ subject: { nodeId: 'adult' }, obstacles: [{ nodeId: 'floor', meshIndex: 0 }] }] }] };
+  saved.draftSha256 = sha256(Buffer.from(stableJson(saved.draft)));
+  await fs.writeFile(retryPath, JSON.stringify(saved));
+  now += 30 * 60 * 1000 + 1;
+  let calls = 0;
+  const result = await authorNarrativeScenes({ ...options, externalRequest: async () => {
+    calls++; throw new Error('Saved geometry must be repaired locally');
+  } });
+  assert.equal(calls, 0);
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+  const floor = result.scenes[0].illustrations[0].nodes.find(node => node.id === 'floor');
+  assert.ok(Math.abs(floor.meshes[0].size[2] - 9.45) < 1e-10);
+});
+
 test('resumed spatial repair sends the audited draft and current collision to the writer', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-audited-draft-'));
   const previousKey = process.env.NVIDIA_API_KEY;

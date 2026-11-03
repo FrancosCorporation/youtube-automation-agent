@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "release": "v2.33.0",
+  "diagnostic": true,
+  "publicationEligible": false,
+  "support": {
+    "sourceJobId": "aadd101f-53bd-4eb9-b758-740a42ab4b1a",
+    "footY": -2.45,
+    "floorTopY": -2.45,
+    "maximumDepthOverhang": 0.215,
+    "floorDepthBefore": 9,
+    "floorDepthAfter": 9.45,
+    "unchanged": [
+      "actor path",
+      "actor scale",
+      "clips",
+      "timings",
+      "floor height"
+    ],
+    "draftSnapshotSha256": "b785443ea2e2c3b46f45f9d8399dd031859427ce3940ae189cd5cd78a9be2017"
+  },
+  "render": {
+    "composition": "NarrativeEpisode",
+    "fps": 24,
+    "scale": 0.5,
+    "frames": [
+      {
+        "aspect": "landscape",
+        "frame": 12,
+        "file": "landscape-0-12.png",
+        "sha256": "2ad1986a45ed1cd646beae163906e207cc64966bd455a67bc70a503e39aba561"
+      },
+      {
+        "aspect": "landscape",
+        "frame": 98,
+        "file": "landscape-1-98.png",
+        "sha256": "a31a753dc068daf5cceef464aa160036ee518bed603422fc2493bda9b336b22d"
+      },
+      {
+        "aspect": "landscape",
+        "frame": 195,
+        "file": "landscape-2-195.png",
+        "sha256": "60481a11125c5bbb518c995c130e1999ce419f03de2bb1dfb850de047f716987"
+      },
+      {
+        "aspect": "landscape",
+        "frame": 98,
+        "file": "landscape-3-98.png",
+        "sha256": "a31a753dc068daf5cceef464aa160036ee518bed603422fc2493bda9b336b22d"
+      },
+      {
+        "aspect": "portrait",
+        "frame": 12,
+        "file": "portrait-0-12.png",
+        "sha256": "e9fb4caddc50767aba9fb3e2c9f9cf94662126486d555d78514bec361f37a44a"
+      },
+      {
+        "aspect": "portrait",
+        "frame": 98,
+        "file": "portrait-1-98.png",
+        "sha256": "938f81acd25d1cb5b3bfbcaecff372ff2f0c08a0154efc84be933166dcb0c81d"
+      },
+      {
+        "aspect": "portrait",
+        "frame": 195,
+        "file": "portrait-2-195.png",
+        "sha256": "48916bde466d86c7d491258f9e9a2ace7620b772f8d21434ebffea9488e1aa05"
+      },
+      {
+        "aspect": "portrait",
+        "frame": 98,
+        "file": "portrait-3-98.png",
+        "sha256": "938f81acd25d1cb5b3bfbcaecff372ff2f0c08a0154efc84be933166dcb0c81d"
+      }
+    ],
+    "backend": "swangle",
+    "backwardSampleHashesMatch": true,
+    "loadingRegressionReproducedInBothAspects": true,
+    "framingVerifiedInBothAspects": true,
+    "fullEpisodeRendered": false
+  },
+  "tests": {
+    "ciNodeExecutions": 1197,
+    "ciGroups": [
+      6,
+      565,
+      8,
+      20,
+      18,
+      26,
+      77,
+      21,
+      38,
+      418
+    ],
+    "python": 40,
+    "browserChecks": [
+      "dashboard",
+      "presenter framing",
+      "Instagram framing"
+    ],
+    "framingTests": 2,
+    "softwareGateTests": 21,
+    "remotionLintAndTypecheck": "passed",
+    "changedJsLint": "passed",
+    "finalFocusedRegressions": 88
+  },
+  "productionObservation": {
+    "at": "2026-11-03T03:09:11Z",
+    "log": "logs/gen_2026-11-03T03-09-11-090Z.log",
+    "event": "scene-02 parte 1/8: rascunho anterior revalidado localmente",
+    "nextPart": "scene-02 parte 2/8",
+    "nextFailure": "actor/table collision; provider timeout/availability"
+  },
+  "limitations": [
+    "Diagnostic furniture is floating and its box shapes do not adequately enact the described interaction; this scene is not visually approved.",
+    "No new complete production episode or publication confirmed.",
+    "Production is waiting for GPU memory; software-only mode was used for these diagnostic stills, not enabled in the service."
+  ],
+  "artifacts": {
+    "landscape-before-loading.png": "f34acf88a0a6c8aa69a8e04a468f0bc4f7fe5c41bb95bd06f7e677a2d555f998",
+    "landscape-framed.png": "a31a753dc068daf5cceef464aa160036ee518bed603422fc2493bda9b336b22d",
+    "landscape-loaded-but-cropped.png": "47f1b646933ea8b38b67c91ae1333168b508a2946afcf18be836cc7863574402",
+    "portrait-before-loading.png": "04095fcff4eb720deb2d64cc58834905a1318c034de836a689eb3ef893dbb97b",
+    "portrait-framed.png": "938f81acd25d1cb5b3bfbcaecff372ff2f0c08a0154efc84be933166dcb0c81d",
+    "portrait-loaded-but-cropped.png": "41a69fd73e8a05d21fe2b4505f35c3361262b85682342d27d20b9576e8f3d4bd"
+  }
+}

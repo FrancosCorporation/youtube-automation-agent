@@ -8,6 +8,7 @@ const { nvidiaDailyLimit, nvidiaRouteIdentity, nvidiaSceneModels } = require('./
 const { sceneResponseFormat } = require('./narrative-scene-schema');
 const { repairIdleActorLayout } = require('./narrative-idle-layout');
 const { repairActorFloorContact } = require('./narrative-floor-contact');
+const { repairActorSupportFootprint } = require('./narrative-support-footprint');
 const { completeMovingBodyChecks } = require('./narrative-spatial-coverage');
 const { loadConfiguredOpenCodeProviders } = require('./opencode-providers');
 const { cueHasLongBeatVariation, cueRequiresPairedVisual } = require('./narrative-visual-semantics');
@@ -37,7 +38,9 @@ const GENERIC_LABELS = new Set([
   'resposta', 'sinal', 'etapa', 'possibilidade', 'limite', 'comparação', 'ponto de partida'
 ].map(label => label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR')));
 const THEMES = require('../config/themes.json').themes;
-const repairAuthoredLayout = (illustration, sentence) => repairIdleActorLayout(repairActorFloorContact(illustration, sentence), sentence);
+const { repairActorFraming } = require('./narrative-actor-framing');
+const repairAuthoredLayout = (illustration, sentence) => repairActorFraming(repairActorSupportFootprint(
+  repairIdleActorLayout(repairActorFloorContact(illustration, sentence), sentence), sentence), sentence);
 
 // Only classify known validation failures; never log provider responses or
 // arbitrary exception messages, which may contain credentials or source text.

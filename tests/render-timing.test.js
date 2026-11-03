@@ -209,15 +209,19 @@ for (const scenario of [
   { name: 'continuing job still requires four GiB', shared: true, lowMemory: true, continuation: true, nice: 10, memory: 3.75, vram: 6, reason: 'available_memory_below_4_gib' },
   { name: 'continuation flag does not relax normal profile', shared: true, continuation: true, nice: 10, memory: 4.25, vram: 6, reason: 'available_memory_below_6_gib' },
   { name: 'training reserves remaining GPU memory', shared: true, nice: 10, memory: 8, vram: 1, reason: 'shared_gpu_free_memory_below_2_gib' },
+  { name: 'explicit software rasterization preserves GPU memory', software: true, gl: 'swangle', shared: true, nice: 10, memory: 8, vram: 0, allowed: true },
+  { name: 'software request cannot disguise a GPU backend', software: true, gl: 'angle', shared: true, nice: 10, memory: 8, vram: 0, reason: 'software_render_requires_constrained_training_profile_and_swangle' },
+  { name: 'software rasterization keeps the RAM reserve', software: true, gl: 'swangle', shared: true, nice: 10, memory: 4, vram: 0, reason: 'available_memory_below_6_gib' },
   { name: 'original constrained policy stays conservative', shared: false, nice: 10, memory: 8, vram: 6, reason: 'gpu_above_constrained_limit' }
 ]) {
   test(`training/render coexistence: ${scenario.name}`, t => {
     const syncFs = require('node:fs');
     const originalRead = syncFs.readFileSync;
     const originalList = syncFs.readdirSync;
-    const previous = [process.env.PULSO_CONSTRAINED_RENDER, process.env.PULSO_RENDER_WITH_TRAINING, process.env.PULSO_RENDER_LOW_MEMORY];
+    const keys = ['PULSO_CONSTRAINED_RENDER', 'PULSO_RENDER_WITH_TRAINING', 'PULSO_RENDER_LOW_MEMORY', 'PULSO_RENDER_SOFTWARE_ONLY', 'PULSO_REMOTION_GL'];
+    const previous = keys.map(key => process.env[key]);
     t.after(() => {
-      for (const [index, key] of ['PULSO_CONSTRAINED_RENDER', 'PULSO_RENDER_WITH_TRAINING', 'PULSO_RENDER_LOW_MEMORY'].entries()) {
+      for (const [index, key] of keys.entries()) {
         if (previous[index] === undefined) delete process.env[key];
         else process.env[key] = previous[index];
       }
@@ -225,6 +229,8 @@ for (const scenario of [
     process.env.PULSO_CONSTRAINED_RENDER = '1';
     process.env.PULSO_RENDER_WITH_TRAINING = scenario.shared ? '1' : '0';
     process.env.PULSO_RENDER_LOW_MEMORY = scenario.lowMemory ? '1' : '0';
+    process.env.PULSO_RENDER_SOFTWARE_ONLY = scenario.software ? '1' : '0';
+    process.env.PULSO_REMOTION_GL = scenario.gl || 'angle';
     t.mock.method(os, 'availableParallelism', () => 6);
     t.mock.method(os, 'cpus', () => Array(28).fill({}));
     t.mock.method(os, 'getPriority', () => scenario.nice);

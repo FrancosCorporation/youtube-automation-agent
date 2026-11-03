@@ -2,6 +2,12 @@
 
 Requisitos: [decisões vigentes](docs/decisoes-vigentes.md). Estado/objetivos: [plan.md](plan.md). Acrescentar entregas datadas aqui; substituir o cursor no plano, sem manter várias versões concorrentes.
 
+## 03/11/2026 — falhas de autoria/render, v2.33.0
+
+Corrigidos três defeitos reproduzidos no rascunho real: mensagem de altura quando faltava borda de piso; captura vazia antes dos GLBs carregarem; personagens cortados nos dois formatos. Reparo limitado do suporte, espera gerida pelo ThreeCanvas e reparo/validação da câmera preservam atores, clips, narração e trajetórias. Cache antigo continua sujeito à validação estrita. O serviço revalidou a parte 1/8 da cena 2 localmente às 00:09 BRT e passou à parte seguinte, ainda bloqueada por colisão adulto/mesa e disponibilidade remota.
+
+CI completa, regressões, lint/TypeScript e oito capturas passaram; repetir o frame 98 produz o mesmo SHA. Conferência final em modo de software explícito e limitado por CPU/RAM/lock, sem alterar o modo de produção. [Provas e limites](docs/evidencias/autoria-2026-11-03/README.md), [release](docs/releases/v2.33.0.md). O diagnóstico segue reprovado como encenação: props flutuam e não demonstram contato/ação suficientes. Nenhum episódio integral ou publicação nova confirmado. Serviço único preservado, sem restart/reenvio, observado aguardando VRAM. Próximo trabalho permanece no cursor do plano.
+
 ## 02/11/2026 — alinhamento à última aprovação, v2.32.0
 
 Pedido: remover contradições deixadas pelas retomadas/modelos anteriores. Preservados integralmente os documentos anteriores e seus hashes em [arquivo](docs/archive/alinhamento-2026-11-02/README.md). Os 63 IDs e seus estados foram mantidos; nenhuma pendência foi declarada concluída por editar documentação.

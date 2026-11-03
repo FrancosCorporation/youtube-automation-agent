@@ -10,6 +10,7 @@ import type { IllustrationMesh, IllustrationNode, NarrativeIllustration } from "
 import { animationState, type AnimationState } from "../../../utils/narrative-animation-tracks.js";
 import { NarrativeIllustratedProp } from "./NarrativeDirectedScene";
 import { NarrativeHumanActor } from "./NarrativeHumanActor";
+import { illustrationViewport } from "../../../utils/narrative-illustration-viewport.js";
 
 const progress = (frame: number, start: number, end: number) => interpolate(frame, [start, Math.max(start + 1, end)], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(.4, 0, .2, 1) });
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;
@@ -74,7 +75,8 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
   const { width, height, fps } = useVideoConfig();
   const aspect = portrait ? "portrait" : "landscape";
   const is3d = illustration.dimension === "3d";
-  const sceneWidth = Math.round(width * (portrait ? .92 : is3d ? .88 : .64)), sceneHeight = Math.round(height * (portrait ? .42 : .62));
+  const view = illustrationViewport(aspect, width, height);
+  const sceneWidth = is3d ? view.width : Math.round(width * (portrait ? .92 : .64)), sceneHeight = view.height;
   const canvasWidth = portrait ? 900 : 1100, canvasHeight = portrait ? 730 : 650;
   const worldWidth = portrait ? 9.6 : 12;
   const states = illustration.nodes.map(node => {
@@ -101,16 +103,16 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
         <ambientLight intensity={1.2} /><hemisphereLight args={["#e7f4ee", "#31536a", 2]} />
         <directionalLight position={[-5, 7, 8]} intensity={3} castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[6, 1, -3]} intensity={2} color="#88dccc" />
-        <React.Suspense fallback={null}>
-          {states.map(({ node, pose, position, rotation, scale, opacity }) => {
-            const actor = node as typeof node & { actorId?: string; actorMotion?: string; actorMotionStartFrame?: number };
-            return <group key={node.id} position={position} rotation={rotation} scale={scale} visible={opacity > .001}>
-              {actor.actorId ? <NarrativeHumanActor actorId={actor.actorId} motion={actor.actorMotion || "Idle"}
-                motionStartFrame={actor.actorMotionStartFrame ?? 0} frame={frame} fps={fps} opacity={opacity} />
-                : node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
-            </group>;
-          })}
-        </React.Suspense>
+        {/* Let ThreeCanvas hold Remotion's capture until GLB loading resolves.
+            A nested null Suspense boundary renders an empty completed frame. */}
+        {states.map(({ node, pose, position, rotation, scale, opacity }) => {
+          const actor = node as typeof node & { actorId?: string; actorMotion?: string; actorMotionStartFrame?: number };
+          return <group key={node.id} position={position} rotation={rotation} scale={scale} visible={opacity > .001}>
+            {actor.actorId ? <NarrativeHumanActor actorId={actor.actorId} motion={actor.actorMotion || "Idle"}
+              motionStartFrame={actor.actorMotionStartFrame ?? 0} frame={frame} fps={fps} opacity={opacity} />
+              : node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
+          </group>;
+        })}
       </ThreeCanvas>
       {states.filter(({ node }) => node.label).map(({ node, position, opacity }) => {
         const isActor = Boolean((node as typeof node & { actorId?: string }).actorId);

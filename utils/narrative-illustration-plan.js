@@ -3,6 +3,7 @@ const { narrativeLabelCueFrame } = require('./narrative-word-cue');
 const { normalizeAnimationTracks, evaluateAnimationTrack } = require('./narrative-animation-tracks');
 const { normalizeSpatialChecks, assertSpatialChecks } = require('./narrative-spatial-audit');
 const { assertActorSupports } = require('./narrative-actor-support');
+const { assertActorFraming } = require('./narrative-actor-framing');
 const { ACTOR_CATALOG, MOTIONS, resolveHumanActor } = require('./narrative-human-actors');
 const clean = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const number = (value, min, max, name, context = '') => {
@@ -152,7 +153,7 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
     if (spatialChecks.length && dimension !== '3d') fail('spatialChecks requer cena 3D');
     let illustration = { version: 3, dimension, cueSentenceId: sentence.id, explanation: item.explanation, nodes, motions, tracks, camera: cameras, spatialChecks };
     if (repairLayout) illustration = repairLayout(illustration, sentence);
-    try { assertSpatialChecks(illustration, sentence); assertActorSupports(illustration, sentence); }
+    try { assertSpatialChecks(illustration, sentence); assertActorSupports(illustration, sentence); assertActorFraming(illustration, sentence); }
     catch (error) {
       // Feed the writer the geometry actually audited after local repairs,
       // while retaining the rejection. No invalid plan becomes a checkpoint.

@@ -251,6 +251,10 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
     && hostLogicalCpus >= 12 && logicalCpus <= 6 && processPriority >= 10;
   const trainingSharedRequested = process.env.PULSO_RENDER_WITH_TRAINING === '1';
   const trainingSharedEligible = trainingSharedRequested && constrainedEligible;
+  // Explicit software rasterization needs no free VRAM. Keep all CPU/RAM,
+  // swap and competing-render protections; reject mismatched GPU backends.
+  const softwareRequested = process.env.PULSO_RENDER_SOFTWARE_ONLY === '1';
+  const softwareEligible = softwareRequested && trainingSharedEligible && process.env.PULSO_REMOTION_GL === 'swangle';
   const sharedLoadRatio = trainingSharedEligible
     ? Math.min(1, Math.max(0.80, Number(process.env.PULSO_SHARED_RENDER_LOAD_RATIO || 0.95)))
     : 0.80;
@@ -277,6 +281,7 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
   const reasons = [];
   if (constrainedRequested && !constrainedEligible) reasons.push('constrained_render_requires_low_priority_and_six_cpu_affinity');
   if (trainingSharedRequested && !trainingSharedEligible) reasons.push('training_shared_render_requires_constrained_process');
+  if (softwareRequested && !softwareEligible) reasons.push('software_render_requires_constrained_training_profile_and_swangle');
   if (loadAverage[0] > loadAverageLimit) reasons.push('load_average_above_limit');
   // The explicitly enabled low-memory profile is restricted to the same
   // low-priority, CPU-limited training-sharing mode and retains swap reserve.
@@ -294,13 +299,13 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
     reasons.push(`free_swap_below_${minimumSwapGiB}_gib`);
   }
   if (activeRenderProcesses.length) reasons.push('another_render_is_active');
-  if (trainingSharedEligible) {
+  if (trainingSharedEligible && !softwareEligible) {
     // Compute utilization is not VRAM exhaustion. A single low-priority
     // renderer may share the training GPU while reserving two GiB of VRAM.
     const freeVram = gpu.gpuMemoryTotalBytes - gpu.gpuMemoryUsedBytes;
     if (gpu.gpuMemoryTotalBytes === null || gpu.gpuMemoryUsedBytes === null) reasons.push('shared_gpu_memory_unavailable');
     else if (freeVram < 2 * 1024 ** 3) reasons.push('shared_gpu_free_memory_below_2_gib');
-  } else if (gpu.gpuBusyPercent !== null && gpu.gpuBusyPercent >= (constrainedEligible ? 80 : 100)) {
+  } else if (!softwareEligible && gpu.gpuBusyPercent !== null && gpu.gpuBusyPercent >= (constrainedEligible ? 80 : 100)) {
     reasons.push(constrainedEligible ? 'gpu_above_constrained_limit' : 'gpu_at_full_utilization');
   }
   const vendor = fs.existsSync('/sys/class/drm/card0/device/vendor')
@@ -311,6 +316,7 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
     status: renderSafe ? 'pass' : 'blocked', renderSafe, observedAt: new Date().toISOString(),
     logicalCpus, hostLogicalCpus, processPriority, constrainedRequested,
     constrainedEligible, trainingSharedRequested, trainingSharedEligible,
+    softwareRequested, softwareEligible,
     loadAverageLimit, loadAverage, availableMemoryBytes, swapFreeBytes,
     activeRenderProcesses, ...gpu, hardwareClass, reasons
   };
