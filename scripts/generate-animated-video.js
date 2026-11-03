@@ -510,6 +510,14 @@ function repairExcludedWriters(attemptedModels, preferredModel) {
   return [...attemptedModels].filter(model => model !== preferredModel);
 }
 
+function scriptRepairPreferredModel(attempt, previousModel, environment = process.env) {
+  if (attempt < 2) return previousModel;
+  const strongerNvidia = 'nvidia/nemotron-3-ultra-550b-a55b';
+  if (environment.NVIDIA_API_KEY && previousModel !== strongerNvidia) return strongerNvidia;
+  if (environment.GEMINI_API_KEY && previousModel !== 'gemini-3.1-pro-preview') return 'gemini:gemini-3.1-pro-preview';
+  return previousModel;
+}
+
 /** Builds only routes whose credentials exist; a provider key is never guessed from API_KEY. */
 function scriptGenerationCandidatesForRetry({
   excludeModels = [],
@@ -1260,7 +1268,8 @@ async function loadOrWriteScript({
     regenerate: async (feedback, { script: currentDraft, attempt }) => {
       const previousGenerationModel = generationModel;
       try {
-        console.log(`      reparo factual ${attempt}/${SCRIPT_REVIEW_MAX_REPAIRS} sobre o roteiro reprovado; writer funcional primeiro`);
+        const repairModel = scriptRepairPreferredModel(attempt, previousGenerationModel);
+        console.log(`      reparo factual ${attempt}/${SCRIPT_REVIEW_MAX_REPAIRS} sobre o roteiro reprovado; ${repairModel === previousGenerationModel ? 'writer funcional primeiro' : 'modelo mais capaz primeiro'}`);
         const generated = await writeScriptWithNvidia({
           topic,
           targetWords,
@@ -1272,8 +1281,7 @@ async function loadOrWriteScript({
           draft: currentDraft,
           excludeModels: repairExcludedWriters(attemptedWriterModels, previousGenerationModel),
           attemptedModels: attemptedWriterModels,
-          preferredModel: attempt > 1 && process.env.GEMINI_API_KEY && !/^gemini(?::|-)/.test(String(previousGenerationModel))
-            ? `gemini:${SCRIPT_GEMINI_FALLBACK_MODELS[0]}` : previousGenerationModel,
+          preferredModel: repairModel,
           callBudget
         });
         generationModel = generated.model;
@@ -2952,6 +2960,7 @@ module.exports = {
   scriptGenerationRequestOptions,
   scriptGenerationModelsForRetry,
   repairExcludedWriters,
+  scriptRepairPreferredModel,
   scriptGenerationCandidatesForRetry,
   scriptFailureDisablesProvider,
   scriptProviderUsageService,

@@ -16,6 +16,7 @@ const {
   SCRIPT_REVIEW_CONCURRENCY,
   scriptGenerationModelsForRetry,
   repairExcludedWriters,
+  scriptRepairPreferredModel,
   scriptGenerationCandidatesForRetry,
   scriptProviderUsageService,
   scriptReviewCandidatesForRetry,
@@ -87,6 +88,20 @@ test('reparo factual pode reutilizar primeiro o writer que respondeu', () => {
   });
   assert.equal(candidates[0].id, preferred);
   assert.equal(candidates.some(candidate => candidate.id === failed), false);
+});
+
+test('segundo reparo factual escala o writer e mantém alternativas configuradas', () => {
+  const environment = { NVIDIA_API_KEY: 'configured', GEMINI_API_KEY: 'configured' };
+  const previous = 'gemini-3.5-flash-lite';
+  assert.equal(scriptRepairPreferredModel(1, previous, environment), previous);
+  const preferredModel = scriptRepairPreferredModel(2, previous, environment);
+  assert.equal(preferredModel, 'nvidia/nemotron-3-ultra-550b-a55b');
+  const candidates = scriptGenerationCandidatesForRetry({ environment, preferredModel,
+    excludeModels: repairExcludedWriters(new Set([previous]), previous) });
+  assert.equal(candidates[0].id, preferredModel);
+  assert(candidates.some(candidate => candidate.model === previous));
+  assert.equal(scriptRepairPreferredModel(2, previous, { GEMINI_API_KEY: 'configured' }), 'gemini:gemini-3.1-pro-preview');
+  assert.equal(scriptRepairPreferredModel(2, previous, {}), previous);
 });
 
 test('script generation uses every configured provider and skips an exhausted NVIDIA route', () => {
