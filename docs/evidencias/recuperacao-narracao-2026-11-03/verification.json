@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-11-03T21:05:23.146835+00:00",
+  "ci": {
+    "command": "npm run test:ci",
+    "exitCode": 0,
+    "nodeTests": 1227,
+    "pythonTests": 40,
+    "browserChecks": [
+      "dashboard accessibility",
+      "presenter framing and backward seeks",
+      "Instagram PT/EN crop, cover and distortion"
+    ],
+    "logSha256": "ddf2a50967181cd61f06552cef3fed29f42817fc3d48b865fabd89a3a1420e11"
+  },
+  "focusedTests": 49,
+  "authorTests": 55,
+  "eslint": "pass",
+  "productionEvidence": {
+    "jobId": "53814e09-9d82-4a3b-8c81-6f1f6af612c2",
+    "narrationDurationSeconds": 504.864,
+    "audioSha256": "196f5e1a54f370751f6d07b42f574ecbb7ae9ac75ecdb905e01928551ec4f19f",
+    "newMasterConfirmed": false,
+    "newPublicationConfirmed": false
+  },
+  "reload": {
+    "at": "2026-11-03T21:03:27Z",
+    "preconditions": [
+      "producer backoff",
+      "no child processes in cgroup",
+      "retry inactive",
+      "empty publication queue"
+    ],
+    "newMainPID": 3856644
+  }
+}

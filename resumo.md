@@ -2,6 +2,14 @@
 
 Requisitos: [decisões vigentes](docs/decisoes-vigentes.md). Estado/objetivos: [plan.md](plan.md). Acrescentar entregas datadas aqui; substituir o cursor no plano, sem manter várias versões concorrentes.
 
+## 03/11/2026 — narração recuperada e contrato de autoria, v2.35.0
+
+Recuperados os 13 checkpoints da cadeia `previous`. A pergunta pendente era se já havia envios; a conferência viva encontrou fila vazia e mais de 110 tentativas no job `53814e09`. Reproduzido: dois hífens isolados em “SSM - Population Health” eram contados como palavras. O helper de TTS produzia áudio correto, mas o alinhador o rejeitava e acionava a CLI alternativa, cuja transcrição longa veio truncada/repetida. Corrigida a tokenização sem remover pontuação das legendas nem aceitar palavras omitidas. O serviço concluiu 504,864 s de voz, avançou às imagens e obteve as duas capas Android, sem geração manual substituta.
+
+Reutilizados os módulos de timings/cache e a fila de adiamento existente. A narração só substitui o checkpoint após validação textual; falha de alinhamento é distinta de indisponibilidade remota. Falhas repetidas de TTS também liberam outras pautas mantendo o job. Na autoria, o schema agora exige pontos de tubos/perfis, mensagens mostram campo e limite, e notas internas extensas são limitadas antes da validação estrita. Não foram relaxados fatos, colisões, apoios, duração ou publicação.
+
+Reload em janela ociosa comprovada às 21:03:27 UTC; unidade única continua ativa. A execução anterior chegou às cenas mas não as concluiu; nenhum master novo ou envio novo foi confirmado. Evidências, hashes e validações em [recuperação de narração](docs/evidencias/recuperacao-narracao-2026-11-03/README.md). Mudanças anteriores de `.planning`, benchmark de encomendas, humanos procedurais experimentais e `SHA256SUMS` preservadas fora da entrega.
+
 ## 03/11/2026 — retomada, CPU e reparos limitados, v2.34.0
 
 Retomada após mudança de conta, com leitura de toda a cadeia `previous`. Consolidadas as correções pendentes de CPU/preparação, cues repetidos, referências espaciais, apoio/móveis e rótulos. Corrigido piso tratado como mesa/apoio de si mesmo. Reparos agora têm contador persistido e recomposição do bloco reprovado após seis respostas; falha remota preserva o rascunho. Serviço executou esse caminho e reutilizou partes anteriores por hash, sem restart ou produção manual substituta.

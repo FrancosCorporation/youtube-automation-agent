@@ -271,7 +271,14 @@ ${retryErrors.length ? `Corrija estas falhas locais: ${retryErrors.join('; ')}` 
 function normalizeScene(raw, input, plan, textCorpus, { repairLayout } = {}) {
   if (raw?.id !== input.id) throw new Error(`ID de cena não corresponde: esperado ${input.id}`);
   if (repairLayout && Array.isArray(raw.illustrations)) {
-    raw = { ...raw, illustrations: raw.illustrations.map(completeMovingBodyChecks) };
+    raw = { ...raw, illustrations: raw.illustrations.map(drawing => {
+      // This is an internal direction note, never narration or on-screen
+      // evidence. Bound a verbose writer note just like visualThesis, without
+      // changing geometry, source claims, labels, or any validation gate.
+      const bounded = typeof drawing.explanation === 'string' && drawing.explanation.length > 600
+        ? { ...drawing, explanation: cleanText(drawing.explanation, 600) } : drawing;
+      return completeMovingBodyChecks(bounded);
+    }) };
   }
   const authoredDraft = raw;
   // The adaptive author specifies the drawing itself. Legacy metadata is

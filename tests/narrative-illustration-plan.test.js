@@ -11,6 +11,16 @@ function drawing() {
     { id: 'coast', evidence: 'costa', label: 'costa', layout, shapes: [{ type: 'rect', x: -90, y: -30, width: 180, height: 60, fill: '#ecb47e' }] }
   ], motions: [{ targetId: 'wave', kind: 'move', cueText: 'avança', durationSeconds: 2, to: { landscape: { x: .7, y: .5, scale: 1 }, portrait: { x: .5, y: .7, scale: .8 } } }] }];
 }
+test('structural diagnostics identify the invalid field and limits instead of calling an oversized explanation missing', () => {
+  const raw = drawing();
+  raw[0].explanation = 'x'.repeat(605);
+  assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /s1\.explanation; use 12–600 caracteres, recebido 605/);
+  raw[0].explanation = 'Uma onda avança em direção à costa.';
+  raw[0].dimension = '3d';
+  raw[0].nodes[0].shapes = [];
+  raw[0].nodes[0].meshes = [{ type: 'tube', color: '#75baca', points: [] }];
+  assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /s1\/wave\.meshes\[0\]\.points; tube requer 2–40 pontos/);
+});
 test('arbitrary authored geometry survives normalization and cache rebinding without topic recipes', () => {
   const result = normalizeIllustrations(drawing(), [sentence], 24);
   assert.equal(result[0].nodes[0].shapes[0].d, 'M-100 40Q0-90 100 40Z');

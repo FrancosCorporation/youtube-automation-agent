@@ -5,6 +5,43 @@ const test = require('node:test');
 const { buildGroupTimings, expandEdgeTtsBoundaryEvents, partitionNarrationCues,
   summarizeNarrationTimings, timingAlignment } = require('../utils/narration-timing');
 
+test('standalone punctuation survives captions without consuming spoken boundaries or shifting groups', () => {
+  const groups = [{ text: '“ SSM - Population Health. ”' }, { text: '— Bem-estar não é certeza. —' }];
+  const spoken = ['SSM', 'Population', 'Health', 'Bem-estar', 'não', 'é', 'certeza'];
+  const events = spoken.map((text, i) => ({ text, startMs: i * 500 + 50, endMs: i * 500 + 450 }));
+  const expanded = expandEdgeTtsBoundaryEvents(events, groups.map(g => g.text).join(' '));
+  assert.equal(expanded.alignment, 'edge-tts-word-boundary');
+  assert.equal(expanded.recoveredMissingWordCount, undefined);
+  const parts = partitionNarrationCues(groups, expanded.words, expanded.alignment);
+  assert.deepEqual(parts.map(p => p.audioOffsetMs), [50, 1550]);
+  parts.forEach((p, i) => {
+    const result = buildGroupTimings(groups[i].text, p.cues, p.durationMs, 'edge-tts', p.alignment);
+    assert.equal(result.alignment, 'edge-tts-word-boundary');
+    assert.equal(result.sentences.length, 1);
+    assert.deepEqual(result.sentences.flatMap(s => s.words), groups[i].text.split(' '));
+    assert(result.sentences.every(s => s.startMs >= 0 && s.endMs <= p.durationMs));
+  });
+  const first = buildGroupTimings(groups[0].text, parts[0].cues, parts[0].durationMs, 'edge-tts', parts[0].alignment);
+  assert.deepEqual(first.sentences[0].wordTimes, [0, 0, 500, 500, 1000, 1400]);
+  assert.deepEqual(first.sentences[0].wordEndTimes, [0, 400, 500, 900, 1400, 1400]);
+  assert.throws(() => expandEdgeTtsBoundaryEvents(events.filter(e => e.text !== 'não'),
+    groups.map(g => g.text).join(' ')), /não correspondem/);
+  assert.throws(() => partitionNarrationCues(groups, expanded.words.filter(w => w.text !== 'não'),
+    expanded.alignment), /sincronização cancelada/);
+});
+
+test('subtitle interpolation keeps punctuation without falling back to a uniform whole-group estimate', () => {
+  const text = '“ SSM - Population Health. ”';
+  const parts = partitionNarrationCues([{ text }], [
+    { text: 'SSM', startMs: 100, endMs: 300 },
+    { text: 'Population Health', startMs: 800, endMs: 1800 }
+  ]);
+  const result = buildGroupTimings(text, parts[0].cues, parts[0].durationMs, 'edge-tts', parts[0].alignment);
+  assert.equal(result.alignment, 'subtitle-cues-interpolated');
+  assert.deepEqual(result.sentences[0].wordTimes, [0, 0, 700, 700, 1200, 1700]);
+  assert.deepEqual(result.sentences[0].wordEndTimes, [0, 200, 700, 1200, 1700, 1700]);
+});
+
 test('one sparse missing metadata span uses its real event duration and is explicitly mixed alignment', () => {
   const expected = Array.from({ length: 200 }, (_, i) => `palavra${i}`);
   const events = expected.filter((_word, i) => i < 100 || i > 103)

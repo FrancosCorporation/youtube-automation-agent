@@ -40,7 +40,9 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
     const sentence = sentences.find(cue => cue.id === item.cueSentenceId);
     if (!sentence || seen.has(sentence.id)) fail('frase ausente ou repetida');
     seen.add(sentence.id);
-    if (typeof item.explanation !== 'string' || item.explanation.length < 12 || item.explanation.length > 600) fail('explicação visual ausente');
+    if (typeof item.explanation !== 'string' || item.explanation.length < 12 || item.explanation.length > 600) {
+      fail(`explicação visual inválida em ${sentence.id}.explanation; use 12–600 caracteres, recebido ${typeof item.explanation === 'string' ? item.explanation.length : 'valor não textual'}`);
+    }
     if (!Array.isArray(item.nodes) || item.nodes.length < 2 || item.nodes.length > 32) fail('usar 2 a 32 partes do desenho');
     const dimension = item.dimension === '3d' ? '3d' : '2d';
     const ids = new Set();
@@ -71,7 +73,9 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
           rotation: vector(mesh.rotation, [0, 0, 0], -6.3, 6.3, `${context}.rotation`), size: vector(mesh.size, [1, 1, 1], .01, 12, `${context}.size`),
           opacity: number(mesh.opacity ?? 1, .1, 1, 'opacity'), metalness: number(mesh.metalness ?? .15, 0, 1, 'metalness') };
         if (mesh.type === 'tube' || mesh.type === 'extrude') {
-          if (!Array.isArray(mesh.points) || mesh.points.length < 2 || mesh.points.length > 40) fail('percurso 3D inválido');
+          if (!Array.isArray(mesh.points) || mesh.points.length < 2 || mesh.points.length > 40) {
+            fail(`percurso 3D inválido em ${context}.points; ${mesh.type} requer 2–40 pontos [x,y,z], não lista vazia`);
+          }
           result.points = mesh.points.map((point, index) => vector(point, null, -12, 12, `${context}.points[${index}]`));
         }
         return result;
@@ -172,6 +176,7 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
 function illustrationPrompt({ threeOnly = false } = {}) {
   return `
 DIREÇÃO ADAPTATIVA — campo illustrations obrigatório em cada cena:
+EXPLANATION: descrição breve da ação e consequência visíveis, entre 12 e 600 caracteres. Prefira uma ou duas frases; não repita a narração inteira nem escreva instruções extensas neste campo.
 ${threeOnly ? `CONTRATO 3D: dimension:"3d" em todas as composições. Cada node contém actorId licenciado OU meshes, nunca shapes SVG ou prop 2D. O desenho principal é uma composição original por frase, com cenário, ação e resultado ligados à fala. Prefira 3–8 nodes legíveis; separe somente peças com função. Não multiplique ambientes/figurantes/placas numa frase curta.
 ESTRUTURA: {cueSentenceId,dimension:"3d",explanation,nodes:[{id,evidence,label,layout:{landscape:{x,y,scale,rotate},portrait:{x,y,scale,rotate}},depth,solidRole,actorId,actorMotion,actorMotionCueText,meshes:[{type,color,position,size,rotation,opacity,metalness}]}],motions:[],tracks:[{targetId,property,keyframes}],camera:{landscape:{position,target,fov},portrait:{position,target,fov}},spatialChecks:[]}.
 EIXOS E APOIO: Y é altura, X largura e Z profundidade. Um piso horizontal tem solidRole:null, size:[10,0.1,8], position:[0,-0.05,0] e rotation:[0,0,0]; size:[10,8,0.1] é uma PAREDE, não um piso. Com piso layout.y=.8, scale=1 e depth=0, os pés dos atores ficam em layout.y=.8. Piso não tem tracks: mantenha-o imóvel; anime a ação dos objetos e clips humanos. Para humanos use layout.rotate=0 nos dois formatos; orientação horizontal vem de rotation3d:[0,yaw,0]. Uma mesa de altura .9 tem caixa size:[2,.9,1], position:[0,.45,0] e a mesma layout.y do piso; o tampo fica .9 acima dele. Uma bolsa de altura .4 apoiada nesse tampo, no mesmo node.layout.y, tem mesh.position.y=1.1. Mantenha X/Z da bolsa dentro do tampo. Estes números exemplificam o sistema de coordenadas, não impõem móveis a temas que não os exigem.

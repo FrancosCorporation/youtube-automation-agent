@@ -13,12 +13,17 @@ const pose = object({ x: number(.02, .98), y: number(.02, .98), scale: number(.0
 const layout = object({ landscape: pose, portrait: pose });
 const camera = object({ position: vector(-24, 24), target: vector(-12, 12), fov: number(20, 65) });
 const ref = object({ nodeId: id(), meshIndex: { anyOf: [{ type: 'null' }, { type: 'integer', minimum: 0, maximum: 59 }] } });
-const mesh = object({
-  type: choice(['box', 'sphere', 'cylinder', 'cone', 'torus', 'tube', 'extrude']),
+const meshProperties = {
   color: { type: 'string', pattern: '^#[a-fA-F0-9]{6}$' },
   position: vector(-8, 8), rotation: vector(-6.3, 6.3), size: vector(.01, 12),
-  opacity: number(.1, 1), metalness: number(0, 1), points: array(vector(-12, 12), 0, 40)
-});
+  opacity: number(.1, 1), metalness: number(0, 1)
+};
+// Curves and profiles require actual points; a shared minItems:0 schema
+// allowed faucets with an empty tube path in otherwise valid responses.
+const mesh = { anyOf: [
+  object({ ...meshProperties, type: choice(['box', 'sphere', 'cylinder', 'cone', 'torus']), points: array(vector(-12, 12), 0, 0) }),
+  object({ ...meshProperties, type: choice(['tube', 'extrude']), points: array(vector(-12, 12), 2, 40) })
+] };
 const node = object({
   id: id(), evidence: string(600), evidenceSentenceId: { anyOf: [string(100), { type: 'null' }] },
   label: string(36), layout, depth: number(-4, 4),

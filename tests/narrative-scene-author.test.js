@@ -833,6 +833,20 @@ function adaptiveSceneForPrompt(prompt) {
     })) };
 }
 
+test('authorship bounds only its verbose direction note while keeping publication validation strict', () => {
+  const plan = longScenePlan(1), input = buildChapterInputs(plan)[0];
+  const scene = adaptiveSceneForPrompt(buildAdaptivePrompt({ plan, chapterInputs: [input] }));
+  scene.illustrations[0].explanation = 'A nota descreve o movimento visível. '.repeat(30);
+  const snapshot = globalThis.structuredClone(scene);
+  assert.throws(() => normalizeScene(scene, input, plan, ''), /explanation; use 12–600/);
+  const fixed = normalizeScene(scene, input, plan, '', { repairLayout: drawing => drawing });
+  assert.equal(fixed.illustrations[0].explanation.length, 600);
+  assert.deepEqual(scene, snapshot);
+  assert.deepEqual(normalizeScene(fixed, input, plan, ''), fixed);
+  scene.illustrations[0].nodes[0].evidence = 'outro assunto';
+  assert.throws(() => normalizeScene(scene, input, plan, '', { repairLayout: drawing => drawing }), /sem trecho literal/);
+});
+
 test('authoring supplies missing known-solid checks; publication and unsafe geometry remain strict', () => {
   const plan = longScenePlan(1), input = buildChapterInputs(plan)[0];
   const scene = adaptiveSceneForPrompt(buildAdaptivePrompt({ plan, chapterInputs: [input] }));

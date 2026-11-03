@@ -53,12 +53,17 @@ function isRetryableGenerationFailure(failureCode) {
   const code = failureCode.trim().toLowerCase();
   // A pinned episode or its media may need repair; retain the in-flight
   // checkpoint rather than silently abandoning a partially rendered video.
-  if (['generation_worker_interrupted', 'narrative_resume_plan_mismatch', 'narrative_asset_integrity_failed', 'narrative_render_output_collision'].includes(code)) return true;
+  if (['generation_worker_interrupted', 'narration_alignment_failed', 'narrative_resume_plan_mismatch', 'narrative_asset_integrity_failed', 'narrative_render_output_collision'].includes(code)) return true;
   if (['source_claims_unverified', 'source_evidence_missing', 'source_context_too_short',
     'youtube_longform_source_too_short', 'youtube_longform_narrative_too_short', 'youtube_longform_narration_too_short',
     'budget_exhausted', 'no_fresh_topic_candidates', 'invalid_topic', 'theme_disabled',
     'video_technical_qa_failed'].includes(code)) return false;
   return /timeout|timed_out|rate.?limit|temporar|network|connection|provider_unavailable|host_resource|render.*(?:failed|timeout)|fetch_failed|http_5\d\d|econn|eai_again|enotfound|spawn_/.test(code);
+}
+
+function shouldDeferGenerationAttempt(failureCode, attemptCount) {
+  return ['narrative_scene_provider_unavailable', 'narration_provider_unavailable', 'narration_alignment_failed']
+    .includes(failureCode) && Number.isSafeInteger(attemptCount) && attemptCount >= 3;
 }
 
 function formatGenerationRetryDelay(delayMs) {
@@ -77,5 +82,6 @@ module.exports = {
   hasConfiguredAlternateWriterProvider,
   generationRetryDelayMs,
   isRetryableGenerationFailure,
+  shouldDeferGenerationAttempt,
   shouldBypassDailyBudgetBackoff
 };

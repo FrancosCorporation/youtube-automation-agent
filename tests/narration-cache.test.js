@@ -43,3 +43,43 @@ test('partial writes and swapped audio or subtitles cannot pass the cache bindin
   assert.equal(narrationCacheMatches(metadata, { inputHash, audio: Buffer.alloc(0), subtitles, wordTimings }), false);
   assert.equal(narrationCacheMatches({ ...metadata, provider: 'unknown' }, { inputHash, audio, subtitles, wordTimings }), false);
 });
+
+test('TTS success with a truncated transcript never replaces the existing narration checkpoint', async t => {
+  const fs = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { EventEmitter } = require('node:events');
+  const { setImmediate } = require('node:timers');
+  const childProcess = require('node:child_process');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tts-checkpoint-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.mock.method(require('dotenv'), 'config', () => ({ parsed: {} }));
+  t.mock.method(childProcess, 'spawnSync', () => ({ status: 0 }));
+  t.mock.method(childProcess, 'spawn', (_command, args) => {
+    const child = new EventEmitter();
+    child.stderr = new EventEmitter();
+    const arg = key => args[args.indexOf(key) + 1];
+    setImmediate(async () => {
+      if (args.includes('--audio')) {
+        await fs.writeFile(arg('--audio'), audio);
+        await fs.writeFile(arg('--timings'), JSON.stringify({ alignment: 'edge-tts-word-boundary-events',
+          events: [{ text: 'Errado', startMs: 0, endMs: 400 }] }));
+      } else {
+        await fs.writeFile(arg('--write-media'), audio);
+        await fs.writeFile(arg('--write-subtitles'), '1\n00:00:00,000 --> 00:00:01,000\nOutro texto.\n');
+      }
+      child.emit('close', 0);
+    });
+    return child;
+  });
+  const { synthesizeNarration, SCRIPT_REVISION } = require('../scripts/generate-animated-video');
+  const dir = path.join(root, `test-${SCRIPT_REVISION}_tts`);
+  await fs.mkdir(dir);
+  const original = { 'narration.mp3': audio, 'narration.srt': subtitles,
+    'narration.word-timings.json': wordTimings, 'narration.mp3.meta.json': Buffer.from('{"version":0}') };
+  for (const [name, content] of Object.entries(original)) await fs.writeFile(path.join(dir, name), content);
+  await assert.rejects(synthesizeNarration({ hook: 'Texto correto.', mainContent: { sections: [] },
+    conclusion: { finalThought: '' } }, 'test', root), { code: 'NARRATION_ALIGNMENT_FAILED' });
+  for (const [name, content] of Object.entries(original)) assert.deepEqual(await fs.readFile(path.join(dir, name)), content);
+  assert.deepEqual((await fs.readdir(dir)).sort(), Object.keys(original).sort());
+});

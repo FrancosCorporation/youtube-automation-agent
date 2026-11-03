@@ -6,9 +6,24 @@ const {
   NO_FRESH_TOPIC_RETRY_DELAY_MS,
   formatGenerationRetryDelay,
   generationRetryDelayMs, isRetryableGenerationFailure,
+  shouldDeferGenerationAttempt,
   hasConfiguredAlternateWriterProvider,
   shouldBypassDailyBudgetBackoff
 } = require('../utils/generation-retry');
+
+test('repeated narration failures preserve the attempt in the deferred queue instead of starving other jobs', () => {
+  for (const code of ['narration_alignment_failed', 'narration_provider_unavailable', 'narrative_scene_provider_unavailable']) {
+    assert.equal(isRetryableGenerationFailure(code), true);
+    assert.equal(shouldDeferGenerationAttempt(code, 1), false);
+    assert.equal(shouldDeferGenerationAttempt(code, 2), false);
+    assert.equal(shouldDeferGenerationAttempt(code, 3), true);
+    assert.equal(shouldDeferGenerationAttempt(code, 113), true);
+    assert.equal(shouldDeferGenerationAttempt(code, undefined), false);
+  }
+  for (const code of ['host_resource_gate', 'generation_worker_interrupted', 'narrative_render_failed', 'source_claims_unverified']) {
+    assert.equal(shouldDeferGenerationAttempt(code, 113), false);
+  }
+});
 
 test('generation retries wait for the UTC API-budget rollover without increasing the cap', () => {
   const now = new Date('2026-10-16T15:04:44.500Z');

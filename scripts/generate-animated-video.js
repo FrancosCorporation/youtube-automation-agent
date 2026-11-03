@@ -1544,6 +1544,19 @@ function parseSrt(srt) {
   return cues;
 }
 
+function validateNarrationAlignment(groups, subtitles, wordTimings) {
+  try {
+    const timing = JSON.parse(String(wordTimings));
+    const hint = ['edge-tts-word-boundary', 'edge-tts-word-boundary-mixed'].includes(timing.alignment)
+      ? timing.alignment : null;
+    return partitionNarrationCues(groups, parseSrt(String(subtitles)), hint);
+  } catch (cause) {
+    throw Object.assign(new Error('narration alignment failed; approved script retained for retry', { cause }), {
+      code: 'NARRATION_ALIGNMENT_FAILED'
+    });
+  }
+}
+
 async function synthesizeNarration(script, slug, outDir, replayNarration = null) {
   const groups = [
     { text: script.hook },
@@ -1581,9 +1594,7 @@ async function synthesizeNarration(script, slug, outDir, replayNarration = null)
       && (providerMode === 'gtts' || metadata?.provider === 'edge-tts');
   if (cached) {
     try {
-      const timing = JSON.parse(wordTimings.toString('utf8'));
-      const hint = ['edge-tts-word-boundary', 'edge-tts-word-boundary-mixed'].includes(timing.alignment) ? timing.alignment : null;
-      partitionNarrationCues(normalizedGroups, parseSrt(subtitles.toString('utf8')), hint);
+      validateNarrationAlignment(normalizedGroups, subtitles, wordTimings);
     } catch {
       if (replayNarration) throw Object.assign(new Error('replay narration alignment is invalid'), {
         code: 'visual_rebuild_narration_cache_mismatch'
@@ -1605,9 +1616,13 @@ async function synthesizeNarration(script, slug, outDir, replayNarration = null)
     const stagedWordTimings = `${wordTimingsPath}.${suffix}.json`;
     try {
       provider = await synthesize(fullText, cmd, stagedMp3, stagedSrt, stagedWordTimings, { voice, rate, pitch });
+      const nextSubtitles = await fs.readFile(stagedSrt);
+      const nextWordTimings = await fs.readFile(stagedWordTimings);
+      // A successful TTS process can still return a truncated transcript.
+      // Validate before replacing any checkpoint bytes or recording its hashes.
+      validateNarrationAlignment(normalizedGroups, nextSubtitles, nextWordTimings);
       const nextMetadata = narrationCacheMetadata({ inputHash, provider,
-        audio: await fs.readFile(stagedMp3), subtitles: await fs.readFile(stagedSrt),
-        wordTimings: await fs.readFile(stagedWordTimings) });
+        audio: await fs.readFile(stagedMp3), subtitles: nextSubtitles, wordTimings: nextWordTimings });
       await fs.rename(stagedMp3, mp3);
       await fs.rename(stagedSrt, srt);
       await fs.rename(stagedWordTimings, wordTimingsPath);
@@ -1620,17 +1635,8 @@ async function synthesizeNarration(script, slug, outDir, replayNarration = null)
 
   const measured = await getMediaDuration(mp3).catch(() => 0);
   const audioDurationMs = Number.isFinite(measured) && measured > 0 ? Math.round(measured * 1000) : 0;
-  const alignmentData = JSON.parse(await fs.readFile(wordTimingsPath, 'utf8'));
-  const cues = parseSrt(await fs.readFile(srt, 'utf8'));
-  const alignmentHint = alignmentData.alignment === 'edge-tts-word-boundary'
-    || alignmentData.alignment === 'edge-tts-word-boundary-mixed'
-    ? alignmentData.alignment
-    : null;
-  let partitions;
-  try { partitions = partitionNarrationCues(normalizedGroups, cues, alignmentHint); }
-  catch { throw Object.assign(new Error('narration alignment failed; approved script retained for retry'), {
-    code: 'NARRATION_PROVIDER_UNAVAILABLE'
-  }); }
+  const partitions = validateNarrationAlignment(normalizedGroups,
+    await fs.readFile(srt), await fs.readFile(wordTimingsPath));
   const timings = partitions.map((partition, index) => {
     const groupText = normalizedGroups[index].text;
     const durationMs = partition.durationMs || 1;
@@ -2987,6 +2993,7 @@ module.exports = {
   YOUTUBE_LONGFORM_MIN_WORDS,
   YOUTUBE_LONGFORM_MIN_DURATION_MS,
   synthesizeNarration,
+  validateNarrationAlignment,
   generateSceneImages,
   screenshotArticles,
   shouldStopSceneImageAttempts,

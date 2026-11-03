@@ -46,3 +46,16 @@ test('provider schema rejects production type/enum/range/ID failures before loca
 test('other provider models retain supported JSON mode instead of assuming schema support', () => {
   assert.deepEqual(sceneResponseFormat('other-model', [input]), { type: 'json_object' });
 });
+
+test('provider schema requires points for curves and profiles instead of admitting an empty faucet tube', () => {
+  const validate = new Ajv().compile(sceneResponseFormat(model, [input]).json_schema.schema);
+  for (const type of ['tube', 'extrude']) {
+    const value = fixture(), mesh = value.scenes[0].illustrations[0].nodes[0].meshes[0];
+    mesh.type = type;
+    assert.equal(validate(value), false);
+    mesh.points = [[0, 0, 0]];
+    assert.equal(validate(value), false);
+    mesh.points = [[0, 0, 0], [0, 1, 0], [1, 1, 0]];
+    assert.equal(validate(value), true, JSON.stringify(validate.errors));
+  }
+});

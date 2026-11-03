@@ -45,7 +45,7 @@ const { createGenerationAttemptStore, isCompletedGenerationAttempt, refreshGener
 const { createDeferredGenerationQueue, sameAttempt } = require('../utils/deferred-generation-queue');
 const { generationFailureCodeFromLog, generationRetryAtFromLog } = require('../utils/generation-errors');
 const { discardTechnicallyRejectedGeneration } = require('../utils/rejected-generation-cleanup');
-const { formatGenerationRetryDelay, generationRetryDelayMs, isRetryableGenerationFailure, shouldBypassDailyBudgetBackoff } = require('../utils/generation-retry');
+const { formatGenerationRetryDelay, generationRetryDelayMs, isRetryableGenerationFailure, shouldBypassDailyBudgetBackoff, shouldDeferGenerationAttempt } = require('../utils/generation-retry');
 const { createSchedulerRuntimeWriter, readPersistedGenerationRetryState } = require('../utils/scheduler-runtime-health');
 const { decideRecapGeneration, isValidRecapWindow, recordRecapWindow, weeklyRecapEnabled } = require('../utils/recap-schedule');
 const {
@@ -1107,8 +1107,8 @@ async function recordGenerationDuration(ms) {
   await writeGenHistory(history);
 }
 
-async function deferRepeatedSceneAttempt(retryDelayMs) {
-  if (!Number.isSafeInteger(interruptedGeneration?.attemptCount) || interruptedGeneration.attemptCount < 3) return false;
+async function deferRepeatedGenerationAttempt(failureCode, retryDelayMs) {
+  if (!shouldDeferGenerationAttempt(failureCode, interruptedGeneration?.attemptCount)) return false;
   const notBefore = new Date(Date.now() + Math.max(retryDelayMs, 30 * 60 * 1000)).toISOString();
   try {
     // Enqueue first: a crash can repeat work, but cannot lose the job.
@@ -1117,10 +1117,10 @@ async function deferRepeatedSceneAttempt(retryDelayMs) {
     interruptedGeneration = null;
     nextGenerationRetryAt = new Date(Date.now() + 30000).toISOString();
     await setRuntimeComponent('producer', 'backoff');
-    log(`⏭️ autoria adiada até ${notBefore}; preservada para retomada, rodízio seguirá com outra pauta`);
+    log(`⏭️ geração adiada até ${notBefore} (${failureCode}); preservada para retomada, rodízio seguirá com outra pauta`);
     return true;
   } catch (error) {
-    log(`⚠️ não foi possível adiar autoria (${String(error.code || error.name || 'Error').slice(0, 80)}); checkpoint preservado`);
+    log(`⚠️ não foi possível adiar geração (${String(error.code || error.name || 'Error').slice(0, 80)}); checkpoint preservado`);
     return false;
   }
 }
@@ -1137,9 +1137,8 @@ async function producer() {
   if (PIPELINED_PRODUCTION) log('⚙️ produção compartilhada: até um próximo vídeo pronto enquanto o anterior é publicado; gate de recursos ativo');
   await setRuntimeComponent('producer', 'waiting');
   // Apply the same fairness rule to a retry restored from an older process.
-  if (lastGenerationFailure?.code === 'narrative_scene_provider_unavailable') {
-    await deferRepeatedSceneAttempt(Math.max(0, Date.parse(nextGenerationRetryAt || '') - Date.now()) || 0);
-  }
+  await deferRepeatedGenerationAttempt(lastGenerationFailure?.code,
+    Math.max(0, Date.parse(nextGenerationRetryAt || '') - Date.now()) || 0);
 
   for (;;) {
     if (isScheduledGenerationPaused()) {
@@ -1334,7 +1333,7 @@ async function producer() {
           attemptStore: generationAttemptStore, expected: interruptedGeneration, root: ROOT
         });
         log(`♻️ tentativa persistida preservada (${video.jobId}, seed ${video.seed})`);
-        if (video.failureCode === 'narrative_scene_provider_unavailable' && await deferRepeatedSceneAttempt(retryDelayMs)) {
+        if (await deferRepeatedGenerationAttempt(video.failureCode, retryDelayMs)) {
           await sleep(30000);
           await setRuntimeComponent('producer', 'waiting');
           continue;

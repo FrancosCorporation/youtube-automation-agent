@@ -1,12 +1,13 @@
 'use strict';
 
 function normalizeToken(word) {
-  return String(word || '').toLowerCase().replace(/[^\wÀ-ÿ-]/g, '');
+  const token = String(word || '').toLowerCase().replace(/[^\wÀ-ÿ-]/g, '');
+  return /[\p{L}\p{N}]/u.test(token) ? token : '';
 }
 
 function cueTokens(cues) {
   return (Array.isArray(cues) ? cues : []).flatMap(cue =>
-    String(cue?.text || '').split(/\s+/).filter(Boolean));
+    spokenWords(cue?.text));
 }
 
 // Subtitle providers may omit a standalone typographic quote or dash because
@@ -21,11 +22,12 @@ function isEdgeTtsWordBoundaryAlignment(alignment) {
 }
 
 function expandEdgeTtsBoundaryEvents(events, text) {
-  const expectedWords = String(text || '').split(/\s+/).filter(Boolean);
+  const expectedWords = spokenWords(text);
   const words = [];
   let hadCombinedEvents = false;
   for (const [eventIndex, event] of (Array.isArray(events) ? events : []).entries()) {
-    const eventWords = String(event?.text || '').trim().split(/\s+/).filter(Boolean);
+    const eventWords = spokenWords(event?.text);
+    if (!eventWords.length) continue;
     const startMs = Number(event?.startMs), endMs = Number(event?.endMs);
     if (!eventWords.length || !Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs < 0 || endMs <= startMs) {
       throw new Error(`Limite de palavra Edge TTS inválido na posição ${eventIndex + 1}`);
@@ -100,7 +102,7 @@ function partitionNarrationCues(groups, cues, alignmentHint = null) {
     }
     let cursor = 0;
     return (Array.isArray(groups) ? groups : []).map(group => {
-      const words = String(group?.text || '').split(/\s+/).filter(Boolean);
+      const words = spokenWords(group?.text);
       if (!words.length) return { audioOffsetMs: 0, durationMs: 0, cues: [], alignment: alignmentHint };
       const selected = sourceCues.slice(cursor, cursor + words.length);
       cursor += words.length;
@@ -167,7 +169,7 @@ function partitionNarrationCues(groups, cues, alignmentHint = null) {
 }
 
 function hasMatchingSubtitleText(text, cues) {
-  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const words = spokenWords(text);
   const subtitles = cueTokens(cues);
   return words.length > 0 && subtitles.length === words.length &&
     words.every((word, index) => normalizeToken(subtitles[index]) === normalizeToken(word));
@@ -187,20 +189,31 @@ function buildWordTimings(text, cues, groupMs, alignmentHint = null) {
   const words = String(text || '').split(/\s+/).filter(Boolean);
   if (!words.length) return [];
 
+  // Keep punctuation in captions without inventing a spoken interval for it.
+  // Every actual word retains its measured/interpolated cue unchanged.
+  const withPunctuation = spokenTimings => {
+    let cursor = 0;
+    return words.map(w => {
+      if (normalizeToken(w)) return { ...spokenTimings[cursor++], w };
+      const at = spokenTimings[cursor]?.startMs ?? spokenTimings.at(-1)?.endMs ?? 0;
+      return { w, startMs: at, endMs: at };
+    });
+  };
+
   if (isEdgeTtsWordBoundaryAlignment(alignmentHint)) {
     if (!hasMatchingSubtitleText(text, cues) || cues.some(cue => String(cue?.text || '').trim().split(/\s+/).filter(Boolean).length !== 1)) {
       throw new Error('Limites de palavra do Edge TTS inválidos para os tempos do grupo');
     }
-    return words.map((word, index) => ({
+    return withPunctuation(spokenWords(text).map((word, index) => ({
       w: word,
       startMs: Number(cues[index].startMs),
       endMs: Number(cues[index].endMs)
-    }));
+    })));
   }
 
   const flat = [];
   for (const cue of Array.isArray(cues) ? cues : []) {
-    const cueWords = String(cue?.text || '').split(/\s+/).filter(Boolean);
+    const cueWords = spokenWords(cue?.text);
     const startMs = Number(cue?.startMs) || 0;
     const endMs = Number(cue?.endMs) || startMs;
     const step = Math.max(60, (endMs - startMs) / Math.max(1, cueWords.length));
@@ -212,7 +225,7 @@ function buildWordTimings(text, cues, groupMs, alignmentHint = null) {
   }
 
   if (hasMatchingSubtitleText(text, cues)) {
-    return words.map((word, index) => ({ w: word, startMs: flat[index].startMs, endMs: flat[index].endMs }));
+    return withPunctuation(flat);
   }
 
   const step = Math.max(60, (Number(groupMs) - 200) / words.length);
@@ -226,7 +239,13 @@ function buildWordTimings(text, cues, groupMs, alignmentHint = null) {
 function buildGroupTimings(text, cues, groupMs, provider = 'unknown', alignmentHint = null) {
   const durationMs = Math.max(1, Math.round(Number(groupMs) || 4000));
   const words = buildWordTimings(text, cues, durationMs, alignmentHint);
-  const sentences = String(text || '').split(/(?<=[.!?…])\s+/).map(sentence => sentence.trim()).filter(Boolean);
+  const sentences = [];
+  for (const sentence of String(text || '').split(/(?<=[.!?…])\s+/).map(s => s.trim()).filter(Boolean)) {
+    // A closing quotation mark after a period is part of the caption, not a
+    // separate zero-duration narrated sentence.
+    if (sentences.length && !spokenWords(sentence).length) sentences[sentences.length - 1] += ` ${sentence}`;
+    else sentences.push(sentence);
+  }
   const output = [];
   let cursor = 0;
 
