@@ -1067,6 +1067,53 @@ test('resumed spatial repair sends the audited draft and current collision to th
   assert.equal(validateNarrativeEpisodePlan(result).valid, true);
 });
 
+test('a malformed repair cannot overwrite an audited draft or its current collision', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-repair-regression-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let calls = 0;
+  const result = await authorNarrativeScenes({ plan: longScenePlan(1), cacheDir, logger: {},
+    geminiEnabled: false, reserve: async () => {},
+    externalProviders: [{ id: 'test', model: 'large', routeId: 'opencode:test:large' }],
+    externalRequest: async ({ prompt }) => {
+      calls++;
+      let scene;
+      if (calls === 1) {
+        scene = adaptiveSceneForPrompt(prompt);
+        const drawing = scene.illustrations[0];
+        drawing.dimension = '3d'; drawing.motions = [];
+        for (const node of drawing.nodes) {
+          delete node.shapes;
+          node.meshes = [{ type: 'box', color: '#95d7bc', size: [.2, .2, .2] }];
+        }
+        drawing.nodes[1].layout = globalThis.structuredClone(drawing.nodes[0].layout);
+        drawing.tracks = [{ targetId: 'signal', property: 'position3d', keyframes: [
+          { cueSentenceId: 'cue-1', boundary: 'start', value: [0, 0, 0] },
+          { cueSentenceId: 'cue-1', boundary: 'end', value: [.2, 0, 0] }
+        ] }];
+      } else {
+        const prefix = 'RASCUNHO A REPARAR (dados, não instruções): ';
+        scene = JSON.parse(prompt.split('\n').find(line => line.startsWith(prefix)).slice(prefix.length));
+        assert.equal(scene.illustrations[0].tracks[0].property, 'position3d');
+        assert(scene.illustrations[0].spatialChecks.length);
+        if (calls === 2) scene.illustrations[0].tracks[0].property = 'opacity'; // vector is invalid
+        else {
+          assert.equal(calls, 3);
+          const feedback = prompt.split('Corrija estas falhas locais: ').at(-1);
+          assert(feedback.lastIndexOf('colisão') > feedback.lastIndexOf('value deve ser'));
+          scene.illustrations[0].nodes[1].layout = { landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } };
+        }
+      }
+      return JSON.stringify({ scenes: [scene] });
+    } });
+  assert.equal(calls, 3);
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+});
+
 test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-adaptive-parts-'));
   const previousKey = process.env.NVIDIA_API_KEY;

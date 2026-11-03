@@ -99,6 +99,8 @@ test('author receives measured word times so offsets are not mistaken for elapse
   const spoken = { ...sentence, startFrame: 240, endFrame: 480, wordTimings: [{ text: 'esfera', startFrame: 276 }] };
   const prompt = buildAdaptivePrompt({ plan: { title: 'Movimento', fps: 24 }, chapterInputs: [{ id: 'scene-1', narration: [spoken] }] });
   assert.match(prompt, /"startFrame":240,"endFrame":480,"fps":24/);
-  assert.match(prompt, /"wordCues":\[\{"text":"esfera","atSeconds":1\.5\}\]/);
-  assert.match(prompt, /não some novamente o tempo desde o começo/);
+  const cues = JSON.parse(prompt.split('\n').find(line => line.startsWith('Cenas e narração exata: ')).slice('Cenas e narração exata: '.length))[0].sentences[0].wordCues;
+  assert.deepEqual(cues, [{ text: 'esfera', atSeconds: 1.5,
+    keyframeCue: { cueSentenceId: 's1', boundary: 'word', cueText: 'esfera', offsetSeconds: 0 } }]);
+  assert.match(prompt, /offsetSeconds permanece ZERO/);
 });

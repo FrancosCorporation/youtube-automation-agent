@@ -149,7 +149,10 @@ function assertSpatialChecks(illustration, sentence) {
   if (result.collisions.length) {
     const hit = result.collisions[0];
     const format = ref => `${ref.nodeId}${ref.meshIndex == null ? '' : `[${ref.meshIndex}]`}`;
-    fail(`colisão ${format(hit.subject)} atravessa ${format(hit.obstacle)} em ${hit.aspect}, frame ${hit.frame}; reposicione o obstáculo ou corrija a trajetória, mantendo contato e cue`);
+    const subject = bodyAt(illustration, hit.subject, hit.aspect, hit.frame);
+    const obstacle = bodyAt(illustration, hit.obstacle, hit.aspect, hit.frame);
+    const vector = values => `[${values.map(value => Number(value.toFixed(3))).join(',')}]`;
+    fail(`colisão ${format(hit.subject)} atravessa ${format(hit.obstacle)} em ${hit.aspect}, frame ${hit.frame}; centros mundiais ${vector(subject.center)}/${vector(obstacle.center)}, meias-extensões ${vector(subject.half)}/${vector(obstacle.half)}; corrija posição/percurso mantendo contato e cue`);
   }
   return result;
 }

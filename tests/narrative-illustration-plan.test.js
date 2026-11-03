@@ -18,6 +18,24 @@ test('arbitrary authored geometry survives normalization and cache rebinding wit
   assert.equal(result[0].motions[0].endFrame, 120);
   assert.deepEqual(normalizeIllustrations(result, [sentence], 24), result);
 });
+test('a stationary legacy move cannot satisfy narrative motion in either aspect', () => {
+  const raw = drawing();
+  raw[0].motions[0].to.portrait = { ...raw[0].nodes[0].layout.portrait };
+  assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /ação sem mudança visível em portrait/);
+  raw[0].motions[0].to.landscape = { ...raw[0].nodes[0].layout.landscape };
+  assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /ação sem mudança visível em landscape/);
+});
+test('holds and camera travel alone cannot replace an object action', () => {
+  const raw = drawing(); raw[0].dimension = '3d'; raw[0].motions = [];
+  for (const node of raw[0].nodes) { node.shapes = []; node.meshes = [{ type: 'box', color: '#75baca', size: [1, 1, 1] }]; }
+  const track = (targetId, property, values) => ({ targetId, property, keyframes: values.map((value, index) => ({
+    cueSentenceId: sentence.id, boundary: index ? 'end' : 'start', value
+  })) });
+  raw[0].tracks = [track('wave', 'opacity', [1, 1]), track('camera', 'position3d', [[0, 0, 0], [0, 1, 0]])];
+  assert.throws(() => normalizeIllustrations(raw, [sentence], 24), /ação sem mudança visível/);
+  raw[0].tracks[0] = track('wave', 'opacity', [0, 1]);
+  assert.equal(normalizeIllustrations(raw, [sentence], 24).length, 1);
+});
 test('untrusted vector plans cannot inject markup, URLs, unsupported primitives or ungrounded labels', () => {
   for (const bad of [
     d => { d[0].nodes[0].shapes[0].d = '<script>alert(1)</script>'; },

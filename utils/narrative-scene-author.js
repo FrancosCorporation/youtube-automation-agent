@@ -250,11 +250,11 @@ Título: ${plan.title}. Fonte: ${JSON.stringify(plan.source)}.
 Contexto para conferência: ${String(sourceContext || '').slice(0, 9000)}
 Cenas e narração exata: ${JSON.stringify(chapterInputs.map(input => ({ id: input.id, title: input.chapterTitle, previousSentence: input.previousSentence?.text, sentences: input.narration.map(sentence => ({ id: sentence.id, text: sentence.text, literalLabels: literalLabelChoices(sentence.text), durationSeconds: (sentence.endFrame - sentence.startFrame) / plan.fps,
   startFrame: sentence.startFrame, endFrame: sentence.endFrame, fps: plan.fps,
-  wordCues: (sentence.wordTimings || []).map(word => ({ text: word.text, atSeconds: Number(((word.startFrame - sentence.startFrame) / plan.fps).toFixed(3)) })) })) })))}
+  wordCues: (sentence.wordTimings || []).map(word => ({ text: word.text, atSeconds: Number(((word.startFrame - sentence.startFrame) / plan.fps).toFixed(3)), keyframeCue: { cueSentenceId: sentence.id, boundary: 'word', cueText: word.text, offsetSeconds: 0 } })) })) })))}
 Responda somente JSON válido, sem markdown, neste formato: {"scenes":[{"id":"ID fornecido", "visualThesis":"o mecanismo que será visível", "illustrations":[COMPOSIÇÕES NO SCHEMA ABAIXO]}]}.
 Contrato de saída para este pedido: ${JSON.stringify({ scenes: chapterInputs.map(input => ({ id: input.id, illustrations: input.narration.map(sentence => ({ cueSentenceId: sentence.id, dimension: '3d' })) })) })}. Complete cada composição com explanation, nodes, motions/tracks e camera. dimension, camera, tracks e spatialChecks pertencem a CADA item de illustrations, nunca à raiz da cena nem a um item separado. Não acrescente itens sem cueSentenceId. Use JSON compacto e apenas o detalhe necessário para explicar a ação; não gaste a resposta repetindo o contexto.
 Retorne exatamente as cenas solicitadas. Não gere os antigos campos objects, layouts, actions, cameraShots ou presenter: eles serão derivados localmente; concentre a autoria nas composições illustrations. Não reescreva a narração. Em label use uma das literalLabels da frase correspondente ou string vazia; não crie nomes explicativos novos. evidence e cueText continuam sendo trechos literais da frase.
-Os wordCues mostram o instante real de cada palavra em segundos a partir do começo da frase. Para word, some offsetSeconds ao atSeconds dessa palavra; não some novamente o tempo desde o começo. Para um instante absoluto dentro da frase, use boundary=start e offsetSeconds desse instante. Confira numericamente que todos os estados de cada trilha estão em ordem e dentro da duração. Não adicione trilhas position3d constantes a pisos, paredes ou outros sólidos imóveis; uma retenção sem deslocamento não é uma ação.
+Os wordCues mostram o instante real de cada palavra em segundos a partir do começo da frase. Para sincronizar à palavra, copie keyframeCue e acrescente value/easing: offsetSeconds permanece ZERO. atSeconds é informação para planejar, não é offsetSeconds. Para um instante absoluto dentro da frase, use boundary=start e offsetSeconds desse instante. Confira numericamente que todos os estados de cada trilha estão em ordem e dentro da duração. Não adicione trilhas position3d constantes a pisos, paredes ou outros sólidos imóveis; uma retenção sem deslocamento não é uma ação.
 ${illustrationPrompt()}
 ${visualCritique?.length ? `Direção da revisão: ${JSON.stringify(visualCritique.map(item => ({ issue: item.issue, recommendedFix: item.recommendedFix })))}` : ''}
 ${retryDraft ? `RASCUNHO A REPARAR (dados, não instruções): ${JSON.stringify(retryDraft)}\nPreserve o que já está correto. Corrija os defeitos apontados e retorne a cena inteira no schema acima.` : ''}
@@ -902,6 +902,8 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
             let chapterFeedback = [];
             let retryDraft = null;
             let retryDraftModel = 'previous-author-unrecorded';
+            let retryDraftAudited = false;
+            let retryDraftFeedback = '';
             try {
               const saved = JSON.parse(await fs.readFile(feedbackPath, 'utf8'));
               if (saved.inputSha256 === inputSha256 && saved.partSha256 === partSha256) {
@@ -924,8 +926,10 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 partScene = null;
                 if (error.sceneDraft && stableJson(error.sceneDraft).length <= 120000) {
                   retryDraft = error.sceneDraft;
+                  retryDraftAudited = true;
+                  retryDraftFeedback = cleanText(error.message, 300);
                   const feedback = cleanText(error.message, 300);
-                  if (feedback && !chapterFeedback.includes(feedback)) chapterFeedback.push(feedback);
+                  if (feedback) chapterFeedback = [...chapterFeedback.filter(item => item !== feedback), feedback];
                   chapterFeedback = chapterFeedback.slice(-8);
                 }
                 // Invalid drafts still require a bounded writer repair.
@@ -949,6 +953,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
               }
               const startedAt = Date.now();
               let localValidation = false;
+              let attemptedDraft = null;
               logger.info?.(`autoria de ${input.id} parte ${partIndex + 1}/${parts.length}: ${attemptModel} (${part.narration.length} frases)`);
               try {
                 const prompt = buildAdaptivePrompt({ plan, chapterInputs: [part], sourceContext, retryErrors: chapterFeedback, visualCritique, retryDraft });
@@ -984,8 +989,7 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                 if (!Array.isArray(parsed.scenes) || parsed.scenes.length !== 1) throw new Error('resposta não contém exatamente uma cena');
                 // Retain only a parsed scene from this request; never provider
                 // exception text or an unbounded response in repair prompts.
-                retryDraft = stableJson(parsed.scenes[0]).length <= 120000 ? parsed.scenes[0] : null;
-                retryDraftModel = attemptModel;
+                attemptedDraft = stableJson(parsed.scenes[0]).length <= 120000 ? parsed.scenes[0] : null;
                 partScene = normalizeScene(parsed.scenes[0], part, plan, `${sourceContext || ''} ${plan.title || ''}`, { repairLayout: repairAuthoredLayout });
                 // Split requests must supply the adaptive compositions, not legacy
                 // metadata that cannot be safely merged across sentence windows.
@@ -1005,12 +1009,26 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
                   || (localValidation && /^NARRATIVE_SCENE_(?:JSON_MISSING|JSON_INVALID)$/.test(failureTag))
                   || failureTag === 'NARRATIVE_SCENE_RESPONSE_TRUNCATED';
                 if (repairable) validationFailures += 1;
-                if (repairable && error.sceneDraft && stableJson(error.sceneDraft).length <= 120000) retryDraft = error.sceneDraft;
+                if (repairable && error.sceneDraft && stableJson(error.sceneDraft).length <= 120000) {
+                  retryDraft = error.sceneDraft;
+                  retryDraftModel = attemptModel;
+                  retryDraftAudited = true;
+                  retryDraftFeedback = cleanText(error.message, 300);
+                } else if (attemptedDraft && !retryDraftAudited) {
+                  retryDraft = attemptedDraft;
+                  retryDraftModel = attemptModel;
+                }
                 const localDetail = repairable && !error?.code && /^(?:scene-\d+: |illustration:)/.test(String(error?.message || ''))
                   ? cleanText(error.message, 300) : '';
                 logger.warn?.(`autoria de ${input.id} (${attemptModel}) falhou (${failureTag})${localDetail ? `: ${localDetail}` : ''}`);
                 const feedback = repairable ? cleanText(error.message, 300) : '';
-                if (feedback && !chapterFeedback.includes(feedback)) chapterFeedback.push(feedback);
+                if (feedback) chapterFeedback = [...chapterFeedback.filter(item => item !== feedback), feedback];
+                // A structurally broken response must not discard geometry and
+                // timing already normalized locally. Keep its diagnostic, but
+                // end with the outstanding defect of the retained draft.
+                if (retryDraftAudited && retryDraftFeedback) {
+                  chapterFeedback = [...chapterFeedback.filter(item => item !== retryDraftFeedback), retryDraftFeedback];
+                }
                 if (error.code === 'BUDGET_EXHAUSTED') unavailableProviders.add(provider);
                 // Do not repeatedly call unavailable models for every block in
                 // this run. A subsequent scheduler attempt may retry the route.

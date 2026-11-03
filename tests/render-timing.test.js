@@ -194,6 +194,7 @@ test('resource gate blocks render jobs but not passive preview servers', () => {
   assert.equal(isActiveRenderCommand(['node', '/project/node_modules/.bin/remotion', 'studio']), false);
   assert.equal(isActiveRenderCommand(['npx', 'hyperframes@0.8.183', 'preview', '.', '--port', '3003']), false);
   assert.equal(isActiveRenderCommand(['node', '/project/scripts/generate-animated-video.js']), true);
+  assert.equal(isActiveRenderCommand(['node', '/project/scripts/check-narrative-render.js', '--plan', 'sample.json']), true);
   assert.equal(isActiveRenderCommand(['npx', 'eslint', 'utils/remotion-story-video-renderer.js']), false);
   assert.equal(isActiveRenderCommand(['node', 'tests/hyperframes-video-renderer.test.js']), false);
 });

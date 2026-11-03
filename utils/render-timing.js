@@ -232,9 +232,10 @@ function isActiveRenderCommand(argv) {
   const hasHyperFramesCli = args.some(value => /^hyperframes(?:@[^/]+)?$/i.test(path.basename(value)));
   const hasRemotionCli = args.some(value => path.basename(value).toLowerCase() === 'remotion');
   const isProductionGenerator = args.some(value => /(?:^|\/)generate-animated-video\.js$/i.test(value));
+  const isDiagnosticRenderer = args.some(value => /(?:^|\/)check-narrative-render\.js$/i.test(value));
   // Preview/Studio servers can stay open while idle; live load, memory and GPU
   // telemetry gate their actual resource impact. Only competing render jobs block.
-  return isProductionGenerator || (hasHyperFramesCli && action.includes('render'))
+  return isProductionGenerator || isDiagnosticRenderer || (hasHyperFramesCli && action.includes('render'))
     || (hasRemotionCli && action.includes('render'));
 }
 

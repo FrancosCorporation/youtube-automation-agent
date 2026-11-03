@@ -1,6 +1,6 @@
 'use strict';
 const { narrativeLabelCueFrame } = require('./narrative-word-cue');
-const { normalizeAnimationTracks } = require('./narrative-animation-tracks');
+const { normalizeAnimationTracks, evaluateAnimationTrack } = require('./narrative-animation-tracks');
 const { normalizeSpatialChecks, assertSpatialChecks } = require('./narrative-spatial-audit');
 const { ACTOR_CATALOG, MOTIONS, resolveHumanActor } = require('./narrative-human-actors');
 const clean = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -121,6 +121,26 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
     if (/\b(pessoa|pessoas|homem|mulher|mulheres|homens|algu[eé]m|fam[ií]lia|paciente|profissional|trabalhador|trabalhadora|pesquisador|pesquisadora|operador|operadora|motorista|cliente|morador|moradora|volunt[aá]rio|volunt[aá]ria|crian[cç]a|estudante|aluno|aluna|astronauta|m[eé]dico|m[eé]dica|enfermeiro|enfermeira|cientista|equipe)\b/i.test(sentence.text)
       && !nodes.some(node => node.actorId)) fail('a narração menciona pessoas; incluir ator humano detalhado no plano 3D');
     if (nodes.some(node => node.actorId) && dimension !== '3d') fail('atores humanos exigem ilustração 3D');
+    const changingTrack = tracks.some(track => {
+      if (track.targetId === 'camera') return false;
+      const frames = [sentence.startFrame, sentence.endFrame - 1,
+        ...track.keyframes.map(key => key.frame).filter(frame => frame > sentence.startFrame && frame < sentence.endFrame)];
+      const initial = JSON.stringify(evaluateAnimationTrack(track, frames[0]));
+      return frames.some(frame => JSON.stringify(evaluateAnimationTrack(track, frame)) !== initial);
+    });
+    for (const aspect of ['landscape', 'portrait']) {
+      const changingMotion = motions.some(motion => {
+        if (motion.endFrame <= motion.startFrame) return false;
+        if (['draw', 'reveal'].includes(motion.kind)) return true;
+        if (motion.kind === 'rotate') return motion.amount !== 0;
+        if (motion.kind === 'scale') return motion.amount !== 1;
+        const from = nodes.find(node => node.id === motion.targetId).layout[aspect];
+        return ['x', 'y', 'scale', 'rotate'].some(key => motion.to[aspect][key] !== from[key]);
+      });
+      if (!hasActorMotion && !changingTrack && !changingMotion) {
+        fail(`ação sem mudança visível em ${aspect}; altere objeto/parte durante a frase, não use destino igual à origem, retenção constante ou só câmera`);
+      }
+    }
     const cameras = {};
     for (const aspect of ['landscape', 'portrait']) {
       const camera = item.camera?.[aspect];
