@@ -467,7 +467,7 @@ test('rechecks Android availability and recovers after Gemini login becomes vali
   assert.equal(await provider.isAvailable(), true);
 });
 
-test('image provider selects the configured Android provider and falls back to web after failure', async () => {
+test('Android generation failure never opens the host browser', async () => {
   const calls = [];
   const android = {
     isAvailable: async () => true,
@@ -475,14 +475,35 @@ test('image provider selects the configured Android provider and falls back to w
     close: async () => {}
   };
   const web = {
-    isAvailable: async () => true,
+    isAvailable: async () => { calls.push('web-probe'); return true; },
     generateImage: async (_prompt, output) => { calls.push('web'); return output; },
     close: async () => {}
   };
   const provider = new GeminiImageProvider({ android, web, preferred: 'android' });
   assert.equal(await provider.isAvailable(), true);
-  assert.equal(await provider.generateImage('prompt', 'output.png'), 'output.png');
-  assert.deepEqual(calls, ['android', 'web']);
+  await assert.rejects(provider.generateImage('prompt', 'output.png'), /android failure/);
+  assert.deepEqual(calls, ['android']);
+  await provider.close();
+});
+
+test('default Android outage stays unavailable even with a ready host browser', async () => {
+  let webCalls = 0;
+  const provider = new GeminiImageProvider({ env: {},
+    android: { isAvailable: async () => false, close: async () => {} },
+    web: { isAvailable: async () => { webCalls++; return true; }, close: async () => {} }
+  });
+  assert.equal(await provider.isAvailable(), false);
+  await assert.rejects(provider.generateImage('prompt', 'output.png'), /visual_image_provider_unavailable/);
+  assert.equal(webCalls, 0);
+  await provider.close();
+});
+
+test('explicit legacy web route remains available without an Android call', async () => {
+  const provider = new GeminiImageProvider({ env: { GEMINI_IMAGE_PROVIDER: 'web' },
+    web: { isAvailable: async () => true, generateImage: async () => 'legacy.png', close: async () => {} },
+    android: { isAvailable: async () => { throw new Error('unexpected Android probe'); }, close: async () => {} }
+  });
+  assert.equal(await provider.generateImage('prompt', 'output.png'), 'legacy.png');
   await provider.close();
 });
 
@@ -500,6 +521,7 @@ test('shared Studio CDP is accessed only through the locked Android provider', a
   let webCalls = 0;
   let androidCalls = 0;
   const provider = new GeminiImageProvider({
+    preferred: 'web',
     env: { YOUTUBE_STUDIO_CDP_URL: 'http://127.0.0.1:9223' },
     web: { cdpUrl: 'http://localhost:9223/', isAvailable: async () => { webCalls++; return true; }, close: async () => {} },
     android: { isAvailable: async () => { androidCalls++; return false; }, close: async () => {} }

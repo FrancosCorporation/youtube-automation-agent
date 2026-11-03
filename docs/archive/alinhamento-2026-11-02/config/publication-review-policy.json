@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "owner-delegated-2026-10-18",
+  "enabled": true,
+  "mode": "owner-delegated-automatic",
+  "authorizedAt": "2026-10-18T14:00:00.000Z",
+  "instruction": "As capas já estão autorizadas em todos os nichos. Gerar imagens fotorealistas originais com Gemini Nano Banana Pro (gemini-3-pro-image) em composições próprias 16:9 para o master horizontal e 9:16 para conteúdo vertical, sem apenas cortar a arte horizontal. O agente ou QA automático revisa cada formato exigido sem pedir minha permissão; acompanho conforme os vídeos são publicados. A capa deve combinar com o tema, despertar curiosidade e convidar ao clique sem sensacionalismo, afirmação inventada ou promessa falsa.",
+  "scope": "Todos os nichos, novos vídeos e pacotes pendentes explicitamente selecionados: criação/correção de capas e liberação automática após fonte/revisão factual, checks técnicos e hashes. Publicar pelos destinos e fluxo existentes sem confirmação humana por capa/vídeo. Não altera contas, cadência, quotas, privacidade nem permite repetir resultados remotos incertos.",
+  "thumbnailReview": {
+    "ownerApprovalRequired": false,
+    "reviewer": "agent-or-automatic-qa",
+    "niches": "all",
+    "criteria": [
+      "Imagem e chamada fiéis à fonte e ao conteúdo do vídeo, adaptadas ao nicho e à pauta específica.",
+      "Chamada legível em PT-BR, com nome exato do modelo/produto e assunto quando centrais à pauta.",
+      "Curiosidade e apelo visual sem inventar afirmações, números, resultados ou promessas.",
+      "Gerar arte específica para 16:9 e 9:16, com enquadramento e área segura próprios; não converter uma proporção na outra por simples corte.",
+      "Gerar a arte fotorealista original com Gemini Nano Banana Pro (gemini-3-pro-image); não substituir por imagem de cena, imagem de artigo, arte vetorial ou outro modelo. Compor o texto separadamente e conferir cada capa antes da liberação por hash."
+    ]
+  }
+}

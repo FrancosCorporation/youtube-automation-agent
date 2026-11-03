@@ -23,15 +23,20 @@ class GeminiImageProvider {
     const env = options.env || process.env;
     const androidEnabled = options.androidEnabled ?? env.GEMINI_ANDROID_FALLBACK !== '0';
     this.android = options.android || (androidEnabled ? new GeminiAndroidImageGenerator({ env, ...options.androidOptions }) : null);
-    this.web = options.webEnabled === false ? null : options.web || new GeminiWebImageGenerator(options.webOptions || {});
-    const preferred = String(options.preferred || env.GEMINI_IMAGE_PROVIDER || 'web').toLowerCase();
+    const preferred = String(options.preferred || env.GEMINI_IMAGE_PROVIDER || 'android').toLowerCase();
+    if (!['android', 'web'].includes(preferred)) throw new TypeError('GEMINI_IMAGE_PROVIDER inválido');
+    // Android is the owner's production route, not just a preference. Never
+    // navigate a host browser after an Android outage. Explicit web callers
+    // remain supported for separate legacy tools.
+    this.web = preferred !== 'web' || options.webEnabled === false ? null
+      : options.web || new GeminiWebImageGenerator(options.webOptions || {});
     // The web provider has no Android device lock and can navigate the shared
     // Chrome while Studio is uploading. The Android provider already owns that
     // lock and checks the foreground screen; use it for this endpoint instead.
     const sharedStudioBrowser = sameCdpEndpoint(this.web?.cdpUrl, env.YOUTUBE_STUDIO_CDP_URL || studioConfig.cdpUrl);
     const safeWeb = sharedStudioBrowser ? null : this.web;
     this.webAllowed = Boolean(safeWeb);
-    this.providers = preferred === 'android' ? [this.android, safeWeb] : [safeWeb, this.android];
+    this.providers = preferred === 'android' ? [this.android] : [safeWeb, this.android];
     this.providers = this.providers.filter(Boolean);
     this.active = null;
     this.requiresVerifiedImageModel = true;

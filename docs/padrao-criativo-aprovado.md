@@ -1,4 +1,6 @@
-# Direção criativa aprovada — 01/11/2026
+# Direção criativa aprovada — consolidada em 02/11/2026
+
+Método vigente: Three.js r187 + Remotion, humanos GLB locais e robô aprovados no piloto de reflorestamento. Requisitos de duração, capas e operação estão em [decisões vigentes](decisoes-vigentes.md); histórico não substitui essa aprovação.
 
 O proprietário aprovou a encenação da linha de triagem de laranjas: “é isso”. Ressalva explícita: a fruta atravessava um suporte, o que não deve acontecer. Esta é uma aprovação da criação e do movimento, com correção espacial necessária; não autoriza repetir laranjas/máquinas em narrativas de outros assuntos.
 
@@ -12,7 +14,7 @@ Planejar corredores com a dimensão inteira do objeto. Peças sólidas não atra
 
 ### Aprovação do piloto e método de produção adotado — 01/11/2026
 
-Após ver os vídeos de reflorestamento gerados em horizontal e vertical, o proprietário aprovou o resultado e solicitou usar esse método em produção. A rota recorrente adota Three.js r187 + Remotion para 3D determinístico por frame; usa os humanos detalhados, texturizados, rigados e licenciados do catálogo GLB local; cria cenário, objetos e ações próprios para cada tema; e mantém layouts independentes 16:9/9:16. O autor e os reparos recebem o catálogo; assets são verificados por hash antes de renderizar. Pessoas não podem cair para pictogramas ou corpos procedurais. Não há Mixamo/site por vídeo. O proprietário aprovou o piloto específico; a próxima execução recorrente é necessária para confirmar que o serviço consumiu a integração.
+Após ver os vídeos de reflorestamento gerados em horizontal e vertical, o proprietário aprovou o resultado e solicitou usar esse método em produção. A rota recorrente adota Three.js r187 + Remotion para 3D determinístico por frame; usa os humanos detalhados, texturizados, rigados e licenciados do catálogo GLB local; cria cenário, objetos e ações próprios para cada tema; e mantém layouts independentes 16:9/9:16. O autor e os reparos recebem o catálogo; assets são verificados por hash antes de renderizar. Pessoas não podem cair para pictogramas ou corpos procedurais. Não há Mixamo/site por vídeo. O proprietário aprovou o piloto e método; um novo episódio completo pelo serviço ainda precisa de prova de render e publicação. Ver o cursor atual, sem repetir o piloto ou recriar uma pausa antiga.
 
 Tempos observados: benchmark de eclusa com r187, 2min12,4s ativos (+0,3s de espera) entre roteiro/áudio congelados e MP4 validado. No piloto aprovado, os renders dos dois aspectos levaram 84,51s e 86,79s, 2min51,3s se sequenciais; a preparação/export dos modelos levou 3,18s e 1,81s depois do setup. Voz inicial, pesquisa, autoria/revisão visual e tempo de setup não foram cronometrados nesse piloto. Não chamar esses 2min51,3s de tempo total da pauta.
 
@@ -33,11 +35,11 @@ O proprietário considerou a renderização razoável, mas apontou defeitos que 
 
 As diretrizes estão em `creativeReferencePrompt()` revisão 4, incluída nas chamadas iniciais e reparos do autor; a revisão também participa do hash de cache. Isso evita depender da memória da conversa. A descrição no prompt não equivale a validação automática de estética, ações humanas ou continuidade de figurino: os limites do verificador local seguem explícitos abaixo.
 
-- Autor v2.15: referência permanente atualizada para humanos detalhados locais e exigência de `spatialChecks` para peças 3D que declaram translação no formato adaptativo compacto. Isso não amplia sozinho o contrato de assets do compositor.
+- Autor recorrente: referência permanente, catálogo GLB e `spatialChecks` integrados ao contrato atual. Pequenos reparos de posição/apoio são revalidados; não dispensam percurso, movimento e QA dos dois layouts.
 - Normalizador compartilhado: valida referências de malhas e executa `narrative-spatial-audit` antes de aceitar desenhos; o validador do episódio e a auditoria existente passam pelo mesmo normalizador.
 - Verificador local: esferas, caixas orientadas e cilindros; posição/rotação/escala hierárquicas e trilhas globais, nos dois layouts. Amostragem inclui subquadros adaptativos e recusa velocidade que exceda o orçamento de amostragem. Contato é permitido; penetração acima da tolerância gera diagnóstico com objetos, malhas, formato e tempo.
 - O diagnóstico retorna ao reparo já existente do autor. Não há chamada adicional de LLM revisor nem aumento de orçamento/tentativas.
-- Limites: verifica **pares declarados**, não descobre automaticamente todo sólido possível; esferas elipsoidais e certos pares com cilindros usam aproximações conservadoras. Não é um simulador físico universal, detector de toda topologia, nem prova de qualidade estética. Geometrias complexas devem ser decompostas em sólidos verificáveis. Legacy 2D/receitas existentes continuam compatíveis; a geração recorrente completa ainda exige comprovação real.
+- Limites: verifica **pares declarados**, não descobre automaticamente todo sólido possível; esferas elipsoidais e certos pares com cilindros usam aproximações conservadoras. Não é um simulador físico universal, detector de toda topologia, nem prova de qualidade estética. Geometrias complexas devem ser decompostas em sólidos verificáveis. Componentes 2D legados continuam disponíveis aos seus consumidores, sem substituir humanos/encenação da produção. A geração recorrente completa ainda exige comprovação real.
 
 ## Referência e reprodução
 

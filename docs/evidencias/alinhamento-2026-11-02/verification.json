@@ -1,0 +1,52 @@
+{
+  "observedAt": "2026-11-02T23:20:20.882881-03:00",
+  "baseCommit": "02b5862dc3b9c4a7f32e56b8d73cbdd2bb29e5ed",
+  "preservedDocuments": 21,
+  "yaiIds": 63,
+  "yaiStatusesUnchanged": true,
+  "singleCurrentCursor": true,
+  "currentDocumentLinks": "passed",
+  "checks": [
+    {
+      "command": "node --test tests/gemini-android-image.test.js tests/thumbnail-art.test.js tests/delegated-publication-review.test.js",
+      "passed": 39,
+      "exitCode": 0
+    },
+    {
+      "command": "bash scripts/run-ci-tests.sh",
+      "exitCode": 0,
+      "includes": "Node groups, browser checks and 40 Python tests"
+    },
+    {
+      "command": "node --test tests/narrative-actor-support.test.js",
+      "passed": 3,
+      "exitCode": 0
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 1,
+      "warning": "preexisting unused decoded in news_chapea_demo/render-and-review.cjs"
+    }
+  ],
+  "logSha256": {
+    "/tmp/pulso-v232-focused.log": "6fe82a7362035ffda5602b311d8c0c1db5f93c708ec4e549688f7ee4caf8b61f",
+    "/tmp/pulso-v232-ci.log": "db537a9d06d5e319d912458d0f6c33eeb8eb7ffc9d99c0e7023b2f96f24be473",
+    "/tmp/pulso-v232-lint.log": "baba3e44d08bc6abc84abbb69474e100113fccba34043c954769b954198337a9",
+    "/tmp/pulso-v232-support.log": "a0fdde3705c7a760ab754239e4caf601ac779b89df6fcc9d94f18abd5965fdbd"
+  },
+  "operation": {
+    "service": "ai-video-scheduler.service",
+    "restartedByThisDelivery": false,
+    "manualGeneration": false,
+    "socialSubmissionByThisDelivery": false,
+    "newEpisodePublicationConfirmed": false
+  },
+  "limits": [
+    "Writer still fails floor support and provider availability on current episode",
+    "Nano Banana Pro requested; effective model not verified",
+    "Full recurring render/publication remains unproved",
+    "Historical archive links preserve original document base; not current instructions"
+  ]
+}

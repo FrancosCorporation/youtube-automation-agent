@@ -1,20 +1,18 @@
-# Documentação do Pulso neste checkout
+# Documentação vigente do Pulso
 
-Atualização: 25/10/2026. O plano único de execução é [plan.md](../plan.md); este índice organiza a leitura, sem duplicar o backlog.
+Consolidada em 02/11/2026. O pedido mais recente do proprietário prevalece; o plano abaixo é a única fila de execução.
 
-| Para entender ou retomar | Documento |
+| Assunto | Documento |
 |---|---|
-| Instruções permanentes e autorização | [AGENTS.md](../AGENTS.md) |
-| Prioridade, cursor e objetivos YAI | [plan.md](../plan.md), [critérios de aceite](criterios-aceite-pulso.md) |
-| Fluxo automático, lacunas, contexto, Remotion, retries, redes e rollout | [Workflow autônomo](workflow-autonomo.md) |
-| Estado verificável e implementação desta revisão | [Ativação e estado do serviço em 25/10](evidencias/workflow-autonomo-2026-10-25/activation-state.json), [snapshot de implementação de 22:25 em 24/10](evidencias/workflow-autonomo-2026-10-24/implementation-state.json), [captura original de 22:08](evidencias/workflow-autonomo-2026-10-24/state.json) |
-| Episódio inicial e origem da migração GPS v2 | [Retomada narrativa](retomada-linha-narrativa-2026-10-23.md) |
-| Distinguir Pulso de AgentTube/Express | [ADR-0001](adr/0001-fronteira-entre-pipelines.md) |
-| QA factual, vídeo/capas e liberação por hash | [Runbook de QA](video-qa-review-runbook.md) |
-| Motion e composição | [Skill local](../.agents/skills/pulso-motion-design/SKILL.md), [projeto Remotion](../experiments/remotion-motion-review/README.md) |
-| Formatos e distribuição por rede | [Matriz de formatos](formatos-video-por-rede-2026-10-13.md); consultar o workflow para disponibilidade atual das contas |
-| Métricas reais | [Runbook de performance](daily-performance-runbook.md) |
-| Acervo, imagens e restauração | [Acervo](media-archive-runbook.md), [banco de imagens](image-library-runbook.md), [backup](backup-restore-runbook.md) |
-| Evidências e decisões anteriores | [resumo.md](../resumo.md), `docs/evidencias/`, `docs/archive/` |
+| Última aprovação e autorizações permanentes | [Decisões vigentes](decisoes-vigentes.md), [AGENTS.md](../AGENTS.md) |
+| Cursor e 63 objetivos | [plan.md](../plan.md), [critérios](criterios-aceite-pulso.md) |
+| Componentes, diagnóstico, recuperação e publicação | [Workflow autônomo](workflow-autonomo.md) |
+| Método de criação e referência humana aprovada | [Direção criativa](padrao-criativo-aprovado.md), [piloto de reflorestamento](../benchmarks/video_3d/reforestation_demo/README.md) |
+| Motion e revisão | [Skill local](../.agents/skills/pulso-motion-design/SKILL.md), [QA](video-qa-review-runbook.md) |
+| Separação de AgentTube e Pulso | [ADR-0001](adr/0001-fronteira-entre-pipelines.md) |
+| Imagens e preservação | [Banco de imagens](image-library-runbook.md), [acervo](media-archive-runbook.md), [backup](backup-restore-runbook.md) |
+| Métricas | [Performance](daily-performance-runbook.md) |
+| Entregas e evidências datadas | [resumo.md](../resumo.md), `releases/`, `evidencias/` |
+| Histórico anterior à consolidação | [Arquivo com hashes](archive/alinhamento-2026-11-02/README.md) |
 
-Precedência: pedido mais recente do proprietário → evidência pertinente ao artefato/estado → cursor atual do plano → histórico. Não usar a data de um arquivo ou teste aprovado como prova de vídeo publicado. Leituras de serviço precisam do manager **de usuário**; `enabled`, `active`, heartbeat recente, geração concluída e envio confirmado são fatos distintos.
+Estado vivo deve ser lido na unit/health/processos/filas/ledger. Snapshots, releases e relatórios antigos não estabelecem PIDs, quotas, pausas ou autorização atuais. Documentação de APIs/HyperFrames do AgentTube e pilotos anteriores permanece disponível para seus usos históricos, sem substituir o método Pulso aprovado.

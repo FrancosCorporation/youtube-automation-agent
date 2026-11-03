@@ -9,7 +9,7 @@
 Este checkout contém dois orquestradores e dois modelos de estado:
 
 1. **AgentTube / fluxo Express:** `npm start` inicia `index.js`, dashboard/agentes e persistência SQLite em `database/db.js`. `npm run scheduler` inicia `schedules/daily-automation.js`, que usa a fila e as entidades SQLite.
-2. **Pulso animado / fluxo operacional:** `scripts/channel-scheduler.js` coordena fila JSON, `STATE_DIR`, renderização e publicadores. Na decisão original usava HyperFrames; em 24/10/2026 a rota narrativa Remotion já está integrada no gerador. A unidade de usuário existe e está habilitada, mas bloqueada pela migração; não há comprovação de ciclo recorrente da nova rota. Estado e critérios de rollout em [workflow-autonomo.md](../workflow-autonomo.md).
+2. **Pulso animado / fluxo operacional:** `scripts/channel-scheduler.js` coordena fila JSON, `STATE_DIR`, renderização e publicadores pela unidade de usuário existente. O método atual é Three.js r187 + Remotion com humanos GLB locais e robô aprovados; HyperFrames pertence ao histórico. Estado vivo/cursor em [plan.md](../../plan.md), requisitos em [decisões vigentes](../decisoes-vigentes.md) e operação em [workflow-autonomo.md](../workflow-autonomo.md). Este ADR não declara pausa, quota, geração ou publicação atuais.
 
 Os dois fluxos têm funcionalidades que não são equivalentes. Analytics, revisão, publicação e estado do AgentTube não aparecem automaticamente no ledger/fila do Pulso. Iniciar os dois como publicadores da mesma conta pode duplicar geração ou envio.
 

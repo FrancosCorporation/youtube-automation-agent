@@ -7,7 +7,7 @@ const sentence = { id: 's1', text: 'A pessoa caminha pelo piso.', startFrame: 0,
 function drawing() {
   const layout = { landscape: { x: .5, y: .5 }, portrait: { x: .5, y: .5 } };
   return [{ dimension: '3d', cueSentenceId: 's1', explanation: 'A pessoa caminha apoiada no piso durante a frase.', nodes: [
-    { id: 'actor', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', layout: structuredClone(layout) },
+    { id: 'actor', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', layout: globalThis.structuredClone(layout) },
     { id: 'floor', evidence: 'piso', layout, meshes: [{ type: 'box', size: [6, .1, 6], position: [0, -.05, 0], color: '#95d7bc' }] }
   ], spatialChecks: [{ subject: { nodeId: 'actor' }, obstacles: [{ nodeId: 'floor', meshIndex: 0 }] }] }];
 }

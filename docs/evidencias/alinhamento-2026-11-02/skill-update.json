@@ -1,0 +1,8 @@
+{
+  "installedPath": "/home/servidor/.agents/skills/video-animado-ia/SKILL.md",
+  "previousLocalPath": "/home/servidor/.agents/skills/video-animado-ia/references/legacy-pipeline-2026-11-02.md",
+  "previousSha256": "f7930a3fe22cdfcd7adce1443c696ff3de4bd58b47b4e0c4fa5bfa7d05c9d961",
+  "currentSha256": "e8a0c64639e8021b0dfba09a0d7e6484a05f43768ad08d7f4ac108ae827619d7",
+  "versionedSource": "docs/skills/video-animado-ia/SKILL.md",
+  "scope": "Pulso project only; no scheduler or publication action"
+}

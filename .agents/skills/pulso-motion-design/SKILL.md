@@ -9,7 +9,7 @@ Use this skill when changing how Pulso videos are storyboarded, animated, framed
 
 ## Workflow
 
-1. Read [the production map](references/production-map.md) and the current `plan.md` §3.0 / `docs/workflow-autonomo.md` before changing the renderer or scene components. The narrative Remotion modules already exist; their integration is not proof of a successful recurring production cycle.
+1. Read `docs/decisoes-vigentes.md`, [the production map](references/production-map.md) and the current `plan.md` §3.0 / `docs/workflow-autonomo.md` before changing the renderer or scene components. The latest owner-approved reforestation method supersedes procedural-human pilots and older visual standards. The narrative Remotion modules already exist; their integration is not proof of a successful recurring production cycle.
 2. Choose a small number of visuals that clarify the spoken beat. Keep data, labels, and claims traceable to the script or source.
    Follow `utils/narrative-creative-reference.js` and `docs/padrao-criativo-aprovado.md`: the owner approved enacted, continuous motion with contact and persistent consequences. Adapt the subject to each narration; do not copy the sorting-line topic. Check swept object volumes against supports and walls; camera framing must not conceal intersections.
    Apply the owner's CHAPEA feedback across topics: clean robot mouth without a dark halo, properly modeled humans, purposeful objects, acted motion, doors opened before passage, and understandable offscreen wardrobe changes. Use readable narration-led scene changes, including dedicated origin/transit/destination shots when explaining communication. Consult the multitema section of the creative direction before authoring the next episode.
