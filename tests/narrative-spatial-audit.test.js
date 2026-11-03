@@ -103,5 +103,5 @@ test('author receives measured word times so offsets are not mistaken for elapse
   const cues = JSON.parse(prompt.split('\n').find(line => line.startsWith('Cenas e narração exata: ')).slice('Cenas e narração exata: '.length))[0].sentences[0].wordCues;
   assert.deepEqual(cues, [{ text: 'esfera', atSeconds: 1.5,
     keyframeCue: { cueSentenceId: 's1', boundary: 'word', cueText: 'esfera', offsetSeconds: 0 } }]);
-  assert.match(prompt, /offsetSeconds permanece ZERO/);
+  assert.match(prompt, /Palavras únicas usam boundary=word e offsetSeconds=0/);
 });

@@ -928,16 +928,18 @@ function setRuntimeComponent(component, state) {
   return persistRuntimeHealth();
 }
 
-async function waitForRenderResources() {
+async function waitForPreparationResources() {
   for (;;) {
     if (isScheduledGenerationPaused()) {
       await setRuntimeComponent('producer', 'paused_backlog');
       return false;
     }
-    const gate = probeRenderHardwareGate();
+    const gate = probeRenderHardwareGate({ preparationOnly: true });
     observedRenderGate = {
       observedAt: gate.observedAt,
       renderSafe: gate.renderSafe,
+      stage: 'preparation',
+      renderer: process.env.PULSO_REMOTION_GL || 'default',
       logicalCpus: gate.logicalCpus,
       loadAverage: gate.loadAverage,
       availableMemoryBytes: gate.availableMemoryBytes,
@@ -952,7 +954,7 @@ async function waitForRenderResources() {
     await setRuntimeComponent('producer', 'waiting_resources');
     const now = Date.now();
     if (now - lastRenderGateLogAt >= 5 * 60 * 1000) {
-      log(`⏸️ aguardando recursos de render; próxima checagem em ${Math.round(RESOURCE_GATE_RECHECK_MS / 1000)} s (${(gate.reasons || []).join(', ') || 'gate fechado'})`);
+      log(`⏸️ aguardando recursos de preparação; próxima checagem em ${Math.round(RESOURCE_GATE_RECHECK_MS / 1000)} s (${(gate.reasons || []).join(', ') || 'gate fechado'})`);
       lastRenderGateLogAt = now;
     }
     await sleep(RESOURCE_GATE_RECHECK_MS);
@@ -1204,7 +1206,7 @@ async function producer() {
 
     // O gate roda antes de selecionar uma pauta/chamar o writer. Se o host
     // estiver ocupado, o processo persiste estado e espera sem consumir LLM.
-    if (!await waitForRenderResources()) continue;
+    if (!await waitForPreparationResources()) continue;
 
     if (producerMustWaitForRetry({ youtubeRetryPending, socialRetryPending, youtubeRetryInProgress, inFlight,
       allowPublicationOverlap: PIPELINED_PRODUCTION })) {

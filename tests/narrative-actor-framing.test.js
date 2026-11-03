@@ -13,7 +13,7 @@ function drawing() {
   return { dimension: '3d', cueSentenceId: 's1', explanation: 'A pessoa caminha pelo piso perto da mesa.', nodes: [
     { id: 'person', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', depth: 4, layout: pose(.35, .85, .9) },
     { id: 'floor', evidence: 'piso', layout: pose(.5, .85), meshes: [{ type: 'box', size: [12, .1, 9.45], position: [0, -.05, 0], color: '#f3eee0' }] },
-    { id: 'table', evidence: 'mesa', depth: 1, layout: pose(.35, .55), meshes: [{ type: 'box', size: [2.2, .75, 1.2], position: [0, .4, 0], color: '#163b3e' }] }
+    { id: 'table', evidence: 'mesa', depth: 1, layout: pose(.35, .85), meshes: [{ type: 'box', size: [2.2, .75, 1.2], position: [0, .4, 0], color: '#163b3e' }] }
   ], camera: { landscape: { position: [0, 3, 14], target: [0, 0, 0], fov: 34 },
     portrait: { position: [0, 3, 11], target: [0, 0, 0], fov: 34 } }, tracks: [
     { targetId: 'person', property: 'position3d', keyframes: [

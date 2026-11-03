@@ -1,5 +1,5 @@
 'use strict';
-const { narrativeLabelCueFrame } = require('./narrative-word-cue');
+const { narrativeLabelCueFrame, narrativeLabelCueFrames, narrativeWordCues } = require('./narrative-word-cue');
 const fail = message => { throw new Error(`illustration: ${message}`); };
 const PROPERTIES = new Set(['position3d', 'rotation3d', 'scale3d', 'opacity', 'target3d']);
 const EASINGS = new Set(['linear', 'smooth', 'ease-in', 'ease-out']);
@@ -49,19 +49,28 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps, { orderByTime = fa
     // Some writers copy the cue's elapsed time into an offset that is already
     // relative to that same cue. When this demonstrably clamps distinct word
     // cues to the same end frame, use the measured word times themselves.
-    // Restrict this to two word states with real word alignment and offsets
-    // matching the elapsed word times; ambiguous collisions remain errors.
-    if (orderByTime && parsed.length === 2 && parsed[0].frame === end && parsed[1].frame === end
-      && parsed.every(key => key.boundary === 'word' && key.offsetSeconds > 0)
-      && parsed[0].cueSentenceId === parsed[1].cueSentenceId) {
-      const sentence = sentences.find(item => item.id === parsed[0].cueSentenceId);
-      const anchors = parsed.map(key => narrativeLabelCueFrame(key.cueText, sentence));
-      const copiedElapsed = anchors.every((anchor, index) => anchor != null
-        && Math.abs(parsed[index].offsetSeconds - (anchor - sentence.startFrame) / fps) <= .25);
-      if (copiedElapsed && anchors[0] < anchors[1]) {
-        for (let i = 0; i < parsed.length; i++) {
-          parsed[i].offsetSeconds = 0;
-          parsed[i].frame = anchors[i];
+    // Require real word alignment and copied elapsed times for every delayed
+    // word in that sentence; ambiguous collisions remain errors.
+    if (orderByTime) {
+      for (const sentence of sentences) {
+        const words = parsed.filter(key => key.cueSentenceId === sentence.id && key.boundary === 'word' && key.offsetSeconds > 0);
+        const anchors = words.map(key => {
+          const matches = narrativeLabelCueFrames(key.cueText, sentence)
+            .filter(frame => Math.abs(key.offsetSeconds - (frame - sentence.startFrame) / fps) <= .25);
+          return matches.length === 1 ? matches[0] : null;
+        });
+        const clamped = words.filter(key => key.frame === end).length >= 2;
+        const copiedElapsed = words.length >= 2 && anchors.every((anchor, index) => anchor != null
+          && Math.abs(words[index].offsetSeconds - (anchor - sentence.startFrame) / fps) <= .25);
+        if (clamped && copiedElapsed && new Set(anchors).size === anchors.length) {
+          for (let i = 0; i < words.length; i++) {
+            const unique = narrativeLabelCueFrame(words[i].cueText, sentence) === anchors[i];
+            const measuredCue = unique ? { boundary: 'word', offsetSeconds: 0 }
+              : narrativeWordCues(sentence, fps).find(cue => Math.round(cue.atSeconds * fps) + sentence.startFrame === anchors[i])?.keyframeCue;
+            if (!measuredCue) continue;
+            Object.assign(words[i], measuredCue);
+            words[i].frame = anchors[i];
+          }
         }
       }
     }

@@ -239,7 +239,7 @@ function isActiveRenderCommand(argv) {
     || (hasRemotionCli && action.includes('render'));
 }
 
-function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinuation = false } = {}) {
+function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinuation = false, preparationOnly = false } = {}) {
   const loadAverage = os.loadavg();
   const logicalCpus = os.availableParallelism?.() || os.cpus().length;
   const hostLogicalCpus = os.cpus().length;
@@ -289,23 +289,25 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
   // A job is admitted at 4.5 GiB. Once admitted, allow modest fluctuation
   // between its preparation and render stages; the subprocess watchdog
   // still stops that job if the 2.5 GiB emergency reserve is breached.
-  const minimumMemoryGiB = lowMemoryProfile ? (lowMemoryContinuation ? 4 : 4.5)
+  const minimumMemoryGiB = preparationOnly ? 2 : lowMemoryProfile ? (lowMemoryContinuation ? 4 : 4.5)
     : constrainedEligible && !trainingSharedEligible ? 12 : 6;
   if (availableMemoryBytes < minimumMemoryGiB * 1024 ** 3) {
     reasons.push(`available_memory_below_${minimumMemoryGiB}_gib`);
   }
-  const minimumSwapGiB = lowMemoryProfile || (constrainedEligible && !trainingSharedEligible) ? 8 : 4;
+  // CPU rendering still allocates native buffers; retain the existing render
+  // reserve. Only the lighter remote-authoring phase has its own admission.
+  const minimumSwapGiB = preparationOnly ? 2 : lowMemoryProfile || (constrainedEligible && !trainingSharedEligible) ? 8 : 4;
   if (swapFreeBytes < minimumSwapGiB * 1024 ** 3) {
     reasons.push(`free_swap_below_${minimumSwapGiB}_gib`);
   }
   if (activeRenderProcesses.length) reasons.push('another_render_is_active');
-  if (trainingSharedEligible && !softwareEligible) {
+  if (!preparationOnly && trainingSharedEligible && !softwareEligible) {
     // Compute utilization is not VRAM exhaustion. A single low-priority
     // renderer may share the training GPU while reserving two GiB of VRAM.
     const freeVram = gpu.gpuMemoryTotalBytes - gpu.gpuMemoryUsedBytes;
     if (gpu.gpuMemoryTotalBytes === null || gpu.gpuMemoryUsedBytes === null) reasons.push('shared_gpu_memory_unavailable');
     else if (freeVram < 2 * 1024 ** 3) reasons.push('shared_gpu_free_memory_below_2_gib');
-  } else if (!softwareEligible && gpu.gpuBusyPercent !== null && gpu.gpuBusyPercent >= (constrainedEligible ? 80 : 100)) {
+  } else if (!preparationOnly && !softwareEligible && gpu.gpuBusyPercent !== null && gpu.gpuBusyPercent >= (constrainedEligible ? 80 : 100)) {
     reasons.push(constrainedEligible ? 'gpu_above_constrained_limit' : 'gpu_at_full_utilization');
   }
   const vendor = fs.existsSync('/sys/class/drm/card0/device/vendor')
@@ -317,6 +319,7 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
     logicalCpus, hostLogicalCpus, processPriority, constrainedRequested,
     constrainedEligible, trainingSharedRequested, trainingSharedEligible,
     softwareRequested, softwareEligible,
+    preparationOnly,
     loadAverageLimit, loadAverage, availableMemoryBytes, swapFreeBytes,
     activeRenderProcesses, ...gpu, hardwareClass, reasons
   };

@@ -2,6 +2,12 @@
 
 Requisitos: [decisões vigentes](docs/decisoes-vigentes.md). Estado/objetivos: [plan.md](plan.md). Acrescentar entregas datadas aqui; substituir o cursor no plano, sem manter várias versões concorrentes.
 
+## 03/11/2026 — retomada, CPU e reparos limitados, v2.34.0
+
+Retomada após mudança de conta, com leitura de toda a cadeia `previous`. Consolidadas as correções pendentes de CPU/preparação, cues repetidos, referências espaciais, apoio/móveis e rótulos. Corrigido piso tratado como mesa/apoio de si mesmo. Reparos agora têm contador persistido e recomposição do bloco reprovado após seis respostas; falha remota preserva o rascunho. Serviço executou esse caminho e reutilizou partes anteriores por hash, sem restart ou produção manual substituta.
+
+Capturas reais horizontal/vertical mostram os rótulos nas malhas e fora da silhueta humana; retorno ao frame reproduz o mesmo SHA. A encenação diagnóstica continua reprovada por objetos/contatos inadequados. Ainda não houve episódio integral ou publicação nova confirmado. X permanece sem identidade/handler operacional e com crash nativo registrado. [Evidências e limitações](docs/evidencias/recuperacao-2026-11-03/README.md), [release](docs/releases/v2.34.0.md). Alterações experimentais e `.planning` preexistentes preservadas fora da entrega.
+
 ## 03/11/2026 — falhas de autoria/render, v2.33.0
 
 Corrigidos três defeitos reproduzidos no rascunho real: mensagem de altura quando faltava borda de piso; captura vazia antes dos GLBs carregarem; personagens cortados nos dois formatos. Reparo limitado do suporte, espera gerida pelo ThreeCanvas e reparo/validação da câmera preservam atores, clips, narração e trajetórias. Cache antigo continua sujeito à validação estrita. O serviço revalidou a parte 1/8 da cena 2 localmente às 00:09 BRT e passou à parte seguinte, ainda bloqueada por colisão adulto/mesa e disponibilidade remota.

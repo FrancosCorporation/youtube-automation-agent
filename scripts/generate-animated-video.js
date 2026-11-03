@@ -20,6 +20,7 @@ const crypto = require('crypto');
 const { spawnSync, spawn } = require('child_process');
 const sharp = require('sharp');
 const { NarrativeEpisodeRenderer, assertRenderCapacity } = require('../utils/narrative-episode-renderer');
+const { probeRenderHardwareGate } = require('../utils/render-timing');
 const { createNarrativeEpisodePlan, sha256: sha256Buffer, stableJson } = require('../utils/narrative-episode-plan');
 const { authorNarrativeScenes } = require('../utils/narrative-scene-author');
 const { loadPinnedNarrativePlan, savePinnedNarrativePlan } = require('../utils/narrative-resume-plan');
@@ -2060,7 +2061,7 @@ async function renderThumbnail({ title, headline, accent, brand, heroImage, topi
 
 async function main() {
   await initializeNvidiaRuntime();
-  assertRenderCapacity();
+  assertRenderCapacity(probeRenderHardwareGate({ preparationOnly: true }));
   const visualCritiqueManifestPath = arg('visual-critique-manifest', null);
   const visualCritiqueManifestSha256 = arg('visual-critique-sha256', null);
   const requestedOut = arg('out', null);
@@ -2635,9 +2636,9 @@ async function main() {
   });
 
   console.log('[4/5] Autoria do plano narrativo e render Remotion horizontal + vertical');
-  // Long image/TTS preparation can overlap a background training job. Recheck
-  // before paying for remote scene authorship when the host can no longer render.
-  assertRenderCapacity();
+  // Remote authorship and plan compilation do not allocate GPU render memory.
+  // Preserve the finished plan before the renderer checks its own capacity.
+  assertRenderCapacity(probeRenderHardwareGate({ preparationOnly: true }));
   const baseEpisodePlan = await createNarrativeEpisodePlan({
     jobId: JOB_ID, script, themeId: theme.id, fps: Number(process.env.ANIMATED_FPS || 24),
     durationMs: total, timings, audioPath,

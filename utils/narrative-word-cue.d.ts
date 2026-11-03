@@ -1,1 +1,3 @@
 export function narrativeLabelCueFrame(label: string, sentence: { wordTimings?: Array<{ text: string; startFrame: number }> }): number | null;
+export function narrativeLabelCueFrames(label: string, sentence: { wordTimings?: Array<{ text: string; startFrame: number }> }): number[];
+export function narrativeWordCues(sentence: { id: string; text: string; startFrame: number; endFrame: number; wordTimings?: Array<{ text: string; startFrame: number }> }, fps: number): Array<{text: string; atSeconds: number; keyframeCue: {cueSentenceId: string; boundary: string; cueText?: string; offsetSeconds: number}}>;

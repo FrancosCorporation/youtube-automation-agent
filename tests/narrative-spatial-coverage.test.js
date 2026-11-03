@@ -32,3 +32,25 @@ test('unsupported geometry requires explicit author repair instead of assuming a
   assert.equal(completeMovingBodyChecks(raw), raw);
   assert.equal(raw.spatialChecks, undefined);
 });
+
+test('a missing single-mesh index is completed locally without hiding collisions or changing a draft', () => {
+  const raw = drawing();
+  raw.spatialChecks = [{subject: {nodeId:'ball'}, obstacles: [{nodeId:'post',meshIndex:null}]}];
+  const snapshot = globalThis.structuredClone(raw);
+  assert.throws(() => normalizeIllustrations([raw], [sentence], 24), /sem malha válida/);
+  const fixed = completeMovingBodyChecks(raw);
+  assert.deepEqual(raw, snapshot);
+  assert.deepEqual(fixed.spatialChecks, [{subject:{nodeId:'ball',meshIndex:0},obstacles:[{nodeId:'post',meshIndex:0}]}]);
+  assert.doesNotThrow(() => normalizeIllustrations([fixed], [sentence], 24));
+  raw.nodes[1].meshes[0].position[0] = 0;
+  assert.throws(() => normalizeIllustrations([completeMovingBodyChecks(raw)], [sentence], 24), /colisão/);
+});
+
+test('ambiguous or explicitly wrong mesh indices remain rejected', () => {
+  for (const mode of ['ambiguous', 'out-of-range']) {
+    const raw = drawing();
+    raw.spatialChecks = [{subject:{nodeId:'ball'},obstacles:[{nodeId:'post',meshIndex:mode === 'out-of-range' ? 4 : null}]}];
+    if (mode === 'ambiguous') raw.nodes[1].meshes.push({...raw.nodes[1].meshes[0]});
+    assert.throws(() => normalizeIllustrations([completeMovingBodyChecks(raw)], [sentence], 24), /sem malha válida/);
+  }
+});

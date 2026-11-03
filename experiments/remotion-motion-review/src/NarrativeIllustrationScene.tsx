@@ -3,14 +3,17 @@ import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { Easing, interpolate, useVideoConfig } from "remotion";
 // @ts-expect-error Runtime Three.js is installed; this project does not bundle its declarations.
-import { CatmullRomCurve3, PerspectiveCamera, Vector3, Shape, ExtrudeGeometry } from "three";
+import { CatmullRomCurve3, PerspectiveCamera, Vector3, Euler, Shape, ExtrudeGeometry } from "three";
 // @ts-expect-error Three.js addon runtime follows the same declaration policy.
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import type { IllustrationMesh, IllustrationNode, NarrativeIllustration } from "../../../utils/narrative-illustration-plan.js";
 import { animationState, type AnimationState } from "../../../utils/narrative-animation-tracks.js";
 import { NarrativeIllustratedProp } from "./NarrativeDirectedScene";
 import { NarrativeHumanActor } from "./NarrativeHumanActor";
+import { NarrativeSolidProp } from "./NarrativeSolidProp";
 import { illustrationViewport } from "../../../utils/narrative-illustration-viewport.js";
+import { placeProjectedLabels } from "../../../utils/narrative-label-fit.js";
+import actorCatalog from "../public/pulso-humans/catalog.json";
 
 const progress = (frame: number, start: number, end: number) => interpolate(frame, [start, Math.max(start + 1, end)], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(.4, 0, .2, 1) });
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;
@@ -44,7 +47,7 @@ export function illustrationPose(node: IllustrationNode, illustration: Narrative
 type V3 = [number, number, number];
 const add = (a: V3, b: V3 = [0, 0, 0]): V3 => a.map((v, i) => v + b[i]) as V3;
 const multiply = (a: V3, b: V3 = [1, 1, 1]): V3 => a.map((v, i) => v * b[i]) as V3;
-const Mesh: React.FC<{ mesh: IllustrationMesh; draw: number; opacity: number; animation: AnimationState }> = ({ mesh, draw, opacity, animation }) => {
+const Mesh: React.FC<{ mesh: IllustrationMesh; draw: number; opacity: number; animation: AnimationState; solidRole?: IllustrationNode['solidRole'] }> = ({ mesh, draw, opacity, animation, solidRole }) => {
   const roundedBox = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 3, .045), []);
   const points = mesh.points;
   const extrusion = useMemo(() => {
@@ -58,6 +61,9 @@ const Mesh: React.FC<{ mesh: IllustrationMesh; draw: number; opacity: number; an
   const visibleCurve = useMemo(() => new CatmullRomCurve3(Array.from({ length: 33 }, (_, index) => curve.getPoint(index / 32 * Math.max(.001, draw)))), [curve, draw]);
   const scale: V3 = mesh.type === "tube" ? [1, 1, 1] : mesh.type === "extrude" ? [mesh.size[0], mesh.size[1], 1] : mesh.size;
   const alpha = mesh.opacity * opacity * (animation.opacity ?? 1);
+  if (mesh.type === "box" && solidRole && solidRole !== "wall") return <group position={add(mesh.position, animation.position3d)} rotation={add(mesh.rotation, animation.rotation3d)} scale={multiply(scale, animation.scale3d)} visible={alpha > .001}>
+    <NarrativeSolidProp role={solidRole} color={mesh.color} opacity={alpha} />
+  </group>;
   return <mesh position={add(mesh.position, animation.position3d)} rotation={add(mesh.rotation, animation.rotation3d)} scale={multiply(scale, animation.scale3d)} castShadow receiveShadow visible={alpha > .001}>
     {mesh.type === "box" && <primitive object={roundedBox} attach="geometry" />}
     {mesh.type === "sphere" && <sphereGeometry args={[.5, 32, 24]} />}
@@ -91,10 +97,35 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
   const cameraPlan = { ...baseCamera, position: add(baseCamera.position, cameraAnimation.position3d), target: add(baseCamera.target, cameraAnimation.target3d) };
   const camera = new PerspectiveCamera(cameraPlan.fov, sceneWidth / sceneHeight, .1, 100);
   camera.position.set(...cameraPlan.position); camera.lookAt(...cameraPlan.target); camera.updateMatrixWorld();
-  const labelPosition = (x: number, y: number, z: number) => {
-    const projected = new Vector3(x, y, z).project(camera);
-    return { left: `${(projected.x + 1) * 50}%`, top: `${(-projected.y + 1) * 50}%` };
-  };
+  // Nodes often share a group origin while their meshes occupy different
+  // positions. Anchor labels to rendered bounds, including both animation
+  // levels, and reserve the human silhouette instead of stacking over it.
+  const projectedNodes = states.filter(state => state.opacity > .05).map(state => {
+    const {node, position, rotation, scale, opacity} = state;
+    const actor = actorCatalog.actors.find(entry => entry.id === node.actorId);
+    const parts = actor ? [{center: [0, actor.heightMeters/2, 0] as V3,
+      size: [actor.boundsMeters.width, actor.heightMeters, actor.boundsMeters.depth] as V3, rotation: [0, 0, 0] as V3}]
+      : node.meshes.flatMap((mesh, index) => {
+        const animation = animationState(illustration.tracks, node.id, frame, index);
+        if (mesh.opacity * (animation.opacity ?? 1) * opacity <= .05) return [];
+        return [{center: add(mesh.position, animation.position3d), size: multiply(mesh.size, animation.scale3d),
+          rotation: add(mesh.rotation, animation.rotation3d)}];
+      });
+    const points = parts.flatMap(part => Array.from({length: 8}, (_, mask) => {
+      const local = part.size.map((size, axis) => ((mask >> axis) & 1 ? 1 : -1) * size/2) as V3;
+      const point = new Vector3(...local).applyEuler(new Euler(...part.rotation)).add(new Vector3(...part.center))
+        .multiply(new Vector3(...scale)).applyEuler(new Euler(...rotation)).add(new Vector3(...position)).project(camera);
+      return {x: (point.x+1)*sceneWidth/2, y: (1-point.y)*sceneHeight/2, z: point.z};
+    })).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y) && point.z >= -1 && point.z <= 1);
+    if (!points.length) return null;
+    const x = Math.min(...points.map(point => point.x)), y = Math.min(...points.map(point => point.y));
+    const width = Math.max(...points.map(point => point.x))-x, height = Math.max(...points.map(point => point.y))-y;
+    return {node, opacity, bounds: {x, y, width, height}};
+  }).filter(state => state !== null);
+  const labels = placeProjectedLabels(projectedNodes.filter(({node}) => node.label).map(({node, bounds, opacity}) => ({
+    id: node.id, text: node.label, opacity, x: bounds.x+bounds.width/2, y: bounds.y+bounds.height+8,
+    width: Array.from(node.label).length*22+20, height: 36
+  })), sceneWidth, sceneHeight*.88, 8, projectedNodes.filter(({node}) => node.actorId).map(({bounds}) => bounds));
   return <div data-qa="adaptive-illustration" data-dimension={illustration.dimension} data-cue={illustration.cueSentenceId}
     style={{ position: "absolute", left: portrait ? "4%" : is3d ? "3%" : side === "left" ? "35%" : "3%", top: portrait ? "21%" : "22%", width: sceneWidth, height: sceneHeight }}>
     {illustration.dimension === "3d" ? <>
@@ -110,15 +141,14 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
           return <group key={node.id} position={position} rotation={rotation} scale={scale} visible={opacity > .001}>
             {actor.actorId ? <NarrativeHumanActor actorId={actor.actorId} motion={actor.actorMotion || "Idle"}
               motionStartFrame={actor.actorMotionStartFrame ?? 0} frame={frame} fps={fps} opacity={opacity} />
-              : node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
+              : node.meshes.map((mesh, index) => <Mesh key={index} mesh={mesh} solidRole={node.meshes.length === 1 ? node.solidRole : undefined} draw={pose.draw} opacity={opacity} animation={animationState(illustration.tracks, node.id, frame, index)} />)}
           </group>;
         })}
       </ThreeCanvas>
-      {states.filter(({ node }) => node.label).map(({ node, position, opacity }) => {
-        const isActor = Boolean((node as typeof node & { actorId?: string }).actorId);
-        return <div key={node.id} style={{ position: "absolute", ...labelPosition(position[0], position[1] - (isActor ? .18 : .65), position[2]),
-          color: "#f3eee0", background: "#09212ad9", padding: "5px 10px", borderRadius: 5, fontSize: portrait ? 22 : 22, fontWeight: 600, transform: "translate(-50%,0)", opacity }}>{node.label}</div>;
-      })}
+      {labels.map(label => <div key={label.id} style={{position: "absolute", left: label.x, top: label.y, width: label.width,
+        textAlign: "center", opacity: label.opacity, fontFamily: "Arial", fontSize: 22, lineHeight: "26px", fontWeight: 600, whiteSpace: "nowrap"}}>
+        <span style={{display: "inline-block", color: "#f3eee0", background: "#09212ad9", padding: "5px 10px", borderRadius: 5}}>{label.text}</span>
+      </div>)}
     </> : <svg width="100%" height="100%" viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}>
       <defs>
         <linearGradient id="direct-metal" x2=".8" y2="1"><stop stopColor="#ccddd0" /><stop offset="1" stopColor="#587e78" /></linearGradient>

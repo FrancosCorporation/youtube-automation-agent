@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-11-03T18:57:57.263253+00:00",
+  "version": "2.34.0",
+  "ci": {
+    "log": "/tmp/pulso-relay-ci-final.log",
+    "sha256": "668cb7ddc72810f0e548387d48eaa940e148fe4aed260e458510bfce0703cfd0",
+    "nodeExecutions": 1220,
+    "python": 40,
+    "failures": 0,
+    "browserChecks": [
+      "dashboard",
+      "presenter framing and seeks",
+      "Instagram framing; no sharing"
+    ]
+  },
+  "compositionLintAndTypeScript": "pass",
+  "focusedRegressionTests": 60,
+  "labelPlacementTests": 3,
+  "captures": {
+    "count": 8,
+    "gl": "swangle",
+    "repeatShaMatches": true
+  },
+  "completeEpisodeConfirmed": false,
+  "newPublicationConfirmed": false,
+  "visualPublicationApproval": false
+}

@@ -59,6 +59,18 @@ test('renderer creates one bundle and renders each aspect from that bundle', () 
   assert(args.includes('--gl=angle-egl'));
 });
 
+test('software render keeps the existing emergency RAM/swap reserve', t => {
+  const keys = ['PULSO_RENDER_SOFTWARE_ONLY', 'PULSO_REMOTION_GL'];
+  const previous = keys.map(key => process.env[key]);
+  t.after(() => keys.forEach((key, i) => { if (previous[i] === undefined) delete process.env[key]; else process.env[key] = previous[i]; }));
+  process.env.PULSO_RENDER_SOFTWARE_ONLY = '1'; process.env.PULSO_REMOTION_GL = 'swangle';
+  let memory = 3, swap = 5;
+  t.mock.method(require('node:fs'), 'readFileSync', () => `MemAvailable: ${memory * 1024 ** 2} kB\nSwapFree: ${swap * 1024 ** 2} kB\n`);
+  assert.equal(lowMemoryRenderCheck(), null);
+  memory = 2; assert.equal(lowMemoryRenderCheck().code, 'HOST_RESOURCE_GATE');
+  memory = 3; swap = 3; assert.equal(lowMemoryRenderCheck().code, 'HOST_RESOURCE_GATE');
+});
+
 test('modo de baixa memória separa renderização e codificação somente durante o treino', t => {
   const keys = ['PULSO_RENDER_WITH_TRAINING', 'PULSO_RENDER_LOW_MEMORY'];
   const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));

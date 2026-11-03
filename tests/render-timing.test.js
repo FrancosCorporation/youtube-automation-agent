@@ -212,6 +212,11 @@ for (const scenario of [
   { name: 'explicit software rasterization preserves GPU memory', software: true, gl: 'swangle', shared: true, nice: 10, memory: 8, vram: 0, allowed: true },
   { name: 'software request cannot disguise a GPU backend', software: true, gl: 'angle', shared: true, nice: 10, memory: 8, vram: 0, reason: 'software_render_requires_constrained_training_profile_and_swangle' },
   { name: 'software rasterization keeps the RAM reserve', software: true, gl: 'swangle', shared: true, nice: 10, memory: 4, vram: 0, reason: 'available_memory_below_6_gib' },
+  { name: 'CPU sequential mode retains the admission reserve', software: true, gl: 'swangle', shared: true, lowMemory: true, nice: 10, memory: 5, swap: 8, vram: 0, allowed: true },
+  { name: 'software render still rejects low swap', software: true, gl: 'swangle', shared: true, lowMemory: true, nice: 10, memory: 5, swap: 5, vram: 0, reason: 'free_swap_below_8_gib' },
+  { name: 'CPU sequential mode cannot start below its RAM reserve', software: true, gl: 'swangle', shared: true, lowMemory: true, nice: 10, memory: 3, swap: 8, vram: 0, reason: 'available_memory_below_4.5_gib' },
+  { name: 'remote preparation is independent of GPU memory', preparationOnly: true, shared: true, lowMemory: true, nice: 10, memory: 3, swap: 3, vram: 0, allowed: true },
+  { name: 'preparation still protects host RAM', preparationOnly: true, shared: true, lowMemory: true, nice: 10, memory: 1, swap: 3, vram: 0, reason: 'available_memory_below_2_gib' },
   { name: 'original constrained policy stays conservative', shared: false, nice: 10, memory: 8, vram: 6, reason: 'gpu_above_constrained_limit' }
 ]) {
   test(`training/render coexistence: ${scenario.name}`, t => {
@@ -238,13 +243,13 @@ for (const scenario of [
     t.mock.method(syncFs, 'readdirSync', (directory, ...args) => directory === '/proc' ? []
       : directory === '/sys/class/drm' ? ['card1'] : originalList(directory, ...args));
     t.mock.method(syncFs, 'readFileSync', (file, ...args) => {
-      if (file === '/proc/meminfo') return `MemAvailable: ${scenario.memory * 1024 ** 2} kB\nSwapFree: ${16 * 1024 ** 2} kB\n`;
+      if (file === '/proc/meminfo') return `MemAvailable: ${scenario.memory * 1024 ** 2} kB\nSwapFree: ${(scenario.swap ?? 16) * 1024 ** 2} kB\n`;
       if (String(file).endsWith('/gpu_busy_percent')) return '99';
       if (String(file).endsWith('/mem_info_vram_total')) return String(12 * 1024 ** 3);
       if (String(file).endsWith('/mem_info_vram_used')) return String((12 - scenario.vram) * 1024 ** 3);
       return originalRead(file, ...args);
     });
-    const gate = probeRenderHardwareGate({ lowMemoryContinuation: scenario.continuation });
+    const gate = probeRenderHardwareGate({ lowMemoryContinuation: scenario.continuation, preparationOnly: scenario.preparationOnly });
     if (scenario.allowed) assert.equal(gate.renderSafe, true, gate.reasons.join(', '));
     else { assert.equal(gate.renderSafe, false); assert(gate.reasons.includes(scenario.reason)); }
   });

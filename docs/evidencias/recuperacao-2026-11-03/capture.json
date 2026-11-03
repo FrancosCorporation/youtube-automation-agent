@@ -1,0 +1,55 @@
+{
+  "diagnostic": true,
+  "publicationEligible": false,
+  "gl": "swangle",
+  "records": [
+    {
+      "aspect": "landscape",
+      "frame": 0,
+      "file": "landscape-0-0.png",
+      "sha256": "c990fff2e5b4f4f5035bebece5a42c3e243b7c2b85ba7c6bd534d8b3926a517b"
+    },
+    {
+      "aspect": "landscape",
+      "frame": 30,
+      "file": "landscape-1-30.png",
+      "sha256": "52e72bf2e212d87d2350b81eaafdc210c4889344b95e187c302f82c91e47781d"
+    },
+    {
+      "aspect": "landscape",
+      "frame": 136,
+      "file": "landscape-2-136.png",
+      "sha256": "d14656c764c2b08e3d7fa812b55163a10977f0969d192ddefe3f1d0fda558f43"
+    },
+    {
+      "aspect": "landscape",
+      "frame": 30,
+      "file": "landscape-3-30.png",
+      "sha256": "52e72bf2e212d87d2350b81eaafdc210c4889344b95e187c302f82c91e47781d"
+    },
+    {
+      "aspect": "portrait",
+      "frame": 0,
+      "file": "portrait-0-0.png",
+      "sha256": "92246c91ecd3a192e1ee93b02594e8e4fc107bf0b59a0db168d567e0bc18cee3"
+    },
+    {
+      "aspect": "portrait",
+      "frame": 30,
+      "file": "portrait-1-30.png",
+      "sha256": "e99e1ff9f454021d4108718eb90024e4ef0be7bb84ca3a16db04279be1da8e05"
+    },
+    {
+      "aspect": "portrait",
+      "frame": 136,
+      "file": "portrait-2-136.png",
+      "sha256": "bf106cac2d5ec93bcabcddf770f1042bba5cef48943f811e9b02e4300160d928"
+    },
+    {
+      "aspect": "portrait",
+      "frame": 30,
+      "file": "portrait-3-30.png",
+      "sha256": "e99e1ff9f454021d4108718eb90024e4ef0be7bb84ca3a16db04279be1da8e05"
+    }
+  ]
+}

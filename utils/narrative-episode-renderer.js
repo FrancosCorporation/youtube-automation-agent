@@ -28,7 +28,7 @@ const REMOTION_VERSION = '4.0.537';
 const RENDER_TIMEOUT_MS = 180 * 60 * 1000;
 // Component changes alter pixels and timing; do not resume an old-format
 // master alongside a newly rendered aspect under the same render identity.
-const NARRATIVE_COMPONENT_REVISION = 'NarrativeEpisode-v2.33-r187-human-loading';
+const NARRATIVE_COMPONENT_REVISION = 'NarrativeEpisode-v2.34-r187-grounded-props-label-bounds';
 
 function safeId(value) {
   return String(value || 'episode').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80) || 'episode';

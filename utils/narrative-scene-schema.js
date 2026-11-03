@@ -22,6 +22,7 @@ const mesh = object({
 const node = object({
   id: id(), evidence: string(600), evidenceSentenceId: { anyOf: [string(100), { type: 'null' }] },
   label: string(36), layout, depth: number(-4, 4),
+  solidRole: choice([null, 'table', 'chair', 'bag', 'wall']),
   actorId: choice([null, ...ACTOR_CATALOG.actors.map(actor => actor.id)]),
   actorMotion: choice([null, ...MOTIONS]), actorMotionCueText: string(300), meshes: array(mesh, 0, 60)
 });

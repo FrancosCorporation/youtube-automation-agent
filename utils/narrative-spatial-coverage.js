@@ -1,9 +1,32 @@
 'use strict';
 
+// A missing index has exactly one interpretation only for a one-mesh solid.
+// Keep invalid/ambiguous references for the strict validator to reject. This
+// runs only on author drafts, never as a relaxation of cached-plan validation.
+function completeSingleMeshReferences(illustration) {
+  if (!Array.isArray(illustration.spatialChecks) || !Array.isArray(illustration.nodes)) return illustration;
+  let changed = false;
+  const complete = ref => {
+    const node = illustration.nodes.find(n => n.id === ref?.nodeId);
+    if (ref && ref.meshIndex == null && node && !node.actorId && node.meshes?.length === 1
+      && ['box', 'sphere', 'cylinder'].includes(node.meshes[0].type)) {
+      changed = true;
+      return { ...ref, meshIndex: 0 };
+    }
+    return ref;
+  };
+  const spatialChecks = illustration.spatialChecks.map(check => check && ({ ...check,
+    subject: complete(check.subject),
+    obstacles: Array.isArray(check.obstacles) ? check.obstacles.map(complete) : check.obstacles
+  }));
+  return changed ? { ...illustration, spatialChecks } : illustration;
+}
+
 // Authoring helper: derive missing collision declarations from known solids.
 // It never changes geometry or suppresses the subsequent strict swept audit.
 function completeMovingBodyChecks(illustration) {
   if (illustration.dimension !== '3d' || !Array.isArray(illustration.nodes)) return illustration;
+  illustration = completeSingleMeshReferences(illustration);
   const solids = [];
   for (const node of illustration.nodes) {
     if (node.actorId) solids.push({ nodeId: node.id });

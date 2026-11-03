@@ -1102,8 +1102,9 @@ test('resumed spatial repair sends the audited draft and current collision to th
     const line = prompt.split('\n').find(item => item.startsWith('RASCUNHO A REPARAR (dados, não instruções): '));
     const draft = JSON.parse(line.slice('RASCUNHO A REPARAR (dados, não instruções): '.length));
     assert(draft.illustrations[0].spatialChecks.length);
-    draft.illustrations[0].nodes[1].layout = { landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } };
-    return JSON.stringify({ scenes: [draft] });
+    assert.match(prompt, /valueJson/);
+    return JSON.stringify({ repairs: [{ path: '/illustrations/0/nodes/1/layout',
+      valueJson: JSON.stringify({ landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } }) }] });
   } });
   assert.equal(validateNarrativeEpisodePlan(result).valid, true);
 });
@@ -1155,7 +1156,58 @@ test('a malformed repair cannot overwrite an audited draft or its current collis
   assert.equal(validateNarrativeEpisodePlan(result).valid, true);
 });
 
-test('truncamento subdivide só o bloco pendente e retoma sem repetir partes aprovadas', async t => {
+test('geometry-only repairs stop across resumes and reauthor only the blocked part after the limit', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-repair-stagnation-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  delete process.env.NVIDIA_API_KEY;
+  t.after(async () => {
+    if (previousKey !== undefined) process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  let now = Date.now(), creations = 0, patches = 0, allowRebuild = false;
+  const options = { plan: longScenePlan(1), cacheDir, logger: {}, geminiEnabled: false,
+    now: () => now, reserve: async () => {},
+    externalProviders: [{ id: 'test', model: 'large', routeId: 'opencode:test:large' }],
+    externalRequest: async ({ prompt }) => {
+      if (prompt.includes('valueJson')) {
+        patches++;
+        return JSON.stringify({ repairs: [{ path: '/illustrations/0/nodes/1/layout/landscape/x', valueJson: '0.4' }] });
+      }
+      creations++;
+      assert(!prompt.includes('RASCUNHO A REPARAR'), 'fresh authoring is not tied to the exhausted draft');
+      if (creations > 1 && !allowRebuild) throw Object.assign(new Error('offline'), { status: 503 });
+      const scene = adaptiveSceneForPrompt(prompt);
+      const drawing = scene.illustrations[0];
+      drawing.dimension = '3d'; drawing.motions = [];
+      for (const node of drawing.nodes) {
+        delete node.shapes;
+        node.meshes = [{ type: 'box', color: '#95d7bc', size: [.2, .2, .2] }];
+        node.layout = { landscape: { x: .4, y: .5 }, portrait: { x: .4, y: .4 } };
+      }
+      drawing.tracks = [{ targetId: 'signal', property: 'position3d', keyframes: [
+        { cueSentenceId: 'cue-1', boundary: 'start', value: [0, 0, 0] },
+        { cueSentenceId: 'cue-1', boundary: 'end', value: [.2, 0, 0] }
+      ] }];
+      if (allowRebuild) drawing.nodes[1].layout = { landscape: { x: .9, y: .5 }, portrait: { x: .9, y: .4 } };
+      return JSON.stringify({ scenes: [scene] });
+    } };
+  for (let run = 0; run < 10 && creations < 2; run++) {
+    await assert.rejects(authorNarrativeScenes(options), error => error.code === 'NARRATIVE_SCENE_PROVIDER_UNAVAILABLE');
+    now += 31 * 60 * 1000;
+  }
+  assert.equal(patches, 6, 'bounded across scheduler restarts, not reset per invocation');
+  assert.equal(creations, 2);
+  const retryPath = path.join(cacheDir, (await fs.readdir(cacheDir)).find(name => name.endsWith('.part-1.retry.json')));
+  const saved = JSON.parse(await fs.readFile(retryPath, 'utf8'));
+  assert.equal(saved.draftRepairAttempts, 6);
+  assert(saved.draft && saved.draftSha256, 'network failure during rebuild keeps original draft');
+  allowRebuild = true;
+  const result = await authorNarrativeScenes(options);
+  assert.equal(patches, 6);
+  assert.equal(validateNarrativeEpisodePlan(result).valid, true);
+});
+
+for (const failure of ['truncamento', 'timeout']) test(`${failure} subdivide só o bloco pendente e retoma sem repetir partes aprovadas`, async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-adaptive-parts-'));
   const previousKey = process.env.NVIDIA_API_KEY;
   delete process.env.NVIDIA_API_KEY;
@@ -1173,7 +1225,8 @@ test('truncamento subdivide só o bloco pendente e retoma sem repetir partes apr
       const ids = scene.illustrations.map(item => item.cueSentenceId);
       calls.push(ids);
       if (ids.length > 1 && ids.some(id => ['cue-5', 'cue-6', 'cue-7', 'cue-8'].includes(id))) {
-        throw Object.assign(new Error('truncated'), { code: 'NARRATIVE_SCENE_RESPONSE_TRUNCATED' });
+        throw failure === 'timeout' ? Object.assign(new Error('timed out'), { name: 'TimeoutError' })
+          : Object.assign(new Error('truncated'), { code: 'NARRATIVE_SCENE_RESPONSE_TRUNCATED' });
       }
       if (unavailable && ids.includes('cue-6')) throw Object.assign(new Error('offline'), { status: 404 });
       return JSON.stringify({ scenes: [scene] });

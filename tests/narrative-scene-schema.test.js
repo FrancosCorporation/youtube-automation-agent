@@ -10,7 +10,7 @@ function fixture() {
   const pose = { x: .5, y: .5, scale: 1, rotate: 0 };
   const camera = { position: [0, 3, 14], target: [0, 0, 0], fov: 34 };
   const node = { id: 'signal', evidence: 'sinal', evidenceSentenceId: null, label: '',
-    layout: { landscape: pose, portrait: pose }, depth: 0, actorId: null, actorMotion: null, actorMotionCueText: '',
+    layout: { landscape: pose, portrait: pose }, depth: 0, solidRole: null, actorId: null, actorMotion: null, actorMotionCueText: '',
     meshes: [{ type: 'sphere', color: '#95d7bc', position: [0, 0, 0], rotation: [0, 0, 0],
       size: [1, 1, 1], opacity: 1, metalness: .15, points: [] }] };
   return { scenes: [{ id: input.id, visualThesis: 'O sinal se torna visível.', illustrations: [{

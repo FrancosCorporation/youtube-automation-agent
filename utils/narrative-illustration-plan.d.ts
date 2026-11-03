@@ -2,7 +2,7 @@ export type IllustrationShape = {type: 'rect' | 'ellipse' | 'path' | 'line'; d?:
 export type IllustrationPose = {x:number; y:number; scale:number; rotate:number};
 export type IllustrationMesh = {type:string; color:string; position:[number,number,number]; rotation:[number,number,number]; size:[number,number,number]; opacity:number; metalness:number; points?:Array<[number,number,number]>};
 import type { AnimationTrack } from './narrative-animation-tracks.js';
-export type IllustrationNode = {id:string; evidence:string; evidenceSentenceId?:string; label:string; prop?:string; shapes:IllustrationShape[]; meshes:IllustrationMesh[]; depth:number; layout:Record<'landscape'|'portrait', IllustrationPose>};
+export type IllustrationNode = {id:string; evidence:string; evidenceSentenceId?:string; label:string; prop?:string; solidRole?:'table'|'chair'|'bag'|'wall'; actorId?:string; actorMotion?:string; actorMotionStartFrame?:number; shapes:IllustrationShape[]; meshes:IllustrationMesh[]; depth:number; layout:Record<'landscape'|'portrait', IllustrationPose>};
 export type IllustrationMotion = {targetId:string; cueText:string; kind:string; startFrame:number; endFrame:number; amount?:number; to?:Record<'landscape'|'portrait', IllustrationPose>; cueAlignment:string};
 export type SpatialRef = {nodeId:string;meshIndex:number};
 export type NarrativeIllustration = {version:number; dimension:'2d'|'3d'; cueSentenceId:string; explanation:string; nodes:IllustrationNode[]; motions:IllustrationMotion[]; tracks?:AnimationTrack[]; spatialChecks?:Array<{subject:SpatialRef;obstacles:SpatialRef[]}>; camera?:Partial<Record<'landscape'|'portrait', {position:[number,number,number]; target:[number,number,number];fov:number}>>};

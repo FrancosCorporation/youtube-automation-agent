@@ -91,6 +91,24 @@ test('authorship repairs word elapsed time copied into offsets only when measure
   const [untimed] = normalizeAnimationTracks(data, nodes, noTiming, 24, { orderByTime: true });
   assert.deepEqual(untimed.keyframes.map(key => key.offsetSeconds), [2.4, 2.7]);
 });
+test('a multi-key camera draft recovers copied word times while keeping the start and end holds', () => {
+  const spoken = [{ id: 's1', text: 'No Nordeste há vagas em Olinda e em São Luís Maranhão.', startFrame: 754, endFrame: 944,
+    wordTimings: [{ text: 'Nordeste', startFrame: 757 }, { text: 'são', startFrame: 785 }, { text: 'Olinda', startFrame: 832 },
+      { text: 'São', startFrame: 906 }, { text: 'Luís', startFrame: 912 }, { text: 'Maranhão', startFrame: 930 }] }];
+  const keys = spoken[0].wordTimings.filter(w => w.text !== 'são').map((word, i) => ({ cueSentenceId: 's1', boundary: 'word', cueText: word.text,
+    offsetSeconds: (word.startFrame - 754) / 24, value: [i, 0, 0] }));
+  const data = [{ targetId: 'camera', property: 'position3d', keyframes: [
+    { cueSentenceId: 's1', boundary: 'start', value: [0, 0, 0] }, ...keys,
+    { cueSentenceId: 's1', boundary: 'end', value: [0, 0, 0] }
+  ] }];
+  assert.throws(() => normalizeAnimationTracks(data, [], spoken, 24), /tempos estritamente crescentes/);
+  const fixed = normalizeAnimationTracks(data, [], spoken, 24, { orderByTime: true });
+  assert.deepEqual(fixed[0].keyframes.map(key => key.frame), [754, 757, 832, 906, 912, 930, 944]);
+  assert.deepEqual(normalizeAnimationTracks(fixed, [], spoken, 24), fixed);
+  data[0].keyframes[2].offsetSeconds = 2;
+  assert.throws(() => normalizeAnimationTracks(data, [], spoken, 24, { orderByTime: true }), /tempos estritamente crescentes/);
+});
+
 test('unknown targets, duplicate properties, reversed time and non-finite geometry are rejected', () => {
   for (const modify of [
     t => { t[0].targetId = 'missing'; }, t => { t[0].meshIndex = 2; },
