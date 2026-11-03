@@ -105,6 +105,12 @@ test('prefers the currently visible Gemini tab when Chrome has many Gemini tabs 
   assert.equal(provider.activeGeminiUrl, active.url());
 });
 
+test('a stalled Chrome tab cannot block visibility detection forever', async () => {
+  const { visibleGeminiTab } = require('../utils/gemini-android-image');
+  const stalled = { evaluate: () => new Promise(() => {}) };
+  await assert.rejects(visibleGeminiTab([stalled], 20), /GEMINI_ANDROID_CDP_VISIBILITY_TIMEOUT/);
+});
+
 test('selects only visible Gemini contenteditable nodes, excluding the hidden clipboard', async () => {
   const editor = { async waitFor(options) { assert.equal(options.state, 'visible'); } };
   const page = {

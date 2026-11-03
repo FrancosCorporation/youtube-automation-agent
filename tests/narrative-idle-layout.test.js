@@ -11,6 +11,7 @@ function drawing() {
   return [{ dimension: '3d', cueSentenceId: 's1', explanation: 'Asya e Derin aguardam lado a lado.', nodes: [
     { id: 'asya', actorId: 'person-a', actorMotion: 'Idle', evidence: 'Asya', layout },
     { id: 'derin', actorId: 'person-a', actorMotion: 'Idle', evidence: 'Derin', layout },
+    { id: 'floor', evidence: 'perto da parede', layout, meshes: [{ type: 'box', color: '#163b3e', size: [8, .1, 8], position: [0, -.05, 0] }] },
   ], tracks: [{ targetId: 'asya', property: 'rotation3d', keyframes: [
     { cueSentenceId: 's1', boundary: 'start', value: [0, 0, 0] },
     { cueSentenceId: 's1', boundary: 'end', value: [0, .05, 0] },

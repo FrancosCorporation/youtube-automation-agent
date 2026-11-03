@@ -53,7 +53,7 @@ function isRetryableGenerationFailure(failureCode) {
   const code = failureCode.trim().toLowerCase();
   // A pinned episode or its media may need repair; retain the in-flight
   // checkpoint rather than silently abandoning a partially rendered video.
-  if (['narrative_resume_plan_mismatch', 'narrative_asset_integrity_failed', 'narrative_render_output_collision'].includes(code)) return true;
+  if (['generation_worker_interrupted', 'narrative_resume_plan_mismatch', 'narrative_asset_integrity_failed', 'narrative_render_output_collision'].includes(code)) return true;
   if (['source_claims_unverified', 'source_evidence_missing', 'source_context_too_short',
     'youtube_longform_source_too_short', 'youtube_longform_narrative_too_short', 'youtube_longform_narration_too_short',
     'budget_exhausted', 'no_fresh_topic_candidates', 'invalid_topic', 'theme_disabled',

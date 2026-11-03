@@ -76,6 +76,14 @@ test('authorship repairs word elapsed time copied into offsets only when measure
   const [fixed] = normalizeAnimationTracks(data, nodes, spoken, 24, { orderByTime: true });
   assert.deepEqual(fixed.keyframes.map(key => [key.frame, key.offsetSeconds]), [[58, 0], [65, 0]]);
   assert.deepEqual(normalizeAnimationTracks([fixed], nodes, spoken, 24), [fixed]);
+  const roundedRealDraft = globalThis.structuredClone(data);
+  roundedRealDraft[0].keyframes[0].offsetSeconds = 2.625;
+  roundedRealDraft[0].keyframes[1].offsetSeconds = 2.625;
+  const [recovered] = normalizeAnimationTracks(roundedRealDraft, nodes, spoken, 24, { orderByTime: true });
+  assert.deepEqual(recovered.keyframes.map(key => [key.frame, key.offsetSeconds]), [[58, 0], [65, 0]]);
+  for (const frame of [0, 58, 61, 65, 92, 61, 0]) {
+    assert.equal(evaluateAnimationTrack(recovered, frame), evaluateAnimationTrack(fixed, frame));
+  }
   const ambiguous = globalThis.structuredClone(data);
   ambiguous[0].keyframes[0].offsetSeconds = 1.9;
   assert.throws(() => normalizeAnimationTracks(ambiguous, nodes, spoken, 24, { orderByTime: true }), /tempos estritamente crescentes/);

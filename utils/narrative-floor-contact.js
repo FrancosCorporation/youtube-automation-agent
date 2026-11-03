@@ -6,7 +6,6 @@ const { auditSpatialChecks, bodyAt } = require('./narrative-spatial-audit');
 function repairActorFloorContact(illustration, sentence) {
   if (illustration.dimension !== '3d' || !illustration.spatialChecks?.length) return illustration;
   const audit = auditSpatialChecks(illustration, sentence);
-  if (!audit.collisions.length) return illustration;
   const solids = [];
   for (const node of illustration.nodes) {
     if (node.actorId) solids.push({ nodeId: node.id });
@@ -16,14 +15,29 @@ function repairActorFloorContact(illustration, sentence) {
     }
   }
   if (solids.length > 129) return illustration;
-  const candidate = globalThis.structuredClone(illustration), shifted = new Set();
-  for (const hit of audit.collisions) {
+  const candidate = globalThis.structuredClone(illustration), shifted = new Set(), aligned = new Set();
+  const nearSupports = [];
+  for (const aspect of ['landscape', 'portrait']) for (const actor of illustration.nodes.filter(node => node.actorId)) {
+    const subject = { nodeId: actor.id };
+    const body = bodyAt(illustration, subject, aspect, sentence.startFrame);
+    const floors = solids.filter(ref => ref.meshIndex != null).map(ref => {
+      const node = illustration.nodes.find(node => node.id === ref.nodeId), mesh = node.meshes[ref.meshIndex];
+      if (mesh.type !== 'box' || mesh.size[1] > .3 || mesh.size[0] < 2 || mesh.size[2] < 2) return null;
+      const support = bodyAt(illustration, ref, aspect, sentence.startFrame);
+      const gap = Math.abs(body.center[1] - body.half[1] - support.center[1] - support.half[1]);
+      return { ref, gap };
+    }).filter(Boolean).sort((a, b) => a.gap - b.gap);
+    if (floors.length && (!floors[1] || floors[1].gap - floors[0].gap > .025)) {
+      nearSupports.push({ subject, obstacle: floors[0].ref, aspect });
+    }
+  }
+  for (const hit of [...audit.collisions, ...nearSupports]) {
     const pairs = [[hit.subject, hit.obstacle], [hit.obstacle, hit.subject]];
     for (const [actorRef, floorRef] of pairs) {
       const actor = candidate.nodes.find(node => node.id === actorRef.nodeId);
       const floor = candidate.nodes.find(node => node.id === floorRef.nodeId);
       const mesh = floor?.meshes[floorRef.meshIndex];
-      if (!actor?.actorId || actorRef.meshIndex != null || !mesh || mesh.type !== 'box'
+      if (!actor?.actorId || aligned.has(`${hit.aspect}:${actor.id}`) || actorRef.meshIndex != null || !mesh || mesh.type !== 'box'
         || mesh.size[1] > .3 || mesh.size[0] < 2 || mesh.size[2] < 2
         || mesh.rotation.some(value => value !== 0) || floor.layout[hit.aspect].rotate !== 0
         || actor.layout[hit.aspect].rotate !== 0) continue;
@@ -36,7 +50,7 @@ function repairActorFloorContact(illustration, sentence) {
       const body = bodyAt(candidate, actorRef, hit.aspect, sentence.startFrame);
       const delta = (support.center[1] + support.half[1] - (body.center[1] - body.half[1])) / 7;
       const y = actor.layout[hit.aspect].y - delta;
-      if (delta <= 0 || delta > .12 || y < .02 || y > .98) continue;
+      if (Math.abs(delta) < 1e-8 || Math.abs(delta) > .12 || y < .02 || y > .98) continue;
       // The complete level path must remain on this support. Easing is
       // component-wise monotone between keys; check all key positions and
       // use the maximum horizontal rotation envelope for the actor's width.
@@ -51,6 +65,7 @@ function repairActorFloorContact(illustration, sentence) {
       if (!supported) continue;
       actor.layout[hit.aspect].y = y;
       shifted.add(actor.id);
+      aligned.add(`${hit.aspect}:${actor.id}`);
     }
   }
   if (!shifted.size || candidate.spatialChecks.length + shifted.size > 64) return illustration;

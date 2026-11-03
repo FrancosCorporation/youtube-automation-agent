@@ -27,6 +27,7 @@ test('recursos retomam cedo e autoria indisponível evita repetir preparação a
   assert.equal(generationRetryDelayMs('narrative_scene_provider_unavailable'), 300000);
   assert.equal(generationRetryDelayMs('narration_provider_unavailable'), 30000);
   assert.equal(isRetryableGenerationFailure('narration_provider_unavailable'), true);
+  assert.equal(isRetryableGenerationFailure('generation_worker_interrupted'), true);
 });
 
 test('scheduler respeita o prazo do autor, rejeita datas inválidas e limita espera', () => {

@@ -61,7 +61,7 @@ test('narrated people use a detailed licensed actor with a speech-aligned local 
   const layout = { landscape: { x: .35, y: .62, scale: .8 }, portrait: { x: .5, y: .5, scale: .65 } };
   const raw = [{ dimension: '3d', cueSentenceId: spoken.id, explanation: 'A pessoa caminha até a costa mostrada no cenário.', nodes: [
     { id: 'actor', evidence: 'pessoa', label: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', layout },
-    { id: 'coast', evidence: 'costa', label: 'costa', layout, meshes: [{ type: 'box', color: '#ecb47e', size: [3, .2, 1] }] }
+    { id: 'coast', evidence: 'costa', label: 'costa', layout, meshes: [{ type: 'box', color: '#ecb47e', size: [3, .2, 1], position: [0, -.1, 0] }] }
   ] }];
   const [result] = normalizeIllustrations(raw, [spoken], 24);
   assert.equal(result.nodes[0].actorId, 'person-a');

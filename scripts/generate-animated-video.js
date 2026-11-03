@@ -915,13 +915,17 @@ function normalizeScript(script, sourceContext = '') {
 
 // Ledger de temas já usados (compartilhado com o scheduler) — evita repetição.
 async function loadUsedTopics() {
-  const ledgerPath = path.join(__dirname, '..', process.env.STATE_DIR || 'data/state', 'topics.json');
+  const root = path.join(__dirname, '..');
+  const stateDir = path.resolve(root, process.env.STATE_DIR || 'data/state');
+  const ledgerPath = path.join(stateDir, 'topics.json');
+  const { loadGenerationTopicReservations } = require('../utils/generation-topic-reservations');
+  const reserved = await loadGenerationTopicReservations({ root, stateDir, jobId: JOB_ID });
   try {
     const raw = JSON.parse(await fs.readFile(ledgerPath, 'utf8'));
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) throw new Error('estrutura de entries inválida');
-    return collectUsedTopicSignals(raw.entries);
+    return collectUsedTopicSignals([...raw.entries, ...reserved]);
   } catch (error) {
-    if (error.code === 'ENOENT') return { titles: [], urls: [] };
+    if (error.code === 'ENOENT') return collectUsedTopicSignals(reserved);
     throw new Error(`ledger de pautas ilegível; geração cancelada para evitar repetição: ${error.message}`);
   }
 }
@@ -2455,10 +2459,14 @@ async function main() {
   }
   // Scene generation owns the optional Gemini probe and its source-led
   // fallback. An image-provider outage must not abort factual script review.
+  const cacheSlug = visualRebuild ? slug : await require('../utils/generation-cache-scope').prepareGenerationCacheScope({
+    root: path.join(__dirname, '..'), outputDir: path.dirname(out), slug, jobId: JOB_ID, revision: SCRIPT_REVISION,
+    topic, formatId: editorialFormat.id, targetWords, contextHash: hashSourceContext(context), allowLegacy: process.argv.includes('--resume')
+  });
   const reviewedScript = await loadOrWriteScript({
     topic,
     targetWords,
-    slug,
+    slug: cacheSlug,
     context,
     sourceTitle,
     sourceUrl: article?.link || '',
@@ -2520,8 +2528,30 @@ async function main() {
   const cacheDir = path.join(__dirname, '..', 'data', 'images', slug);
   const parallelT0 = Date.now();
   const narrationPromise = (async () => {
-      const r = await synthesizeNarration(script, slug, path.dirname(out), visualRebuild?.narrationAudio || null);
+      const r = await synthesizeNarration(script, cacheSlug, path.dirname(out), visualRebuild?.narrationAudio || null);
       console.log(`      [tts] pronto em ${((Date.now() - parallelT0) / 60000).toFixed(1)} min`);
+      // Reject unusable narration before starting Android images and covers.
+      const total = r.totalDurationMs || r.timings.reduce((n, timing) => n + timing.durationMs, 0);
+      if (requireLongForm && total < YOUTUBE_LONGFORM_MIN_DURATION_MS) {
+        await recordTopic({
+          jobId: JOB_ID,
+          videoId: activeVideoId,
+          renderer: RENDERER_ID,
+          theme: theme.id,
+          title: sourceTitle || topic,
+          url: article?.link || '',
+          source: article?.source || 'Imprensa',
+          sourceEvidence,
+          publicationEligible: false,
+          publicationReview,
+          publicationHold: { reason: 'youtube_longform_narration_too_short', durationMs: total },
+          originTitle: originTitle || sourceTitle || topic,
+          originUrl: originUrl || article?.link || ''
+        });
+        throw Object.assign(new Error(`narração de ${(total / 1000).toFixed(1)}s abaixo do mínimo editorial de seis minutos para YouTube`), {
+          code: 'youtube_longform_narration_too_short'
+        });
+      }
       return r;
   })();
   const [ttsResult, imagesResult, refsResult] = await Promise.all([
@@ -2575,26 +2605,7 @@ async function main() {
   const { audioPath, timings } = ttsResult;
   script.timings = timings;
   const total = ttsResult.totalDurationMs || timings.reduce((n, t) => n + t.durationMs, 0);
-  if (requireLongForm && total < YOUTUBE_LONGFORM_MIN_DURATION_MS) {
-    await recordTopic({
-      jobId: JOB_ID,
-      videoId: activeVideoId,
-      renderer: RENDERER_ID,
-      theme: theme.id,
-      title: sourceTitle || topic,
-      url: article?.link || '',
-      source: article?.source || 'Imprensa',
-      sourceEvidence,
-      publicationEligible: false,
-      publicationReview,
-      publicationHold: { reason: 'youtube_longform_narration_too_short', durationMs: total },
-      originTitle: originTitle || sourceTitle || topic,
-      originUrl: originUrl || article?.link || ''
-    });
-    throw Object.assign(new Error(`narração de ${(total / 1000).toFixed(1)}s abaixo do mínimo editorial de seis minutos para YouTube`), {
-      code: 'youtube_longform_narration_too_short'
-    });
-  }
+
   const images = imagesResult.scenes;
   const thumbnailArt = imagesResult.thumbnailImage;
   const portraitThumbnailArt = imagesResult.portraitThumbnailImage;

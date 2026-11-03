@@ -57,7 +57,7 @@ function normalizeAnimationTracks(raw, nodes, sentences, fps, { orderByTime = fa
       const sentence = sentences.find(item => item.id === parsed[0].cueSentenceId);
       const anchors = parsed.map(key => narrativeLabelCueFrame(key.cueText, sentence));
       const copiedElapsed = anchors.every((anchor, index) => anchor != null
-        && Math.abs(parsed[index].offsetSeconds - (anchor - sentence.startFrame) / fps) <= .2);
+        && Math.abs(parsed[index].offsetSeconds - (anchor - sentence.startFrame) / fps) <= .25);
       if (copiedElapsed && anchors[0] < anchors[1]) {
         for (let i = 0; i < parsed.length; i++) {
           parsed[i].offsetSeconds = 0;

@@ -172,7 +172,7 @@ function runGenerator(args, logFile, { jobId, videoId, timeoutMs = GENERATION_JO
     }, timeoutMs);
     timeout.unref();
     child.on('error', error => { spawnError = error; });
-    child.on('close', async code => {
+    child.on('close', async (code, signal) => {
       clearTimeout(timeout);
       if (killTimer) clearTimeout(killTimer);
       await Promise.allSettled([finished(stdoutFilter), finished(stderrFilter)]);
@@ -183,12 +183,12 @@ function runGenerator(args, logFile, { jobId, videoId, timeoutMs = GENERATION_JO
         jobId,
         startedAt,
         status: exitCode === 0 ? 'completed' : 'failed',
-        ...(exitCode === 0 ? {} : { errorCode: timedOut ? 'generation_worker_timeout' : spawnError?.code || `exit_${exitCode}` })
+        ...(exitCode === 0 ? {} : { errorCode: timedOut ? 'generation_worker_timeout' : signal ? 'generation_worker_interrupted' : spawnError?.code || `exit_${exitCode}` })
       });
       if (spawnError) observationLogger.logErrorWithContext({ name: spawnError.name, code: spawnError.code }, {
         jobId, videoId, destination: 'local_render'
       });
-      resolve({ code: exitCode, timedOut, spawnError: spawnError?.code || null });
+      resolve({ code: exitCode, signal, timedOut, spawnError: spawnError?.code || null });
     });
   });
 }
@@ -852,11 +852,12 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
     // apagaria o arquivo antes da fila e faria o consumer receber um path morto.
     return { ok: true, outPath: finalOutPath, jobId, videoId };
   }
-  let failureCode = null;
+  let failureCode = childResult.timedOut ? 'generation_worker_timeout'
+    : childResult.signal ? 'generation_worker_interrupted' : null;
   let retryAt = null;
   try {
     const failureLog = await fsp.readFile(logFile, 'utf8');
-    failureCode = childResult.timedOut ? 'generation_worker_timeout' : generationFailureCodeFromLog(failureLog);
+    failureCode ||= generationFailureCodeFromLog(failureLog);
     if (!childResult.timedOut) retryAt = generationRetryAtFromLog(failureLog);
   }
   catch (_error) { /* o código da falha permanece desconhecido */ }

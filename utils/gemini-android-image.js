@@ -27,6 +27,28 @@ const PORTRAIT_RATIO = 9 / 16;
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const normalized = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+async function boundedCdpRead(operation, timeoutMs, code) {
+  let timer;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(code)), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function visibleGeminiTab(pages, timeoutMs = 5000) {
+  const visibility = await boundedCdpRead(
+    Promise.all(pages.map(page => page.evaluate(() => document.visibilityState === 'visible').catch(() => false))),
+    timeoutMs, 'GEMINI_ANDROID_CDP_VISIBILITY_TIMEOUT'
+  );
+  return pages.find((_page, index) => visibility[index]) || null;
+}
+
 function uiText(node) {
   return normalized(`${node.text || ''} ${node.description || ''} ${node.hint || ''}`);
 }
@@ -230,8 +252,7 @@ class GeminiAndroidImageGenerator {
     const normalizedUrl = /^https?:\/\//i.test(pageUrl || '') ? pageUrl : (pageUrl ? `https://${pageUrl}` : '');
     const targetUrl = normalizedUrl.split(/[?#]/, 1)[0];
     const pages = context.pages().filter(page => /^https:\/\/gemini\.google\.com\//i.test(page.url()));
-    const visibility = await Promise.all(pages.map(page => page.evaluate(() => document.visibilityState === 'visible').catch(() => false)));
-    const activePage = pages.find((_page, index) => visibility[index]);
+    const activePage = await visibleGeminiTab(pages);
     if (activePage) {
       this.activeGeminiUrl = activePage.url();
       return activePage;
@@ -403,7 +424,7 @@ class GeminiAndroidImageGenerator {
   }
 
   async _browserImageSources(page) {
-    return page.evaluate(() => {
+    return boundedCdpRead(page.evaluate(() => {
       const found = [];
       const walk = root => {
         for (const element of root.querySelectorAll('*')) {
@@ -415,7 +436,7 @@ class GeminiAndroidImageGenerator {
       };
       walk(document);
       return found;
-    });
+    }), 10000, 'GEMINI_ANDROID_CDP_IMAGE_READ_TIMEOUT');
   }
 
   async _waitForBrowserImage(page, previousSources, timeoutMs = this.timeoutMs) {
@@ -441,7 +462,7 @@ class GeminiAndroidImageGenerator {
     const image = images.find(candidate => candidate.src === imageSource) || images.at(-1);
     if (!image?.src) throw new Error('GEMINI_ANDROID_CDP_IMAGE_MISSING');
     if (image.src.startsWith('blob:') || image.src.startsWith('data:image/')) {
-      const dataUrl = await page.evaluate(source => {
+      const dataUrl = await boundedCdpRead(page.evaluate(source => {
         const found = [];
         const walk = root => {
           for (const element of root.querySelectorAll('*')) {
@@ -459,7 +480,7 @@ class GeminiAndroidImageGenerator {
           canvas.getContext('2d').drawImage(element, 0, 0);
           return canvas.toDataURL('image/png');
         } catch (_error) { return null; }
-      }, image.src);
+      }, image.src), 15000, 'GEMINI_ANDROID_CDP_IMAGE_READ_TIMEOUT');
       if (dataUrl) return Buffer.from(dataUrl.split(',')[1], 'base64');
     }
     const response = await context.request.get(image.src, { timeout: 30000 });
@@ -625,5 +646,6 @@ module.exports = {
   hasGeminiAppPromo,
   hasTouchableBounds,
   listGeminiDownloads,
-  normalized
+  normalized,
+  visibleGeminiTab
 };

@@ -73,6 +73,7 @@ test('human actor collision checks use a conservative full-body envelope in both
   const layout = { landscape: { x: .5, y: .5 }, portrait: { x: .5, y: .5 } };
   const raw = [{ dimension: '3d', cueSentenceId: 's1', explanation: 'A pessoa caminha perto do suporte.', nodes: [
     { id: 'person', evidence: 'pessoa', actorId: 'person-a', actorMotion: 'Walk', actorMotionCueText: 'caminha', layout },
+    { id: 'floor', evidence: 'ao lado do suporte', layout, meshes: [{ type: 'box', color: '#163b3e', position: [0, -.05, 0], size: [8, .1, 8] }] },
     { id: 'support', evidence: 'suporte', layout, meshes: [{ type: 'box', color: '#95d7bc', position: [0, .82, 0], size: [.2, 1.8, .2] }] }
   ], spatialChecks: [{ subject: { nodeId: 'person' }, obstacles: [{ nodeId: 'support', meshIndex: 0 }] }] }];
   assert.throws(() => normalizeIllustrations(raw, [spoken], 24), /colisão person atravessa support/);
