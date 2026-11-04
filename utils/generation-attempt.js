@@ -67,6 +67,15 @@ function validateAttempt(value, root) {
     throw new Error('formato editorial de retomada inválido');
   }
   const article = value.article == null ? null : validateGenerationArticle(value.article);
+  const visualRebuild = value.visualRebuild;
+  if (visualRebuild != null && (value.recap || typeof visualRebuild.manifestPath !== 'string'
+    || path.isAbsolute(visualRebuild.manifestPath)
+    || !isWithin(path.join(root, 'data/reports/qa'), path.resolve(root, visualRebuild.manifestPath))
+    || !visualRebuild.manifestPath.endsWith('.json')
+    || !/^[a-f0-9]{64}$/.test(visualRebuild.manifestSha256 || '')
+    || !Number.isInteger(visualRebuild.depth) || visualRebuild.depth < 1 || visualRebuild.depth > 2)) {
+    throw new Error('referência de reconstrução visual inválida');
+  }
   if (value.recap != null && value.recap !== true) {
     throw new Error('registro de geração interrompida contém marcador de recap inválido');
   }
@@ -95,6 +104,8 @@ function validateAttempt(value, root) {
     ...(value.attemptCount != null ? { attemptCount: value.attemptCount } : {}),
     ...(value.formatId ? { formatId: value.formatId } : {}),
     ...(article ? { article } : {}),
+    ...(visualRebuild ? { visualRebuild: { manifestPath: visualRebuild.manifestPath,
+      manifestSha256: visualRebuild.manifestSha256, depth: visualRebuild.depth } } : {}),
     ...(value.recap === true ? { recap: true, recapWindow: { ...value.recapWindow } } : {})
   };
 }

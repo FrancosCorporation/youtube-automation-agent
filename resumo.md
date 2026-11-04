@@ -1,5 +1,12 @@
 # Resumo de entregas do Pulso
 
+
+## 04/11/2026 — recuperação de crítica visual, v2.38.0
+
+O agendador só repetia a revisão de um vídeo retido e não solicitava reconstrução. Implementada reserva persistente por crítica/hash, entrada na fila existente e retomada do mesmo job após interrupção entre masters. O original não é sobrescrito; publicações incertas impedem uma substituição automática. Limite de duas gerações de reconstrução e três tentativas por job, exceto espera de recursos; falha terminal encerra aquela recuperação. Capítulos fora da crítica são revalidados e preservados.
+
+A revisão dos frames de Psicologia aos 60/180 s foi convertida em crítica executável de `scene-02`; fonte, áudio, roteiro, imagens e sete capítulos preserváveis conferidos com os arquivos reais. Isso foi uma prova isolada de preparação; nenhuma reconstrução ou publicação nova foi alegada. CI completa (incluindo 40 testes Python e browser), 90 testes de integração focados e 61 posteriores passaram. Recarga será aplicada pelo guard em janela ociosa. O ajuste local de câmera segue sem validação visual e fora desta entrega. A reconstrução continua exigindo revisão nova; a rejeição original não é apagada. [Evidências e trabalho restante](docs/evidencias/recuperacao-visual-2026-11-04/README.md).
+
 Requisitos: [decisões vigentes](docs/decisoes-vigentes.md). Estado/objetivos: [plan.md](plan.md). Acrescentar entregas datadas aqui; substituir o cursor no plano, sem manter várias versões concorrentes.
 
 ## 03/11/2026 — finalização e distribuição recuperáveis, v2.37.0

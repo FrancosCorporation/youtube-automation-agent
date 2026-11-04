@@ -817,7 +817,7 @@ async function publishEverywhere(outPath) {
 }
 
 async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, seed: requestedSeed,
-  attemptStartedAt, attemptCount = 0, theme, slotAt, onStart, sourceVisualsOnly = false, formatId, article }) {
+  attemptStartedAt, attemptCount = 0, theme, slotAt, onStart, sourceVisualsOnly = false, formatId, article, visualRebuild }) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const finalOutPath = outPath || `data/videos/${recap ? 'recap' : 'auto'}_${stamp}.mp4`;
   const jobId = requestedJobId || createJobId();
@@ -839,10 +839,14 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
       ...(sourceVisualsOnly ? { sourceVisualsOnly: true } : {}),
       ...(formatId ? { formatId } : {}),
       ...(article ? { article } : {}),
+      ...(visualRebuild ? { visualRebuild } : {}),
       ...(recap && recapWindow ? { recap: true, recapWindow } : {})
     });
   }
-  const args = recap
+  const args = visualRebuild
+    ? ['--out', finalOutPath, '--theme', theme || THEME, '--seed', String(seed),
+      '--visual-critique-manifest', visualRebuild.manifestPath, '--visual-critique-sha256', visualRebuild.manifestSha256]
+    : recap
     ? ['--recap', '--words', '950', '--out', finalOutPath, '--theme', theme || THEME, '--days', String(RECAP_EVERY_DAYS), '--seed', String(seed)]
     : ['--auto', '--words', '950', '--out', finalOutPath, '--theme', theme || THEME, '--seed', String(seed)];
   // Retry com o mesmo outPath + --resume: etapas com cache (roteiro/narração/
@@ -875,7 +879,8 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
     await notifyFailure('Geração de vídeo falhou', `motivo: ${failureCode || childResult.spawnError || 'erro_desconhecido'}\nexit code ${childResult.code}\nlog: ${logFile}`);
   }
   return { ok: false, outPath: finalOutPath, jobId, videoId, failureCode, seed, retryAt,
-    retryable: isRetryableGenerationFailure(failureCode) };
+    retryable: isRetryableGenerationFailure(failureCode)
+      && !(visualRebuild && attemptCount >= 2 && failureCode !== 'host_resource_gate') };
 }
 
 // The explicit shared profile may prepare one episode during publication.
@@ -1181,6 +1186,15 @@ async function producer() {
     }
 
     if (!interruptedGeneration) {
+      try {
+        const { enqueueVisualRebuilds } = require('../utils/visual-rebuild-recovery');
+        const count = await enqueueVisualRebuilds({ root: ROOT, ledgerPath: LEDGER_PATH,
+          queue: deferredGenerationQueue, activeThemes: ACTIVE_THEMES.map(item => item.id),
+          onError: (videoId, error) => log(`⏸️ reconstrução ${videoId} aguardando fonte íntegra (${String(error.code || error.name || 'Error').slice(0, 80)})`) });
+        if (count) log(`♻️ ${count} reconstrução(ões) visual(is) reservada(s) para o produtor`);
+      } catch (error) {
+        log(`⚠️ recuperação visual preservada para nova conferência (${String(error.code || error.name || 'Error').slice(0, 80)})`);
+      }
       const deferred = await deferredGenerationQueue.claimNext({
         skipCompleted: async candidate => queue.some(item => sameAttempt(item, candidate, ROOT))
       });
@@ -1285,6 +1299,7 @@ async function producer() {
         ...(resumingAttempt?.sourceVisualsOnly ? { sourceVisualsOnly: true } : {}),
         ...(resumingAttempt?.formatId ? { formatId: resumingAttempt.formatId } : {}),
         ...(resumingAttempt?.article ? { article: resumingAttempt.article } : {}),
+        ...(resumingAttempt?.visualRebuild ? { visualRebuild: resumingAttempt.visualRebuild } : {}),
         ...(recapWindow ? { recapWindow } : {}),
         theme: currentTheme.id,
         slotAt: resumingAttempt?.slotAt || new Date(nextSlot).toISOString(),
@@ -1295,6 +1310,11 @@ async function producer() {
     }
     finally { generationInProgress = false; }
     const durationMs = Date.now() - t0;
+    if (resumingAttempt?.visualRebuild && (video.ok || !video.retryable)) {
+      const { finishVisualRebuild } = require('../utils/visual-rebuild-recovery');
+      await finishVisualRebuild({ ledgerPath: LEDGER_PATH, jobId: video.jobId,
+        status: video.ok ? 'completed' : 'failed' });
+    }
 
     if (video.ok) {
       // Registra o tempo real pra calibrar as próximas estimativas

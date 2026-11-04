@@ -24,7 +24,6 @@ const { probeRenderHardwareGate } = require('../utils/render-timing');
 const { createNarrativeEpisodePlan, sha256: sha256Buffer, stableJson } = require('../utils/narrative-episode-plan');
 const { authorNarrativeScenes } = require('../utils/narrative-scene-author');
 const { loadPinnedNarrativePlan, savePinnedNarrativePlan } = require('../utils/narrative-resume-plan');
-const { assertSafeVisualRebuildOutput } = require('../utils/hyperframes-video-renderer');
 const { GeminiImageProvider } = require('../utils/gemini-image-provider');
 const { buildThumbnailHtml, buildPortraitThumbnailHtml, chooseLocalizedThumbnailHeadline,
   THUMBNAIL_CANVAS, THUMBNAIL_RENDER_POLICY, PORTRAIT_THUMBNAIL_CANVAS, PORTRAIT_THUMBNAIL_RENDER_POLICY } = require('../utils/thumbnail-design');
@@ -2074,9 +2073,6 @@ async function main() {
   if (Boolean(visualCritiqueManifestPath) !== Boolean(visualCritiqueManifestSha256)) {
     throw new TypeError('--visual-critique-manifest requires --visual-critique-sha256');
   }
-  if (visualCritiqueManifestPath && process.argv.includes('--resume')) {
-    throw new Error('visual rebuild cannot be combined with --resume');
-  }
   if (visualCritiqueManifestPath && !requestedOut) {
     throw new Error('visual rebuild requires --out with a new, nonexistent output path');
   }
@@ -2111,12 +2107,19 @@ async function main() {
       && sourceEditorial.visualMode !== 'graphics-and-source-prints') {
       throw new Error('--no-images conflicts with the source QA visual mode');
     }
-    await assertSafeVisualRebuildOutput(path.resolve(requestedOut), loadedCritique.sourceMasterPath);
+    const { prepareVisualRebuildOutput } = require('../utils/visual-rebuild-recovery');
+    const root = path.join(__dirname, '..');
+    const rebuildAttempt = await prepareVisualRebuildOutput({ root,
+      stateDir: path.resolve(root, process.env.STATE_DIR || 'data/state'), outPath: requestedOut,
+      sourceMasterPath: loadedCritique.sourceMasterPath, jobId: JOB_ID,
+      manifestPath: visualCritiqueManifestPath, manifestSha256: visualCritiqueManifestSha256,
+      resume: process.argv.includes('--resume') });
     if (path.dirname(path.resolve(requestedOut)) !== path.dirname(path.resolve(loadedCritique.sourceMasterPath))) {
       throw new Error('visual rebuild output must stay beside the source master so narration cache can be reused');
     }
     visualRebuild = {
       ...loadedCritique,
+      recoveryDepth: rebuildAttempt?.visualRebuild?.depth || 1,
       sourceEditorial,
       hook: sourceEditorial.hook
     };
@@ -2665,9 +2668,11 @@ async function main() {
   const { assertNarrativeIllustration, authorWithIllustrationRepair } = require('../utils/narrative-illustration-audit');
   if (episodePlan) console.log('      plano visual fixado para esta saída reutilizado após validar roteiro, áudio e fonte');
   else {
+    const preservedScenes = visualRebuild ? await require('../utils/visual-rebuild-recovery').preservedRebuildScenes({
+      root: projectRoot, stateDir: resumeStateDir, critique: visualRebuild }) : [];
     episodePlan = await authorWithIllustrationRepair({
       author: authorNarrativeScenes,
-      options: { plan: baseEpisodePlan, sourceContext: context, logger: console },
+      options: { plan: baseEpisodePlan, sourceContext: context, logger: console, preservedScenes },
       visualCritique: visualRebuild?.findings || []
     }).catch(error => {
       if (error?.code && error.code !== 'Error' && error.code !== error.name) throw error;
@@ -2867,6 +2872,7 @@ async function main() {
     && thumbnailArtProvenance.portrait?.aspectRatio === '9:16');
   await recordTopic({
     jobId: JOB_ID,
+    ...(visualRebuild ? { visualRecoveryDepth: visualRebuild.recoveryDepth } : {}),
     videoId: activeVideoId,
     renderer: RENDERER_ID,
     formatId: script.formatId,

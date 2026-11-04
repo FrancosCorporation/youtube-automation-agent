@@ -356,6 +356,26 @@ test('timeout no autor principal tenta outro modelo e valida e registra o result
   assert.equal(cached.author.model, models[1]);
 });
 
+test('reconstrução conserva cenas fora da crítica e não solicita novamente seu conteúdo', async t => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-preserved-scene-'));
+  const previousKey = process.env.NVIDIA_API_KEY;
+  process.env.NVIDIA_API_KEY = 'test-only';
+  t.after(async () => {
+    if (previousKey === undefined) delete process.env.NVIDIA_API_KEY;
+    else process.env.NVIDIA_API_KEY = previousKey;
+    await fs.rm(cacheDir, { recursive: true, force: true });
+  });
+  const plan = basePlan();
+  const scene = normalizeScene(authoredScene(), buildChapterInputs(plan)[0], plan, '');
+  const options = { plan, preservedScenes: [scene], cacheDir, logger: {}, geminiEnabled: false,
+    reserve: async () => { throw new Error('não deve gastar chamada'); },
+    request: async () => { throw new Error('não deve chamar provider'); } };
+  const result = await authorNarrativeScenes(options);
+  assert.deepEqual(result.scenes, [scene]);
+  assert.equal(result.author.modelsByScene[scene.id], 'validated-source-scene');
+  await assert.rejects(authorNarrativeScenes({ ...options, visualCritique: [{ sceneId: scene.id, issue: 'reparar' }] }), /preserved narrative scene/);
+});
+
 test('Gemini autorizado pode gerar cena validada sem chave NVIDIA e usa o orçamento compartilhado', async t => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pulso-scene-gemini-'));
   const previousKey = process.env.NVIDIA_API_KEY;

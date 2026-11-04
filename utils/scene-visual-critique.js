@@ -31,6 +31,10 @@ function normalizeSceneCorrection(correction) {
       throw new TypeError(`visual correction ${operation} has unsupported fields`);
     }
   };
+  if (operation === 'reauthor-narrative') {
+    exactKeys(['operation']);
+    return { operation };
+  }
   const componentTarget = () => {
     if (!REVEAL_COMPONENTS.has(String(correction.componentType || ''))) {
       throw new TypeError(`visual correction ${operation} has unsupported componentType`);
@@ -72,6 +76,7 @@ function normalizeSceneCorrection(correction) {
 }
 
 function applyCorrection(scene, correction) {
+  if (correction.operation === 'reauthor-narrative') throw new Error('narrative reauthoring requires the narrative writer');
   const components = Array.isArray(scene.components) ? scene.components : [];
   if (correction.operation === 'set-layout') {
     delete scene.hero;

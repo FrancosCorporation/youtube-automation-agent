@@ -660,7 +660,7 @@ async function requestGeminiScene({ prompt, model, timeoutMs = 120000 }) {
 }
 
 async function authorNarrativeScenes({ plan, sourceContext = '', model = process.env.NARRATIVE_ILLUSTRATION_MODEL || process.env.NARRATIVE_SCENE_MODEL || 'z-ai/glm-5.3-flash',
-  visualCritique = null, cacheDir = path.join(ROOT, 'data', 'cache', 'narrative-scenes'), logger = console,
+  visualCritique = null, preservedScenes = [], cacheDir = path.join(ROOT, 'data', 'cache', 'narrative-scenes'), logger = console,
   reserve = reserveCall, request = requestNvidiaChatCompletion,
   geminiEnabled = Boolean(process.env.GEMINI_API_KEY), geminiFirst = false, geminiRequest = requestGeminiScene,
   externalProviders = configuredSceneProviders(), externalRequest = requestExternalScene, now = Date.now,
@@ -670,8 +670,9 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     || plan.claims?.length !== plan.sentences.length
     || !/^[a-f0-9]{64}$/i.test(String(plan.inputSha256 || ''))) throw new Error('plano-base sem narração, claims ou hash');
   const contextHash = sha256(Buffer.from(String(sourceContext || '').replace(/\s+/g, ' ').trim()));
-  const critiqueHash = Array.isArray(visualCritique) && visualCritique.length
-    ? sha256(Buffer.from(stableJson(visualCritique))) : 'none';
+  const critiqueHash = preservedScenes.length
+    ? sha256(Buffer.from(stableJson({ visualCritique, preservedScenes })))
+    : Array.isArray(visualCritique) && visualCritique.length ? sha256(Buffer.from(stableJson(visualCritique))) : 'none';
   // scriptSha256 also contains volatile news age and screenshot metadata.
   // Scene authorship depends on the actual reviewed narration/visual inputs;
   // a retry must retain completed chapters when only that metadata changes.
@@ -710,6 +711,14 @@ async function authorNarrativeScenes({ plan, sourceContext = '', model = process
     throw Object.assign(new Error('chave de autoria das cenas ausente'), { code: 'NVIDIA_API_KEY_MISSING' });
   }
   const enriched = { ...plan, scenes: [] };
+  for (const previous of preservedScenes) {
+    const input = chapterInputs.find(item => item.id === previous.id);
+    if (!input || visualCritique?.some(finding => finding.sceneId === previous.id)) throw new Error('invalid preserved narrative scene');
+    const scene = normalizeScene(previous, input, plan, `${sourceContext || ''} ${plan.title || ''}`);
+    await writeAtomic(`${cachePath}.${input.id}.partial`, `${JSON.stringify({ inputSha256, scene,
+      model: 'validated-source-scene', creativeReference: CREATIVE_REFERENCE,
+      sceneSha256: sha256(Buffer.from(stableJson(scene))) })}\n`);
+  }
   let retryErrors = [];
   let lastError = null;
   // A stalled model must not consume both attempts on every scheduler retry.
