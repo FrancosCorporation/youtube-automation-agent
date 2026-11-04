@@ -38,7 +38,7 @@ function backgroundRetryMustWait({ generationInProgress, queuedCount, inFlight, 
   allowPublicationOverlap = false }) {
   // Publishing stays serial. A retry may inspect other episodes while a
   // ready episode waits for its slot, giving pending retries a turn.
-  return Boolean(inFlight || retryInProgress || generationInProgress)
+  return Boolean(inFlight || retryInProgress || (generationInProgress && !allowPublicationOverlap))
     || (!allowPublicationOverlap && Number(queuedCount) > 0);
 }
 

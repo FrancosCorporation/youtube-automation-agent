@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const {
-  buildNarrativeBundleArgs, buildNarrativeRenderArgs, hashBundleDirectory, remainingRenderTimeout, memoryBoundedNodeOptions, lowMemoryRenderCheck, narrativeRenderStatePath
+  buildNarrativeBundleArgs, buildNarrativeRenderArgs, hashBundleDirectory, memoryBoundedNodeOptions, lowMemoryRenderCheck, narrativeRenderStatePath
 } = require('../utils/narrative-episode-renderer');
 
 test('render checkpoints honor isolated absolute and relative state directories', () => {
@@ -15,7 +15,6 @@ test('render checkpoints honor isolated absolute and relative state directories'
   assert.equal(narrativeRenderStatePath('/project', 'sandbox', 'job-1234'), '/project/sandbox/narrative-renders/job-1234.json');
   assert.equal(narrativeRenderStatePath('/project', '/tmp/pulso-test', 'job-1234'), '/tmp/pulso-test/narrative-renders/job-1234.json');
 });
-
 test('monitor de render exige reserva de memória e swap, inclusive se a leitura falhar', t => {
   const syncFs = require('node:fs');
   let memoryGiB = 3;
@@ -112,13 +111,4 @@ test('bundle identity ignores only the changing runtime entries in Remotion publ
   assert.equal(await hashBundleDirectory(root), first);
   await fs.writeFile(path.join(root, 'index.html'), html([{ ...stable, sizeInBytes: 21 }]));
   assert.notEqual(await hashBundleDirectory(root), first);
-});
-
-test('render deadline is shared and expires before launching another stage', () => {
-  assert(remainingRenderTimeout(Date.now() + 60_000, 'landscape') > 0);
-  assert.throws(() => remainingRenderTimeout(Date.now() - 1, 'portrait'), error => {
-    assert.equal(error.code, 'HYPERFRAMES_TIMEOUT');
-    assert.equal(error.stage, 'portrait');
-    return true;
-  });
 });

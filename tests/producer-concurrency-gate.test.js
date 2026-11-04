@@ -73,7 +73,9 @@ test('retry pendente permite preparar durante envio, mas ganha prioridade quando
     inFlight: false, allowPublicationOverlap: true }), true);
   assert.equal(producerMustWaitForRetry({ youtubeRetryInProgress: true,
     inFlight: true, allowPublicationOverlap: true }), true);
-  assert.equal(backgroundRetryMustWait({ generationInProgress: true, allowPublicationOverlap: true }), true);
+  assert.equal(backgroundRetryMustWait({ generationInProgress: true, allowPublicationOverlap: true }), false);
+  assert.equal(backgroundRetryMustWait({ generationInProgress: true, inFlight: true, allowPublicationOverlap: true }), true);
+  assert.equal(backgroundRetryMustWait({ generationInProgress: true, retryInProgress: true, allowPublicationOverlap: true }), true);
   assert.equal(backgroundRetryMustWait({ generationInProgress: true }), true);
   assert.equal(backgroundRetryMustWait({ queuedCount: 1 }), true);
   assert.equal(backgroundRetryMustWait({ queuedCount: 1, allowPublicationOverlap: true }), false);

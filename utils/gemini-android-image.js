@@ -7,7 +7,7 @@ const sharp = require('sharp');
 const { Logger } = require('./logger');
 const { createAndroidEmulatorControl } = require('./android-emulator-control');
 const { withAndroidDeviceLock } = require('./android-device-lock');
-const { ensureAndroidChromeCdpForward } = require('./android-chrome-cdp');
+const { resolveAndroidChromeCdpUrl } = require('./android-chrome-cdp');
 const { safeErrorTag } = require('./safe-error-tag');
 const socialDevices = require('../config/android-social-devices.json');
 
@@ -184,7 +184,7 @@ class GeminiAndroidImageGenerator {
   async _ensureChromeCdp() {
     if (!this.autoCdp || this.browserPackage !== 'com.android.chrome') return;
     if (this.cdpUrl) {
-      ensureAndroidChromeCdpForward({ cdpUrl: this.cdpUrl, device: this.device,
+      this.cdpUrl = resolveAndroidChromeCdpUrl({ cdpUrl: this.cdpUrl, device: this.device,
         runAdb: (_device, args) => this.control.run(args, { timeout: 10000 }) });
       return;
     }

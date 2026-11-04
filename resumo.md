@@ -2,6 +2,26 @@
 
 Requisitos: [decisões vigentes](docs/decisoes-vigentes.md). Estado/objetivos: [plan.md](plan.md). Acrescentar entregas datadas aqui; substituir o cursor no plano, sem manter várias versões concorrentes.
 
+## 03/11/2026 — finalização e distribuição recuperáveis, v2.37.0
+
+Pedido: completar a automação pelo código, sem acompanhamento contínuo. Corrigida finalização silenciosa com capas/cortes ausentes: o job permanece recuperável, com adiamento após repetição. Cortes possuem checkpoints por origem/receita/hash/duração; promoção do master possui intenção persistida para recuperação após crash. Consumer recupera revisão delegada pendente; retries podem executar durante geração no perfil compartilhado, com serialização do publicador e lock Android. Studio persiste o ID remoto observado e reconcilia periodicamente por conta, hash e linha pública/publicada.
+
+Guard existente ganhou reload solicitado por PID/hash, somente após comprovar ociosidade e ausência de filhos/locks; elimina a necessidade de acompanhar manualmente a janela de atualização. Alterações anteriores de TTS, apoios, experimentos e `.planning` preservadas fora desta entrega. [Release](docs/releases/v2.37.0.md), [evidências e limites](docs/evidencias/autonomia-2026-11-03/README.md).
+
+O horizontal do job `aadd101f` está concluído (461,013 s), e o serviço retomou o vertical em blocos. A execução integral e publicação do novo episódio ainda não estão comprovadas; YAI-062/063 permanecem parciais. X requer identidade/adaptador; pergunta sobre a conta enviada ao proprietário nesta conversa.
+
+Retomada após troca de conta: corrigida confirmação do SIGSTOP no guard (estado T real antes de conferir ociosidade novamente). CI final local: 1.251 testes Node, 40 Python e browser/enquadramento; lint sem erros e um aviso anterior. Pedido de reload por PID/hash gravado e corretamente adiado com render ativo; vertical passou a 1.440 quadros concluídos. O proprietário orientou acesso ao X com Google no emulador; crash nativo reproduzido e atualização disponível iniciada pela Play Store. Nenhum novo envio comprovado; não confundir reconciliação de postagens antigas com produção/publicação nova.
+
+Login Google concluído no Chrome do emulador: perfil próprio Pulso IA `@RodolfoFrancod1` confirmado. App nativo continua falhando e atualização foi bloqueada por espaço; adaptador X pendente. Colisão real de CDP corrigida no Studio/Gemini, preservando Chrome do host e validando encaminhamento Android; 55 testes focados e conexão real passaram. Worker NVIDIA realizou auditoria estática em snapshot; proposta CDP insuficiente não foi integrada, correção final feita e validada pelo orquestrador.
+
+## 03/11/2026 — render com retomada por bloco e Instagram, v2.36.0
+
+Após ler os 14 checkpoints, a inspeção atual encontrou a autoria concluída e o job `aadd101f` já renderizando 461 s de vídeo. Corrigido o limite de três horas compartilhado entre horizontal e vertical; a nova execução persiste blocos de 30 s por identidade/hash/duração, preserva os tempos globais e monta o áudio contínuo uma única vez. Um watchdog detecta ausência de avanço sem confundir CPU lenta com travamento. Recuperação de capturas antigas confere cada arquivo antes de reutilizá-lo; 4.320 quadros reais foram preservados inicialmente sem parar o renderer. O monitor temporário `/tmp/pulso-checkpoint-active-render.cjs` só copia capturas completas do PID original, respeita identidade/lock e termina com esse processo; não gera nem publica.
+
+Corrigido outro bloqueio reproduzido: Instagram abria uma postagem já existente e devolvia `unknown`. O verificador retorna uma vez ao perfil e exige controles próprios e handle aprovado. Conferência real passou após o patch; TikTok/Kwai também estavam autenticados. X ainda falha por biblioteca nativa `libyoga.so`, sem conta/adaptador configurados. Pergunta de identidade enviada ao proprietário enquanto o restante continua. Planejamento dos cortes da narração atual passou para os destinos, mas isso não comprova render nem envio dos cortes.
+
+Serviço único preservado, sem restart/reenvio. A renderização iniciada antes do patch ainda usa o código antigo; o próximo processo carrega a recuperação nova. Testes e evidências em [render retomável](docs/evidencias/render-retomavel-2026-11-03/README.md). Modificações anteriores de TTS, apoio, benchmarks e `.planning` ficaram fora desta entrega. Ainda não há novo master integral/publicação confirmado; acompanhar render, QA, publicação e próximo ciclo.
+
 ## 03/11/2026 — narração recuperada e contrato de autoria, v2.35.0
 
 Recuperados os 13 checkpoints da cadeia `previous`. A pergunta pendente era se já havia envios; a conferência viva encontrou fila vazia e mais de 110 tentativas no job `53814e09`. Reproduzido: dois hífens isolados em “SSM - Population Health” eram contados como palavras. O helper de TTS produzia áudio correto, mas o alinhador o rejeitava e acionava a CLI alternativa, cuja transcrição longa veio truncada/repetida. Corrigida a tokenização sem remover pontuação das legendas nem aceitar palavras omitidas. O serviço concluiu 504,864 s de voz, avançou às imagens e obteve as duas capas Android, sem geração manual substituta.

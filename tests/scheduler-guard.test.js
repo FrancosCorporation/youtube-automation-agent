@@ -30,6 +30,7 @@ fi
     env: {
       ...process.env,
       SYSTEMCTL_BIN: fakeSystemctl,
+      STATE_DIR: directory,
       SYSTEMCTL_CALL_LOG: callLog,
       TEST_SERVICE_ACTIVE: active ? '1' : '0'
     }

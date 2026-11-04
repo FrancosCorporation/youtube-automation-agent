@@ -236,6 +236,29 @@ test('Instagram session probe leaves an active draft and its confirmation dialog
   assert.equal(taps, 0, 'session probing never navigates away from the unsaved draft');
 });
 
+test('Instagram session probe returns from a post viewer and still requires the own profile', async () => {
+  for (const ownProfile of [true, false]) {
+    const keys = [];
+    const viewer = [
+      { resourceId: 'com.instagram.android:id/action_bar_title', text: 'Posts', visible: true },
+      { resourceId: 'com.instagram.android:id/row_feed_profile_header', description: 'pulso_ai_news posted a video', visible: true },
+      { resourceId: 'com.instagram.android:id/action_bar_button_back', clickable: true, visible: true }
+    ];
+    const result = await inspectAndroidAppSession({ platform: 'instagram', timeoutMs: 20, wait: async () => {}, control: {
+      async isPackageInstalled() { return true; },
+      getResumedActivity() { return 'com.instagram.android/com.instagram.mainactivity.InstagramMainActivity'; },
+      dumpUi() { return keys.length && ownProfile ? [
+        { text: 'Edit profile', visible: true },
+        { resourceId: 'com.instagram.android:id/action_bar_title', text: 'pulso_ai_news', visible: true }
+      ] : viewer; },
+      press(key) { keys.push(key); }
+    } });
+    assert.deepEqual(keys, ['BACK']);
+    assert.equal(result.status, ownProfile ? 'logged_in' : 'unknown');
+    assert.equal(result.accountHandle, ownProfile ? '@pulso_ai_news' : undefined);
+  }
+});
+
 test('Instagram session probe retorna de Reel próprio para confirmar identidade', async () => {
   let reads = 0;
   const keys = [];

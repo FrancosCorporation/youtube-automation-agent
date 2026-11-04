@@ -659,7 +659,7 @@ async function publishEverywhere(outPath) {
   let publicationContext = {};
   let submissionStarted = false;
   try {
-    const entry = await readLedgerEntry(outPath);
+    let entry = await readLedgerEntry(outPath);
     if (!entry || !entry.title) { log('⚠️ upload: ledger sem entrada'); return { slotConsumed: false }; }
     const absoluteOutPath = path.isAbsolute(outPath) ? path.resolve(outPath) : path.resolve(ROOT, outPath);
     const videoId = typeof entry.videoId === 'string' && /^vid_[a-f0-9]{24}$/.test(entry.videoId)
@@ -685,7 +685,16 @@ async function publishEverywhere(outPath) {
       return { slotConsumed: false };
     }
 
-    const qaManifest = await verifyEntryQaManifest(entry, absoluteOutPath);
+    let qaManifest = await verifyEntryQaManifest(entry, absoluteOutPath);
+    if (qaManifest.status === 'verified' && qaManifest.visualReview === 'pending') {
+      const { resumeDelegatedReview } = require('../utils/resume-delegated-review');
+      const { applyDelegatedPublicationReview } = require('../utils/delegated-publication-review');
+      const recovered = await resumeDelegatedReview({ entry, verified: qaManifest,
+        apply: item => applyDelegatedPublicationReview({ root: ROOT, manifestPath: item.qaManifestPath, ledgerPath: LEDGER_PATH }),
+        reloadEntry: readLedgerEntry, verifyEntry: item => verifyEntryQaManifest(item, absoluteOutPath) });
+      entry = recovered.entry;
+      qaManifest = recovered.verified;
+    }
     const routeDecision = autonomousNarrativePublicationDecision(entry, qaManifest);
     if (!routeDecision.allowed) {
       observationLogger.logContentPipeline('publication_preflight', videoId, 'failed', {
@@ -1473,7 +1482,14 @@ async function youtubeRetryWorker() {
     youtubeRetryInProgress = true;
     youtubeRetryPending = false;
     await persistRuntimeHealth();
-    try { await retryPendingYouTube(); }
+    try {
+      const { reconcilePendingStudioPublications } = require('../utils/youtube-pending-reconciliation');
+      try {
+        const reconciled = await reconcilePendingStudioPublications({ root: ROOT });
+        if (reconciled.confirmed?.length) log(`✅ reconciliação Studio: ${reconciled.confirmed.length} publicação(ões) confirmada(s)`);
+      } catch (error) { log(`⏸️ reconciliação Studio adiada: ${error.code || error.name}`); }
+      await retryPendingYouTube();
+    }
     catch (error) { log(`⚠️ retry do YouTube ignorado: ${error.message}`); }
     finally { youtubeRetryInProgress = false; await persistRuntimeHealth(); }
   }

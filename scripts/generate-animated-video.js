@@ -2788,6 +2788,8 @@ async function main() {
   }
 
   // Partes sociais narrativas verticais, com duração e enquadramento por destino.
+  const { assertGenerationFinalization, requiredSocialPlatforms } = require('../utils/generation-finalization');
+  const socialPlatforms = requiredSocialPlatforms();
   let clips = [];
   if (!process.argv.includes('--no-clips')) {
     console.log('[4.5/5] Partes narrativas verticais por plataforma');
@@ -2800,6 +2802,7 @@ async function main() {
         outDir: path.join(clipsDir, 'narrative'),
         baseName: JOB_ID,
         portraitVideoPath: portraitOut,
+        platforms: socialPlatforms,
         visualMode: 'explanatory'
       });
       const platformParts = new Map();
@@ -2811,6 +2814,10 @@ async function main() {
       console.warn(`      partes narrativas sociais não geradas; master preservado (${safeErrorTag(error)})`);
     }
   }
+
+  assertGenerationFinalization({ thumbnailPath: thumbPath, portraitThumbnailPath: portraitThumbPath,
+    clips, platforms: socialPlatforms, requireCovers: !process.argv.includes('--no-thumb'),
+    requireClips: !process.argv.includes('--no-clips') });
 
   const qa = await writeVideoQaManifest({
     root: path.join(__dirname, '..'),

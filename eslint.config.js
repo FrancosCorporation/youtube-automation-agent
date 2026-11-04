@@ -16,6 +16,10 @@ module.exports = [
       'data/scripts/**',
       'data/videos/**',
       'data/thumbnails/**',
+      // Per-job Remotion webpack output, including the currently active render.
+      'data/render-tmp/**',
+      'data/reports/**/bundle/**',
+      'data/reports/**/bundle-*/**',
       // Authenticated browser profiles include vendor extension code; they are
       // local runtime state, not application source.
       'data/browser-profiles/**',
@@ -59,6 +63,7 @@ module.exports = [
         require: 'readonly',
         setInterval: 'readonly',
         setTimeout: 'readonly',
+        structuredClone: 'readonly',
         URL: 'readonly',
         window: 'readonly',
         document: 'readonly',

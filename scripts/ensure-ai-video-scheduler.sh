@@ -5,6 +5,8 @@ systemctl_bin="${SYSTEMCTL_BIN:-/usr/bin/systemctl}"
 service_unit="ai-video-scheduler.service"
 
 if "$systemctl_bin" --user is-active --quiet "$service_unit"; then
+  script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  /usr/bin/node "$script_dir/reload-scheduler-when-idle.js"
   exit 0
 fi
 

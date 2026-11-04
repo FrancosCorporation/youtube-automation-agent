@@ -203,7 +203,7 @@ async function inspectAndroidAppSession({ control, platform, timeoutMs = 45000, 
   const deadline = Date.now() + Math.max(0, Number(timeoutMs));
   let status = 'unknown';
   let profileTabTapped = false;
-  let ownReelBackPressed = false;
+  let profileContentBackPressed = false;
   let emptyCameraClosed = false;
   do {
     const nodes = await control.dumpUi({ timeout: Math.max(1, deadline - Date.now()) });
@@ -234,8 +234,16 @@ async function inspectAndroidAppSession({ control, platform, timeoutMs = 45000, 
       && /^(your reels|seus reels)$/i.test(String(node.text || '').trim()))
       && nodes.some(node => node.visible !== false
         && node.resourceId === 'com.instagram.android:id/clips_author_username');
-    if (instagramOwnReel && !ownReelBackPressed && typeof control.press === 'function') {
-      ownReelBackPressed = true;
+    const instagramPostViewer = platform === 'instagram' && nodes.some(node => node.visible !== false
+      && node.resourceId === 'com.instagram.android:id/action_bar_title'
+      && /^(posts|publica[cç][oõ]es)$/i.test(String(node.text || '').trim()))
+      && nodes.some(node => node.visible !== false && node.resourceId === 'com.instagram.android:id/row_feed_profile_header')
+      && nodes.some(node => node.visible !== false && node.clickable
+        && node.resourceId === 'com.instagram.android:id/action_bar_button_back');
+    // A saved post viewer has no profile tab. Return once, then require the
+    // actual own-profile controls and handle; a post's author is not identity.
+    if ((instagramOwnReel || instagramPostViewer) && !profileContentBackPressed && typeof control.press === 'function') {
+      profileContentBackPressed = true;
       await control.press('BACK');
       continue;
     }

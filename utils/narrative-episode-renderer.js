@@ -5,7 +5,7 @@ const nodeFs = require('node:fs');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { getMediaDuration } = require('./ffmpeg');
+const { getMediaDuration, getFFmpegPath } = require('./ffmpeg');
 const { mixdownAudio, buildSfxEvents, deriveMood } = require('./audio-mix');
 const { withProcessFileLock } = require('./process-file-lock');
 const { runCommand } = require('./hyperframes-video-renderer');
@@ -14,6 +14,9 @@ const { selectThemePalette } = require('./theme-visuals');
 const { VISUAL_DESIGN_TOKENS } = require('./visual-design-tokens');
 const { APPROVED_ROBOT_SRC, assertNarrativeEpisodeProps } = require('./narrative-episode-props');
 const { verifyHumanActorAssets } = require('./narrative-human-actors');
+const { createNarrativeRenderWatchdog } = require('./narrative-render-watchdog');
+const { renderNarrativeSegments, buildNarrativeSegmentMuxArgs, narrativeSegmentList } = require('./narrative-render-segments');
+const { verifiedNarrativeFrameRange, buildNarrativeFrameEncodeArgs } = require('./narrative-frame-backup');
 const {
   ROOT, narrativePlanInputSha256, sha256, stableJson,
   validateNarrativeEpisodePlan, verifyNarrativeEpisodeAssets
@@ -25,7 +28,11 @@ const REMOTION_BIN = path.join(REMOTION_PROJECT, 'node_modules', '.bin', 'remoti
 const ROBOT_ASSET = path.join(REMOTION_PUBLIC, 'pulso-story', 'approved-robot-rigged.glb');
 const ROBOT_SHA256 = '6a9eb38d99229ac5519bb2900bda50df462b6d4eed411daa2a872e41fbc48df5';
 const REMOTION_VERSION = '4.0.537';
+// Each aspect needs its own budget on CPU. Sharing three hours between two
+// sequential HD renders aborted the portrait after the landscape used most
+// of that time. The scheduler still bounds the whole generation worker.
 const RENDER_TIMEOUT_MS = 180 * 60 * 1000;
+const BUNDLE_TIMEOUT_MS = 15 * 60 * 1000;
 // Component changes alter pixels and timing; do not resume an old-format
 // master alongside a newly rendered aspect under the same render identity.
 const NARRATIVE_COMPONENT_REVISION = 'NarrativeEpisode-v2.34-r187-grounded-props-label-bounds';
@@ -117,7 +124,7 @@ function buildNarrativeBundleArgs(bundleDir) {
   return ['bundle', 'src/index.ts', `--out-dir=${bundleDir}`, `--public-dir=${REMOTION_PUBLIC}`, '--log=info'];
 }
 
-function buildNarrativeRenderArgs({ bundleDir, propsPath, outputPath, fps, width, height, gl }) {
+function buildNarrativeRenderArgs({ bundleDir, propsPath, outputPath, fps, width, height, gl, frameRange }) {
   const args = [
     'render', bundleDir, 'NarrativeEpisode', outputPath,
     `--props=${propsPath}`, `--fps=${fps}`, `--width=${width}`,
@@ -126,6 +133,7 @@ function buildNarrativeRenderArgs({ bundleDir, propsPath, outputPath, fps, width
   ];
   if (lowMemoryTrainingMode()) args.push('--disallow-parallel-encoding');
   if (gl) args.push(`--gl=${gl}`);
+  if (frameRange) args.push(`--frames=${frameRange.start}-${frameRange.end}`, '--muted');
   return args;
 }
 
@@ -172,14 +180,6 @@ async function hashBundleDirectory(bundleDir) {
     hash.update('\0');
   }
   return hash.digest('hex');
-}
-
-function remainingRenderTimeout(deadlineAt, label) {
-  const remaining = deadlineAt - Date.now();
-  if (remaining > 0) return remaining;
-  throw Object.assign(new Error(`render narrativo excedeu o prazo total durante ${label}`), {
-    code: 'HYPERFRAMES_TIMEOUT', stage: label
-  });
 }
 
 async function copyAsset(source, destination) {
@@ -281,7 +281,6 @@ class NarrativeEpisodeRenderer {
         code: 'HOST_RESOURCE_GATE', preflight: hardwareGate
       });
     }
-    const deadlineAt = Date.now() + this.timeoutMs;
     const stableRuntimeInput = sha256(Buffer.from(stableJson({
       plan: plan.inputSha256, renderer: REMOTION_VERSION, componentRevision: NARRATIVE_COMPONENT_REVISION
     })));
@@ -348,7 +347,7 @@ class NarrativeEpisodeRenderer {
         env: { ...process.env, NODE_OPTIONS: bundleMemory.value },
         logger: this.logger, label: 'narrative-remotion-bundle',
         ...lowMemoryMonitorOptions(),
-        timeoutMs: remainingRenderTimeout(deadlineAt, 'bundle')
+        timeoutMs: Math.min(this.timeoutMs, BUNDLE_TIMEOUT_MS)
       });
       bundleSha256 = await hashBundleDirectory(bundleDir);
       bundleDurationMs = Date.now() - bundleStartedAt;
@@ -380,6 +379,19 @@ class NarrativeEpisodeRenderer {
             episodePlanSha256, rendererVersion, startedAt: new Date().toISOString(), completed: {} };
       state.bundleSha256 = bundleSha256;
       state.bundleDurationMs = bundleDurationMs;
+      // A crash can occur after link() but before the completion checkpoint.
+      // The intent is written first, so only the exact verified bytes can be
+      // adopted on restart; an unrelated existing output remains a collision.
+      if (state.promoting?.inputSha256 === inputSha256) {
+        const { aspect, record } = state.promoting;
+        if (['landscape', 'portrait'].includes(aspect) && record?.path === targets[aspect].path) {
+          const recovered = await readMatchingCompletion({ inputSha256, completed: { [aspect]: record } },
+            aspect, targets[aspect].path, inputSha256);
+          if (recovered) state.completed[aspect] = recovered;
+        }
+        delete state.promoting;
+        await atomicJson(statePath, state);
+      }
       const landscapeDone = await readMatchingCompletion(state, 'landscape', outputPath, inputSha256);
       const portraitDone = await readMatchingCompletion(state, 'portrait', portraitOutputPath, inputSha256);
       outputs = { landscape: landscapeDone, portrait: portraitDone };
@@ -412,15 +424,49 @@ class NarrativeEpisodeRenderer {
         this.logger.info?.(`Remotion NarrativeEpisode: ${aspect} ${targets[aspect].width}x${targets[aspect].height}, ${plan.fps} fps, ${(plan.durationInFrames / plan.fps).toFixed(1)} s`);
         const nodeMemory = memoryBoundedNodeOptions(process.env.NODE_OPTIONS, activeHardwareGate.availableMemoryBytes);
         this.logger.info?.(`Remotion heap limitado a ${nodeMemory.heapMiB} MiB para preservar memória do host`);
-        await runCommand(REMOTION_BIN, buildNarrativeRenderArgs({
-          bundleDir, propsPath, outputPath: temporaryOutputPath, fps: plan.fps,
-          width: targets[aspect].width, height: targets[aspect].height, gl: process.env.PULSO_REMOTION_GL
+        const segmentDir = path.join(path.dirname(statePath), `${safeId(plan.jobId)}-segments`, inputSha256, aspect);
+        const segmentFiles = await renderNarrativeSegments({
+          directory: segmentDir, inputSha256, totalFrames: plan.durationInFrames, fps: plan.fps, logger: this.logger,
+          render: async ({ start, end, outputPath: segmentOutput }) => {
+            assertRenderCapacity(probeRenderHardwareGate({ lowMemoryContinuation: true }));
+            const inputPattern = await verifiedNarrativeFrameRange({
+              directory: path.join(segmentDir, 'frame-backup'), inputSha256, fps: plan.fps,
+              width: targets[aspect].width, height: targets[aspect].height, start, end
+            });
+            if (inputPattern) {
+              this.logger.info?.(`${aspect}: recuperando capturas verificadas dos quadros ${start}-${end}`);
+              await runCommand(getFFmpegPath(), buildNarrativeFrameEncodeArgs({
+                inputPattern, start, end, fps: plan.fps, outputPath: segmentOutput
+              }), { cwd: REMOTION_PROJECT, env: process.env, logger: this.logger,
+                label: `narrative-remotion-${aspect}-restore`, ...lowMemoryMonitorOptions(),
+                timeoutMs: Math.min(this.timeoutMs, BUNDLE_TIMEOUT_MS) });
+              return;
+            }
+            const watchdog = createNarrativeRenderWatchdog({ logger: this.logger,
+              resourceCheck: lowMemoryTrainingMode() ? lowMemoryRenderCheck : null });
+            await runCommand(REMOTION_BIN, buildNarrativeRenderArgs({
+              bundleDir, propsPath, outputPath: segmentOutput, fps: plan.fps,
+              width: targets[aspect].width, height: targets[aspect].height,
+              gl: process.env.PULSO_REMOTION_GL, frameRange: { start, end }
+            }), {
+              cwd: REMOTION_PROJECT,
+              env: { ...process.env, NODE_OPTIONS: nodeMemory.value, ...(lowMemoryTrainingMode() ? { TMPDIR: workDir } : {}) },
+              ...watchdog, label: `narrative-remotion-${aspect}-${start}-${end}`,
+              resourceCheckIntervalMs: 5000, timeoutMs: this.timeoutMs
+            });
+          }
+        });
+        // Silent video segments use the original global frame numbers. Mux the
+        // continuous audio once, avoiding AAC padding/drift at chunk boundaries.
+        const listPath = path.join(workDir, `${aspect}-segments.txt`);
+        await fs.writeFile(listPath, narrativeSegmentList(segmentFiles));
+        await runCommand(getFFmpegPath(), buildNarrativeSegmentMuxArgs({
+          listPath, audioPath: mixedAudio.path, outputPath: temporaryOutputPath,
+          durationSeconds: plan.durationInFrames / plan.fps
         }), {
           cwd: REMOTION_PROJECT,
-          env: { ...process.env, NODE_OPTIONS: nodeMemory.value, ...(lowMemoryTrainingMode() ? { TMPDIR: workDir } : {}) },
-          logger: this.logger, label: `narrative-remotion-${aspect}`,
-          ...lowMemoryMonitorOptions(),
-          timeoutMs: remainingRenderTimeout(deadlineAt, aspect)
+          env: process.env, logger: this.logger, label: `narrative-remotion-${aspect}-mux`,
+          ...lowMemoryMonitorOptions(), timeoutMs: Math.min(this.timeoutMs, BUNDLE_TIMEOUT_MS)
         });
         const [stat, durationSeconds, sha] = await Promise.all([
           fs.stat(temporaryOutputPath), getMediaDuration(temporaryOutputPath), hashFile(temporaryOutputPath)
@@ -432,13 +478,20 @@ class NarrativeEpisodeRenderer {
         }
         // A same-directory hard link promotes only a fully checked file and
         // fails if another writer created the destination in the meantime.
+        const completedRecord = { path: targets[aspect].path, sha256: sha, sizeBytes: stat.size, durationSeconds };
+        state.promoting = { inputSha256, aspect, record: completedRecord };
+        await atomicJson(statePath, state);
         await fs.link(temporaryOutputPath, targets[aspect].path);
         await fs.unlink(temporaryOutputPath);
         temporaryOutputPath = null;
-        outputs[aspect] = { path: targets[aspect].path, sha256: sha, sizeBytes: stat.size, durationSeconds };
+        outputs[aspect] = completedRecord;
         state.completed[aspect] = outputs[aspect];
+        delete state.promoting;
         state.updatedAt = new Date().toISOString();
         await atomicJson(statePath, state);
+        await fs.rm(segmentDir, { recursive: true, force: true }).catch(error => {
+          this.logger.warn?.(`master ${aspect} preservado; limpeza dos blocos pendente (${error.code || error.name})`);
+        });
       }
       const result = {
         schemaVersion: 1, jobId: plan.jobId, inputSha256, bundleSha256,
@@ -486,5 +539,5 @@ class NarrativeEpisodeRenderer {
 module.exports = {
   NarrativeEpisodeRenderer, REMOTION_PROJECT, REMOTION_PUBLIC, ROBOT_SHA256,
   assertRenderCapacity, buildNarrativeBundleArgs, buildNarrativeRenderArgs, hashBundleDirectory,
-  lowMemoryRenderCheck, memoryBoundedNodeOptions, narrativeRenderStatePath, remainingRenderTimeout
+  lowMemoryRenderCheck, memoryBoundedNodeOptions, narrativeRenderStatePath
 };

@@ -8,7 +8,7 @@ const { chromium } = require('playwright');
 const { withAndroidDeviceLock } = require('./android-device-lock');
 const { socialAndroidTarget } = require('./android-social-target');
 const { createAndroidEmulatorControl } = require('./android-emulator-control');
-const { ensureAndroidChromeCdpForward } = require('./android-chrome-cdp');
+const { resolveAndroidChromeCdpUrl } = require('./android-chrome-cdp');
 const { createPublicationResult } = require('./publication-status');
 const { reconcileClickedStudioPublication } = require('./youtube-studio-reconciliation');
 const studioConfig = require('../config/youtube-studio.json');
@@ -106,10 +106,12 @@ function androidAvailableBytes(output) {
   return kilobytes * 1024;
 }
 
-function outcomeUnknown({ platform = 'youtube', videoPath, expectedSha256, message, screenshotPath }) {
+function outcomeUnknown({ platform = 'youtube', videoPath, expectedSha256, message, screenshotPath,
+  videoId = null, channelId = null }) {
   return createPublicationResult({
     platform, videoPath, artifactSha256: expectedSha256,
     status: 'unknown', failureCode: 'youtube_studio_outcome_unknown',
+    externalId: videoId, account: channelId,
     evidence: { kind: 'attempt_outcome_unknown', observed: String(message || 'O upload começou; confira o canal antes de qualquer nova tentativa.').replace(/[\r\n\t]+/g, ' ').slice(0, 220),
       ...(screenshotPath ? { screenshotPath } : {}) }
   });
@@ -349,13 +351,13 @@ async function connectStudioBrowser({ cdpUrl, device, adbPath, connect, runAdb, 
   const foregroundChrome = () => runAdb(device, ['shell', 'am', 'start', '-a', 'android.intent.action.MAIN',
     '-c', 'android.intent.category.LAUNCHER', '-p', 'com.android.chrome'], { adbPath });
   if (!local) return connect(cdpUrl, { timeout: 10000 });
-  ensureAndroidChromeCdpForward({ cdpUrl, device, adbPath, runAdb });
+  const resolvedCdpUrl = resolveAndroidChromeCdpUrl({ cdpUrl, device, adbPath, runAdb });
   let lastError;
   for (const delayMs of [2000, 3500, 5000]) {
     try {
       foregroundChrome();
       await wait(delayMs);
-      return await connect(cdpUrl, { timeout: 10000 });
+      return await connect(resolvedCdpUrl, { timeout: 10000 });
     } catch (error) {
       lastError = error;
     }
@@ -493,6 +495,7 @@ async function uploadWithStudio({
     let page = null;
     let studioUploadStarted = false;
     let publishClicked = false;
+    let observedVideoId = null;
     let preparedChannelId = null;
     let publicationResult = null;
     const stageId = safeComponent(jobId || artifactSha256.slice(0, 20));
@@ -590,6 +593,7 @@ async function uploadWithStudio({
       if (!await studioRadioIsSelected(visibilityOption)) throw Object.assign(new Error('Studio não confirmou a visibilidade selecionada'), {
         code: 'YOUTUBE_STUDIO_VISIBILITY_FIELD_MISSING'
       });
+      observedVideoId = await readPendingStudioVideoId(page, String(title).trim()).catch(() => null);
       await clickFirst(page, ['#done-button', 'ytcp-button#done-button', `button:has-text("${privacyStatus === 'public' ? 'Publicar' : 'Salvar'}")`, `button:has-text("${privacyStatus === 'public' ? 'Publish' : 'Save'}")`], 'Publicar');
       publishClicked = true;
 
@@ -608,6 +612,7 @@ async function uploadWithStudio({
       }
       if (!confirmedUploadText(completionText) && privacyStatus === 'public' && studioProcessingNotice(completionText)) {
         const pendingVideoId = await readStudioVideoId(page, String(title).trim());
+        observedVideoId = pendingVideoId || observedVideoId;
         const proof = await waitForStudioPublishedRow(browser, { videoId: pendingVideoId,
           expectedChannelId: prepared.channelId, platform, artifactSha256,
           timeoutMs: Math.min(timeoutMs, 10 * 60 * 1000) });
@@ -640,8 +645,10 @@ async function uploadWithStudio({
         return publicationResult;
       }
       if (publishClicked || studioUploadStarted) {
+        const pendingVideoId = publishClicked && privacyStatus === 'public' && page && preparedChannelId
+          ? observedVideoId || await readPendingStudioVideoId(page, String(title).trim()).catch(() => null) : null;
         const reconciled = await reconcileClickedStudioPublication({ publishClicked, privacyStatus,
-          readId: () => page && preparedChannelId ? readPendingStudioVideoId(page, String(title).trim()) : null,
+          readId: () => pendingVideoId,
           waitForRow: videoId => waitForStudioPublishedRow(browser, { videoId, expectedChannelId: preparedChannelId,
             platform, artifactSha256, timeoutMs: Math.min(timeoutMs, 120000) }) }).catch(() => null);
         if (reconciled) {
@@ -654,6 +661,7 @@ async function uploadWithStudio({
         // A screenshot is evidence for reconciliation, never proof of no send.
         const screenshotPath = error?.pickerScreenshotPath || (page ? await savePrivateScreenshot(page, artifactSha256).catch(() => null) : null);
         publicationResult = outcomeUnknown({ platform, videoPath: source, expectedSha256: artifactSha256,
+          videoId: pendingVideoId, channelId: preparedChannelId,
           message: `Studio iniciou o upload/publicação e a confirmação não foi concluída: ${message}`, screenshotPath });
         return publicationResult;
       }
@@ -682,6 +690,7 @@ async function uploadWithStudio({
 }
 
 module.exports = {
+  ensureStudioAndroidDevice, adb,
   studioProcessingNotice, waitForStudioPublishedRow,
   advanceToVisibility,
   prepareStudioPage, connectStudioBrowser,

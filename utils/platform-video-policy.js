@@ -413,6 +413,7 @@ function socialClipCaption({ clip, title, hashtags = '', sourceUrl = '', platfor
 }
 
 module.exports = {
+  NARRATIVE_SOCIAL_PLATFORMS,
   INSTAGRAM_DISCOVERY_MAX_SECONDS,
   INSTAGRAM_MIN_NARRATIVE_SECONDS,
   INSTAGRAM_APP_MAX_SECONDS,

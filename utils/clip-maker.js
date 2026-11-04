@@ -8,7 +8,8 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { getMediaDuration, runFFmpeg } = require('./ffmpeg');
-const { buildPortraitPartRender } = require('./portrait-part-ranges');
+const { renderPortraitPartCheckpoint } = require('./portrait-part-checkpoint');
+const { sha256StableRegularFile } = require('./video-qa-manifest');
 const {
   configuredNarrativePartDurationLimitSeconds,
   createNarrativePartScript,
@@ -409,6 +410,7 @@ async function makeNarrativeSocialParts({
     }
   }
   if (!variants.size) return [];
+  const portraitSha256 = portraitVideoPath ? (await sha256StableRegularFile(portraitVideoPath)).sha256 : null;
   await fs.mkdir(outDir, { recursive: true });
   const results = [];
   const safeName = String(baseName).toLowerCase().replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').slice(0, 48) || 'social';
@@ -440,12 +442,10 @@ async function makeNarrativeSocialParts({
             const end = offset + (Number.isFinite(Number(block.audioEndMs)) ? Number(block.audioEndMs) : Number(timing?.durationMs));
             return { start, end };
           });
-          const render = buildPortraitPartRender({ portraitVideoPath, outputPath, ranges });
-          await ffmpegRunner(render.args);
-          const renderedDuration = await mediaDurationReader(outputPath);
-          if (!Number.isFinite(Number(renderedDuration)) || Math.abs(Number(renderedDuration) - render.durationMs / 1000) > 0.45) {
-            throw new RangeError(`duração derivada do master vertical divergiu na parte ${part.index}/${part.count}`);
-          }
+          const renderedDuration = await renderPortraitPartCheckpoint({
+            sourcePath: portraitVideoPath, sourceSha256: portraitSha256, outputPath, ranges,
+            run: ffmpegRunner, durationReader: mediaDurationReader
+          });
           const validPlatforms = platformsForVariant.filter(platform => !narrativePartDurationRejection(
             platform,
             { kind: 'social-narrative-part', platforms: [platform] },
@@ -525,7 +525,7 @@ async function makeNarrativeSocialParts({
       }
       }
     } catch (error) {
-      await Promise.all(variantOutputPaths.map(filePath => fs.unlink(filePath).catch(() => {})));
+      if (!portraitVideoPath) await Promise.all(variantOutputPaths.map(filePath => fs.unlink(filePath).catch(() => {})));
       if (legacyInstagramLayout) throw error;
       console.warn(`      variante narrativa ${platformsForVariant.join('/')} ignorada: ${error.message.slice(0, 180)}`);
       continue;
