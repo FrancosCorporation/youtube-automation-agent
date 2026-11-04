@@ -198,6 +198,33 @@ test('missing, disabled or malformed policy cannot release media', async t => {
   await assert.rejects(f.run(), /invalid delegated/);
 });
 
+test('a critique recorded during rendering becomes a hash-bound rejection once, only for its scene plan', async t => {
+  const f = await fixture(t);
+  f.manifest.jobId = 'job-test-20261104';
+  f.manifest.scenePlan = { schemaVersion: 1, sha256: 'b'.repeat(64), sceneIds: ['scene-02'] };
+  await f.save();
+  const hold = { jobId: f.manifest.jobId, sourceScenePlanSha256: 'c'.repeat(64), reason: 'personagens ilegíveis',
+    critique: { schemaVersion: 1, findings: [{ sceneId: 'scene-02', category: 'composition', severity: 'high',
+      issue: 'Personagem muito pequeno', recommendedFix: 'Enquadrar a ação e o personagem de perto',
+      correction: { operation: 'reauthor-narrative' } }] } };
+  const file = path.join(f.root, 'data/state/visual-publication-holds.json');
+  await fs.writeFile(file, JSON.stringify({ schemaVersion: 1, entries: [hold] }));
+  await f.run();
+  assert.equal(JSON.parse(await fs.readFile(path.join(f.root, f.manifestPath))).visualReview.status, 'pending');
+  hold.sourceScenePlanSha256 = f.manifest.scenePlan.sha256;
+  await fs.writeFile(file, JSON.stringify({ schemaVersion: 1, entries: [hold] }));
+  await f.run();
+  const reviewed = await fs.readFile(path.join(f.root, f.manifestPath), 'utf8');
+  const manifest = JSON.parse(reviewed);
+  assert.equal(manifest.visualReview.status, 'rejected');
+  assert.equal(manifest.visualReview.rebuildRequired, true);
+  assert.deepEqual(manifest.visualReview.critique.sceneIds, ['scene-02']);
+  const entry = JSON.parse(await fs.readFile(f.ledgerPath)).entries[0];
+  assert.equal(entry.qaManifestSha256, hash(Buffer.from(reviewed)));
+  await f.run();
+  assert.equal(await fs.readFile(path.join(f.root, f.manifestPath), 'utf8'), reviewed);
+});
+
 test('rejected facts, chronology, explicit holds and visual rejection stay held', async t => {
   const f = await fixture(t);
   const original = clone(f.entry);

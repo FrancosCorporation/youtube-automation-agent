@@ -879,8 +879,9 @@ async function generate({ recap, recapWindow, outPath, jobId: requestedJobId, se
     await notifyFailure('Geração de vídeo falhou', `motivo: ${failureCode || childResult.spawnError || 'erro_desconhecido'}\nexit code ${childResult.code}\nlog: ${logFile}`);
   }
   return { ok: false, outPath: finalOutPath, jobId, videoId, failureCode, seed, retryAt,
-    retryable: isRetryableGenerationFailure(failureCode)
-      && !(visualRebuild && attemptCount >= 2 && failureCode !== 'host_resource_gate') };
+    // Restarts/resource waits are not new visual revisions. Bound the lineage
+    // in visual-rebuild-recovery; retain operational retries of the same job.
+    retryable: isRetryableGenerationFailure(failureCode) };
 }
 
 // The explicit shared profile may prepare one episode during publication.
@@ -1528,7 +1529,7 @@ async function socialRetryWorker() {
     await persistRuntimeHealth();
     try {
       const { reconcileSocialPublications } = require('../utils/social-reconciliation');
-      for (const platform of ['tiktok', 'instagram']) {
+      for (const platform of ['tiktok', 'instagram', 'x']) {
         try {
           const reconciled = await reconcileSocialPublications({ root: ROOT, platform });
           if (reconciled.confirmed?.length) log(`✅ reconciliação ${platform}: ${reconciled.confirmed.length} publicação(ões) confirmada(s), sem reenvio`);
@@ -1652,11 +1653,15 @@ async function main() {
         await persistQueue();
         log('📦 MP4 saudável no ledger, mas fora da fila após interrupção; entrada reconciliada para retomar publicação com os gates atuais');
       }
-      await generationAttemptStore.clear();
+      await require('../utils/visual-rebuild-recovery').clearCompletedGenerationCheckpoint({
+        ledgerPath: LEDGER_PATH, attemptStore: generationAttemptStore, attempt: interruptedGeneration
+      });
       interruptedGeneration = null;
       log('✅ checkpoint de geração reconciliado: o MP4 existente corresponde ao job do ledger e passou no QA; não será renderizado nem publicado de novo');
     } else if (matchingQueueItem) {
-      await generationAttemptStore.clear();
+      await require('../utils/visual-rebuild-recovery').clearCompletedGenerationCheckpoint({
+        ledgerPath: LEDGER_PATH, attemptStore: generationAttemptStore, attempt: interruptedGeneration
+      });
       interruptedGeneration = null;
       log('✅ geração anterior já está na fila persistida; marcador redundante removido');
     } else {

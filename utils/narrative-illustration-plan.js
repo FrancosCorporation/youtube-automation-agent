@@ -3,7 +3,7 @@ const { narrativeLabelCueFrame } = require('./narrative-word-cue');
 const { normalizeAnimationTracks, evaluateAnimationTrack } = require('./narrative-animation-tracks');
 const { normalizeSpatialChecks, assertSpatialChecks } = require('./narrative-spatial-audit');
 const { assertActorSupports } = require('./narrative-actor-support');
-const { assertActorFraming } = require('./narrative-actor-framing');
+const { assertActorFraming, MIN_ACTOR_VIEWPORT_HEIGHT } = require('./narrative-actor-framing');
 const { ROLES, solidRole } = require('./narrative-solid-role');
 const { assertGroundedFurniture } = require('./narrative-grounded-stage');
 const { ACTOR_CATALOG, MOTIONS, resolveHumanActor } = require('./narrative-human-actors');
@@ -31,7 +31,7 @@ function pose(value, context = '') {
     scale: number(value?.scale ?? 1, .05, 3, 'scale', context), rotate: number(value?.rotate ?? 0, -360, 360, 'rotate', context) };
 }
 
-function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
+function normalizeIllustrations(raw, sentences, fps, { repairLayout, requireReadableActors = false } = {}) {
   if (raw == null || Array.isArray(raw) && raw.length === 0) return [];
   if (!Array.isArray(raw) || raw.length !== sentences.length) fail('uma composição por frase é obrigatória');
   const seen = new Set();
@@ -161,7 +161,14 @@ function normalizeIllustrations(raw, sentences, fps, { repairLayout } = {}) {
     if (spatialChecks.length && dimension !== '3d') fail('spatialChecks requer cena 3D');
     let illustration = { version: 3, dimension, cueSentenceId: sentence.id, explanation: item.explanation, nodes, motions, tracks, camera: cameras, spatialChecks };
     if (repairLayout) illustration = repairLayout(illustration, sentence);
-    try { assertSpatialChecks(illustration, sentence); assertActorSupports(illustration, sentence); assertActorFraming(illustration, sentence); assertGroundedFurniture(illustration, sentence); }
+    try {
+      assertSpatialChecks(illustration, sentence);
+      assertActorSupports(illustration, sentence);
+      // New/repaired author output must be legible before expensive rendering.
+      // Hash-bound legacy checkpoints retain their original validation contract.
+      assertActorFraming(illustration, sentence, { minHeight: requireReadableActors ? MIN_ACTOR_VIEWPORT_HEIGHT : 0 });
+      assertGroundedFurniture(illustration, sentence);
+    }
     catch (error) {
       // Feed the writer the geometry actually audited after local repairs,
       // while retaining the rejection. No invalid plan becomes a checkpoint.

@@ -25,7 +25,7 @@ test('held publication recovery never retries artifacts with a prior or uncertai
 
 test('held publication recovery only accepts MP4 files inside the managed video directory', () => {
   assert.equal(isVideoInsideProject('data/videos/clip.mp4'), true);
-  assert.equal(isVideoInsideProject('/home/servidor/Git/youtube_ai/youtube-automation-agent/data/videos/clip.mp4'), true);
+  assert.equal(isVideoInsideProject(path.resolve(__dirname, '../data/videos/clip.mp4')), true);
   assert.equal(isVideoInsideProject('/tmp/clip.mp4'), false);
   assert.equal(isVideoInsideProject('data/videos/../secret.mp4'), false);
   assert.equal(isVideoInsideProject('data/videos/clip.mov'), false);

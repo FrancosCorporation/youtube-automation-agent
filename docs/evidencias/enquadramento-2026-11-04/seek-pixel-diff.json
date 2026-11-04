@@ -1,0 +1,12 @@
+{
+  "landscape": {
+    "differentBytes": true,
+    "maxChannelDifference": 1,
+    "pixelsWithDeltaOver8": 0
+  },
+  "portrait": {
+    "differentBytes": true,
+    "maxChannelDifference": 1,
+    "pixelsWithDeltaOver8": 0
+  }
+}

@@ -214,7 +214,7 @@ const ensureSocialReady = createSocialReadiness({
 });
 
 function isSocialHandlerAvailable(platform) {
-  return typeof androidUploadHandlers[platform] === 'function';
+  return platform === 'x' || typeof androidUploadHandlers[platform] === 'function';
 }
 
 function socialNotReadyResult(platform, videoPath, readiness) {
@@ -239,6 +239,7 @@ async function publishSocialOnAndroid(platform, payload) {
   if (!readiness.ready) {
     return socialNotReadyResult(platform, payload.videoPath, readiness);
   }
+  if (platform === 'x') return require('../utils/x-android-publisher').publishXAndroid(payload);
   const emulator = socialAndroidTarget(platform).emulator;
   await emulator.acquire(); // inicia Redroid para que a sessão possa ser inspecionada por ADB
   try {
@@ -248,7 +249,7 @@ async function publishSocialOnAndroid(platform, payload) {
   }
 }
 
-// Proteção de último recurso: nenhum caminho social pode iniciar Playwright.
+// X usa somente CDP encaminhado ao Chrome Android; nunca Chromium do host.
 const step = (platform, msg) => console.log(`  [${platform}] ${msg}`);
 
 async function verifyEntryQaManifest(entry, root = ROOT) {

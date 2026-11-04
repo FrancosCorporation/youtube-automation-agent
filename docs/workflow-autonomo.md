@@ -70,7 +70,7 @@ env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/
 
 Conferir health recente, processos filhos, último `logs/gen_*.log`, fila e locks. Não reinstalar unit por consulta sem bus. Mudanças carregadas pelo próximo filho não exigem reiniciar uma geração ativa. Reload do serviço somente quando producer/consumer/retry e locks comprovarem janela ociosa; manter fila, slot, job e prazos.
 
-YouTube/Shorts, Instagram, Kwai e TikTok possuem caminhos de publicação; revalidar sessão/identidade/estado por destino. X permanece dependente de compatibilidade e identidade verificável. Telegram está excluído. Quotas antigas não são diagnóstico atual, e ausência no perfil não prova que é seguro reenviar.
+YouTube/Shorts, Instagram, Kwai e TikTok possuem caminhos de publicação; revalidar sessão/identidade/estado por destino. X usa Chrome Android com identidade própria verificada, lock compartilhado e reconciliação por legenda/vídeo/horário/URL; confirmação de um envio real permanece critério separado. Telegram está excluído. Quotas antigas não são diagnóstico atual, e ausência no perfil não prova que é seguro reenviar.
 
 ## Prova de conclusão
 

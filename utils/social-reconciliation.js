@@ -14,23 +14,28 @@ const { sha256StableRegularFile } = require('./video-qa-manifest');
 const { scanTikTokPublicPosts } = require('./tiktok-reconciliation');
 const { scanInstagramPosts } = require('./instagram-reconciliation');
 const { normalizeAccountHandle } = require('./android-session-state');
+const { scanXPublicPosts, xCaptionForInput } = require('./x-android-publisher');
 
 function reconciliationCandidates(entries, platform, accountHandle, root) {
   const expected = normalizeAccountHandle(accountHandle);
   if (!expected) return [];
   const candidates = [];
-  for (const entry of entries || []) for (const clip of entry.clips || []) {
-    const previous = Object.entries(entry.results?.clips || {})
+  for (const entry of entries || []) for (const clip of [
+    ...(entry.clips || []), ...(platform === 'x' && entry.videoPath ? [{ path: entry.videoPath, reconciliationScope: 'long' }] : [])
+  ]) {
+    const scope = clip.reconciliationScope || 'clip';
+    const previous = scope === 'long' ? entry.results?.long?.[platform] : Object.entries(entry.results?.clips || {})
       .find(([file]) => path.resolve(root, file) === path.resolve(root, clip.path))?.[1]?.[platform];
     if (!['unknown', 'submitted', 'processing'].includes(previous?.status)
       || previous.platform !== platform || !/^[a-f0-9]{64}$/i.test(previous.artifact?.sha256 || '')
       || !Number.isFinite(Date.parse(previous.submittedAt))
       || path.resolve(root, previous.artifact.path) !== path.resolve(root, clip.path)
       || previous.account && normalizeAccountHandle(previous.account) !== expected) continue;
-    const caption = socialClipCaption({ clip, title: clip.title || entry.seo?.youtubeTitle || entry.title,
-      hashtags: resolveThemeHashtags(entry.seo?.hashtags, entry.theme), sourceUrl: entry.url || '', platform });
-    candidates.push({ id: `${entry.jobId}:${clip.path}`, entry, clip, previous,
-      caption: instagramCaptionForInput(caption) });
+    const caption = scope === 'long' ? `${entry.seo?.youtubeTitle || entry.title}\n\n${entry.url ? `Fonte: ${entry.url}` : ''}`
+      : socialClipCaption({ clip, title: clip.title || entry.seo?.youtubeTitle || entry.title,
+        hashtags: resolveThemeHashtags(entry.seo?.hashtags, entry.theme), sourceUrl: entry.url || '', platform });
+    candidates.push({ id: `${entry.jobId}:${clip.path}`, entry, clip, previous, scope,
+      caption: platform === 'x' ? xCaptionForInput(caption) : instagramCaptionForInput(caption) });
   }
   return candidates;
 }
@@ -46,7 +51,7 @@ function reconciliationPage(state, candidates) {
 // converts absence into permission to resend. State and evidence survive restarts.
 async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'), platform = 'tiktok',
   force = false, maxPosts = 6, env = process.env, lockTimeoutMs = 10000 } = {}) {
-  const scan = { tiktok: scanTikTokPublicPosts, instagram: scanInstagramPosts }[platform];
+  const scan = { tiktok: scanTikTokPublicPosts, instagram: scanInstagramPosts, x: scanXPublicPosts }[platform];
   if (!scan) throw new Error('reconciliador não implementado para esse destino');
   const stateDir = path.resolve(root, env.STATE_DIR || 'data/state');
   const ledgerPath = path.join(stateDir, 'topics.json');
@@ -81,22 +86,29 @@ async function reconcileSocialPublications({ root = path.resolve(__dirname, '..'
               await fs.writeFile(file, target.control.screenshot());
               return path.relative(root, file);
             };
-            try { await scan({ control: target.control, accountHandle, candidates: eligible, maxPosts, capture, pageOffset: report.page,
+            try { await scan({ target, control: target.control, accountHandle, candidates: eligible, maxPosts, capture, pageOffset: report.page,
               onConfirmed: async proof => {
                 const candidate = eligible.find(item => item.id === proof.id);
                 const result = { ...candidate.previous, status: 'confirmed', account: proof.account,
+                  ...(proof.url ? { url: proof.url, externalId: proof.externalId } : {}),
                   confirmedAt: new Date().toISOString(), reconciledAt: new Date().toISOString(),
                   evidence: { kind: 'public_profile_post', observed: platform === 'tiktok'
                     ? 'Perfil próprio conferido; legenda completa idêntica e privacidade Everyone selecionada.'
-                    : 'Conta própria conferida; publicação presente em Posts com insights e legenda completa idêntica.',
+                    : platform === 'x' ? 'Conta própria, vídeo, horário posterior ao envio e legenda completa idêntica no X.'
+                      : 'Conta própria conferida; publicação presente em Posts com insights e legenda completa idêntica.',
                     captionSha256: crypto.createHash('sha256').update(proof.caption).digest('hex'),
                     screenshotPath: proof.captionScreenshot, privacyScreenshotPath: proof.privacyScreenshot } };
                 delete result.failureCode; delete result.nextAttemptAt;
                 await recordPublicationResult(ledgerPath, candidate.entry.videoPath,
-                  { scope: 'clip', platform, artifactPath: candidate.clip.path, result }, { root });
+                  { scope: candidate.scope, platform, artifactPath: candidate.clip.path, result }, { root });
                 report.confirmed.push({ jobId: candidate.entry.jobId, artifactPath: candidate.clip.path });
               } }); } catch (error) {
               report.screenshotPath = await capture('deferred').catch(() => null);
+              // Preserve the observed accessibility tree for diagnosing an app
+              // update or transient screen without inferring an account change.
+              report.uiPath = path.relative(root, path.join(directory, `${Date.now()}-deferred-ui.json`));
+              await fs.writeFile(path.join(root, report.uiPath), JSON.stringify(await target.control.dumpUi()), { mode: 0o600 })
+                .catch(() => { report.uiPath = null; });
               throw error;
             }
           }, { lockPath: target.lockPath, owner: `reconcile:${platform}`, timeoutMs: lockTimeoutMs });

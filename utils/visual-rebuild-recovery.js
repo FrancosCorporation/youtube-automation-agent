@@ -81,7 +81,8 @@ async function enqueueVisualRebuilds({ root, ledgerPath, queue, activeThemes,
     let reserved = false;
     await updateTopicLedger(ledgerPath, current => {
       const source = current.entries.find(e => e.videoId === entry.videoId && e.qaManifestSha256 === entry.qaManifestSha256);
-      if (source && !source.visualRecovery && isPublicationEligible(source) && !hasRemotePublication(source)) {
+      if (source && !source.visualRecovery && !source.publicationHold
+        && isPublicationEligible(source) && !hasRemotePublication(source)) {
         source.visualRecovery = { status: 'pending', attempt };
         reserved = true;
       }
@@ -94,7 +95,7 @@ async function enqueueVisualRebuilds({ root, ledgerPath, queue, activeThemes,
   const current = JSON.parse(await fs.readFile(ledgerPath, 'utf8'));
   for (const entry of current.entries) {
     if (entry.visualRecovery?.status === 'pending' && !hasRemotePublication(entry)
-      && isPublicationEligible(entry)
+      && isPublicationEligible(entry) && !entry.publicationHold && activeThemes.includes(entry.theme)
       && entry.qaManifestSha256 === entry.visualRecovery.attempt.visualRebuild.manifestSha256) {
       await queue.enqueue(entry.visualRecovery.attempt);
     }
@@ -113,4 +114,15 @@ async function finishVisualRebuild({ ledgerPath, jobId, status }) {
   });
 }
 
-module.exports = { enqueueVisualRebuilds, finishVisualRebuild, hasRemotePublication, prepareVisualRebuildOutput, preservedRebuildScenes };
+// Call only after completion was verified or the publication queue was saved.
+// Persist the reservation's terminal state before dropping the recovery marker;
+// a crash between these writes must never replay the original reservation.
+async function clearCompletedGenerationCheckpoint({ ledgerPath, attemptStore, attempt }) {
+  if (attempt?.visualRebuild) {
+    await finishVisualRebuild({ ledgerPath, jobId: attempt.jobId, status: 'completed' });
+  }
+  await attemptStore.clear();
+}
+
+module.exports = { enqueueVisualRebuilds, finishVisualRebuild, hasRemotePublication, prepareVisualRebuildOutput,
+  preservedRebuildScenes, clearCompletedGenerationCheckpoint };

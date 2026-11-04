@@ -1,5 +1,14 @@
 # Resumo de entregas do Pulso
 
+## 04/11/2026 — retomada visual e X Android, v2.39.0
+
+Recuperados seis checkpoints após troca de conta. Finalização da reconstrução agora encerra a reserva antes de limpar o marcador; espera de recursos/interrupção preserva a mesma tentativa. Crítica feita durante o render é aplicada ao manifesto concluído, permitindo a reconstrução posterior. Enquadramento passou a ter tamanho mínimo obrigatório na autoria, com reparo de câmera e espaço para o título horizontal; capturas reais dos dois formatos inspecionadas. A cena dos fósseis continua semanticamente reprovada, apesar da aproximação.
+
+X integrado ao Chrome Android com identidade própria, lock, proteção de rascunhos e resultado incerto preservado para reconciliação. Menu da conta e editor reais conferidos sem upload de teste. A reconciliação inclui masters/cortes do X; Instagram retorna ao topo antes de paginar, e falhas de carregamento de Instagram/TikTok não são confundidas com conta divergente. Reutilizados os helpers de lock/CDP, prontidão social, ledger e revisão existentes; sem dependência nova.
+
+Worker NVIDIA anterior entregou rascunho refeito pelo orquestrador; o worker desta retomada excedeu quatro minutos com patch incompleto, não integrado. Correção de leitura de textarea/contenteditable e teste em HTML local realizados pelo orquestrador. Treino, mídias, filas e mudanças anteriores preservados. CI concluída (49 verificações iniciais, 1.273 casos Node, 40 Python e browser), lint/TypeScript aprovados; recarga ociosa aplicada às 18:55 UTC, recuperando o mesmo job. Estado final registrado na [evidência da entrega](docs/evidencias/autonomia-2026-11-04/README.md). Sem publicação nova comprovada; YAI-062/063 continuam parciais.
+
+
 
 ## 04/11/2026 — recuperação de crítica visual, v2.38.0
 

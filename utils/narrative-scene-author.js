@@ -261,6 +261,7 @@ Cenas e narração exata: ${JSON.stringify(chapterInputs.map(input => ({ id: inp
 Responda somente JSON válido, sem markdown, neste formato: {"scenes":[{"id":"ID fornecido", "visualThesis":"o mecanismo que será visível", "illustrations":[COMPOSIÇÕES NO SCHEMA ABAIXO]}]}.
 Contrato de saída para este pedido: ${JSON.stringify({ scenes: chapterInputs.map(input => ({ id: input.id, illustrations: input.narration.map(sentence => ({ cueSentenceId: sentence.id, dimension: '3d' })) })) })}. Complete cada composição com explanation, nodes, motions/tracks e camera. dimension, camera, tracks e spatialChecks pertencem a CADA item de illustrations, nunca à raiz da cena nem a um item separado. Não acrescente itens sem cueSentenceId. Use JSON compacto e apenas o detalhe necessário para explicar a ação; não gaste a resposta repetindo o contexto.
 Retorne exatamente as cenas solicitadas. Não gere os antigos campos objects, layouts, actions, cameraShots ou presenter: eles serão derivados localmente; concentre a autoria nas composições illustrations. Não reescreva a narração. Em label use uma das literalLabels da frase correspondente ou string vazia; não crie nomes explicativos novos. evidence e cueText continuam sendo trechos literais da frase.
+Componha o enquadramento em torno da ação: o humano deve ter tamanho legível, e paredes/pisos são contexto, não o assunto dominante. Uma caixa isolada não representa um fóssil, alimento, ferramenta ou relação psicológica. Modele os traços distintivos do objeto com as geometrias disponíveis. Se a explicação diz que alguém segura, entrega ou transforma um objeto, as trilhas precisam mostrar contato e consequência; não descreva uma ação que os nós deixam parados no piso. Para conceitos abstratos, encene uma situação cotidiana ilustrativa compatível com a fala, sem apresentar essa ilustração como fato observado na fonte.
 Os wordCues mostram o instante real de cada palavra em segundos a partir do começo da frase. Copie keyframeCue exatamente e acrescente value/easing. Palavras únicas usam boundary=word e offsetSeconds=0; palavras repetidas usam boundary=start/end e offsetSeconds já calculado. Nunca copie atSeconds para offsetSeconds de uma cue word. Confira numericamente que todos os estados de cada trilha estão em ordem e dentro da duração. Não adicione trilhas position3d constantes a pisos, paredes ou outros sólidos imóveis; uma retenção sem deslocamento não é uma ação.
 ${illustrationPrompt({ threeOnly: true })}
 ${visualCritique?.length ? `Direção da revisão: ${JSON.stringify(visualCritique.map(item => ({ issue: item.issue, recommendedFix: item.recommendedFix })))}` : ''}
@@ -435,7 +436,9 @@ function normalizeScene(raw, input, plan, textCorpus, { repairLayout } = {}) {
   if (!gestureCues.length || gestureCues.length > 6) throw new Error(`${input.id}: gestos narrativos ausentes ou excessivos`);
   const asset = plan.assets.find(item => item.id === input.assetId);
   let illustrations;
-  try { illustrations = normalizeIllustrations(raw.illustrations, input.narration, plan.fps, { repairLayout }); }
+  try { illustrations = normalizeIllustrations(raw.illustrations, input.narration, plan.fps, {
+    repairLayout, requireReadableActors: Boolean(repairLayout)
+  }); }
   catch (error) {
     if (repairLayout && Array.isArray(error.illustrationDrafts)) {
       const drafts = new Map(error.illustrationDrafts.map(item => [item.cueSentenceId, item]));

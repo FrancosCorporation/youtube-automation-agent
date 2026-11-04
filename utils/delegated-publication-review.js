@@ -72,8 +72,20 @@ async function applyDelegatedPublicationReview({
       throw new Error('invalid visual publication holds');
     }
     const masterSha256 = manifest.assets?.find(asset => asset.role === 'master')?.sha256;
-    if (holds.entries.some(hold => (hold.sha256 && hold.sha256 === masterSha256)
-      || (!hold.sha256 && hold.jobId === manifest.jobId))) {
+    const hold = holds.entries.find(hold => (hold.sha256 && hold.sha256 === masterSha256)
+      || (!hold.sha256 && hold.jobId === manifest.jobId));
+    if (hold) {
+      // A critique can be recorded while the other aspect is still rendering.
+      // Bind it to the completed manifest once, so the producer can repair it
+      // instead of retrying an opaque hold forever. Never transfer it to a
+      // different scene plan or reinterpret an unstructured hold as a repair.
+      if (hold.critique && hold.sourceScenePlanSha256 === manifest.scenePlan?.sha256
+        && verified.visualReview !== 'rejected') {
+        await recordVideoVisualReview({ root: projectRoot, manifestPath: resolvedManifestPath, ledgerPath,
+          status: 'rejected', reviewer: 'Revisão visual registrada durante a geração',
+          expectedManifestSha256: entry.qaManifestSha256, validateEntry: eligible,
+          note: hold.reason, critique: hold.critique });
+      }
       return { status: 'held', reason: 'visual_artifact_rejected', videoId: entry.videoId };
     }
   }

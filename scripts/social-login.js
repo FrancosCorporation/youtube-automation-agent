@@ -28,10 +28,16 @@ async function inspectSocialLogin(platform, {
   expectedHandle,
   restorePrevious = false,
   withLock = withAndroidDeviceLock,
-  lockPath
+  lockPath,
+  inspectXSession
 } = {}) {
   if (!ANDROID_PLATFORMS.includes(platform)) {
     throw new Error(`plataforma desconhecida: ${platform || '(vazia)'}; opções: ${ANDROID_PLATFORMS.join(', ')}`);
+  }
+  if (platform === 'x') {
+    return (inspectXSession || require('../utils/x-android-publisher').inspectXAndroidSession)({
+      accountHandle: expectedHandle ?? process.env.ANDROID_SOCIAL_HANDLE_X, sessionRoot
+    });
   }
   const target = socialAndroidTarget(platform, { stateRoot: sessionRoot });
   control = control || target.control;

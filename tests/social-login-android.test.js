@@ -150,7 +150,7 @@ test('social login rejects unknown apps and releases the emulator after inspecti
   const emulator = fakeEmulator();
   await assert.rejects(inspectSocialLogin('facebook', { emulator, sessionRoot: stateRoot }), /plataforma desconhecida/);
 
-  await assert.rejects(inspectSocialLogin('x', {
+  await assert.rejects(inspectSocialLogin('tiktok', {
     emulator,
     control: {
       async isPackageInstalled() { throw new Error('ADB indisponível'); },
@@ -161,6 +161,16 @@ test('social login rejects unknown apps and releases the emulator after inspecti
   }), /ADB indisponível/);
   assert.equal(emulator.acquired, 1);
   assert.equal(emulator.released, 1);
+});
+
+test('X login uses its Android browser identity inspector instead of the crashing native app', async () => {
+  const result = await inspectSocialLogin('x', { expectedHandle: '@approved', sessionRoot: '/fixture/state',
+    inspectXSession: async options => {
+      assert.equal(options.accountHandle, '@approved');
+      assert.equal(options.sessionRoot, '/fixture/state');
+      return { status: 'logged_in', accountHandle: '@approved' };
+    } });
+  assert.equal(result.status, 'logged_in');
 });
 
 test('automatic revalidation restores Firefox within the device lock; Telegram is excluded', async t => {

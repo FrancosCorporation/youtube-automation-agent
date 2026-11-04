@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { PerspectiveCamera, Vector3 } = require('../experiments/remotion-motion-review/node_modules/three');
 const { normalizeIllustrations } = require('../utils/narrative-illustration-plan');
-const { assertActorFraming, repairActorFraming } = require('../utils/narrative-actor-framing');
+const { assertActorFraming, repairActorFraming, MIN_ACTOR_VIEWPORT_HEIGHT } = require('../utils/narrative-actor-framing');
 const { bodyAt } = require('../utils/narrative-spatial-audit');
 const { animationState } = require('../utils/narrative-animation-tracks');
 const { illustrationViewport } = require('../utils/narrative-illustration-viewport');
@@ -56,4 +56,54 @@ test('framing audits the middle of a camera path and rejects an unrepairable swe
   track.keyframes.splice(1, 0, { ...track.keyframes[0], frame: 24, value: [24, 24, -24] });
   assert.throws(() => assertActorFraming(fixed, sentence), /câmera corta/);
   assert.throws(() => assertActorFraming(repairActorFraming(fixed, sentence), sentence), /câmera corta/);
+});
+
+test('a distant but uncropped actor is brought closer without moving the actor or cropping other props', () => {
+  const [initial] = normalizeIllustrations([drawing()], [sentence], 24, { repairLayout: repairActorFraming });
+  for (const aspect of ['landscape', 'portrait']) {
+    const camera = initial.camera[aspect];
+    camera.position = camera.position.map((value, axis) => camera.target[axis] + 2.5 * (value - camera.target[axis]));
+  }
+  assert.doesNotThrow(() => assertActorFraming(initial, sentence));
+  assert.throws(() => assertActorFraming(initial, sentence, { minHeight: MIN_ACTOR_VIEWPORT_HEIGHT }), /pequeno demais/);
+  const fixed = repairActorFraming(initial, sentence);
+  assert.deepEqual(fixed.nodes, initial.nodes);
+  assert.deepEqual(fixed.tracks, initial.tracks);
+  assert.doesNotThrow(() => assertActorFraming(fixed, sentence));
+  for (const aspect of ['landscape', 'portrait']) {
+    const viewport = illustrationViewport(aspect, aspect === 'portrait' ? 1080 : 1920, aspect === 'portrait' ? 1920 : 1080);
+    function actorHeight(plan) {
+      const camera = new PerspectiveCamera(plan.fov, viewport.width / viewport.height, .1, 100);
+      camera.position.set(...plan.position); camera.lookAt(...plan.target); camera.updateMatrixWorld();
+      const body = bodyAt(initial, { nodeId: 'person' }, aspect, 0);
+      const ys = Array.from({ length: 8 }, (_, mask) => {
+        const point = body.center.map((v, axis) => v + body.half.reduce((sum, half, i) => sum + ((mask >> i) & 1 ? 1 : -1) * half * body.axes[i][axis], 0));
+        return new Vector3(...point).project(camera).y;
+      });
+      return Math.max(...ys) - Math.min(...ys);
+    }
+    assert(actorHeight(fixed.camera[aspect]) > actorHeight(initial.camera[aspect]) * 1.1, aspect);
+  }
+});
+
+test('authorship rejects readable-frame failures and returns the audited draft for repair', () => {
+  const initial = drawing();
+  for (const aspect of ['landscape', 'portrait']) {
+    initial.camera[aspect] = { position: [0, 3, 24], target: [0, 1, 0], fov: 65 };
+    initial.nodes[0].layout[aspect].scale = .3;
+  }
+  initial.tracks = [];
+  assert.throws(() => normalizeIllustrations([initial], [sentence], 24, {
+    repairLayout: value => value, requireReadableActors: true
+  }), error => {
+    assert.match(error.message, /pequeno demais/);
+    assert.equal(error.illustrationDrafts.length, 1);
+    assert.equal(error.illustrationDrafts[0].nodes[0].actorId, 'person-a');
+    return true;
+  });
+  const { normalizeScene } = require('../utils/narrative-scene-author');
+  const input = { id: 'scene-01', narration: [sentence], sentenceIds: [sentence.id], startFrame: 0, durationInFrames: 48 };
+  assert.throws(() => normalizeScene({ id: input.id, visualThesis: initial.explanation, illustrations: [initial] },
+    input, { fps: 24, themeId: 'psicologia', title: sentence.text, assets: [] }, sentence.text,
+    { repairLayout: value => value }), /pequeno demais/);
 });

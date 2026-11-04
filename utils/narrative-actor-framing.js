@@ -2,6 +2,7 @@
 const { bodyAt } = require('./narrative-spatial-audit');
 const { animationState } = require('./narrative-animation-tracks');
 const { illustrationViewport } = require('./narrative-illustration-viewport');
+const MIN_ACTOR_VIEWPORT_HEIGHT = .23;
 const add = (a, b) => a.map((v, i) => v + b[i]);
 const sub = (a, b) => a.map((v, i) => v - b[i]);
 const dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
@@ -36,7 +37,12 @@ function fits(points, project, margin) {
     return Number.isFinite(p.x) && Number.isFinite(p.y) && p.depth > .1 && p.depth < 100 && Math.abs(p.x) <= margin && Math.abs(p.y) <= margin;
   });
 }
-function assertActorFraming(drawing, sentence) {
+function projectedHeight(points, project) {
+  const values = points.map(project);
+  if (values.some(p => !Number.isFinite(p.y) || p.depth <= .1)) return 0;
+  return (Math.max(...values.map(p => p.y)) - Math.min(...values.map(p => p.y))) / 2;
+}
+function assertActorFraming(drawing, sentence, { minHeight = 0 } = {}) {
   if (drawing.dimension !== '3d') return;
   const actors = drawing.nodes.filter(node => node.actorId);
   if (!actors.length) return;
@@ -44,8 +50,14 @@ function assertActorFraming(drawing, sentence) {
     const project = projection(drawing, aspect, frame);
     for (const actor of actors) {
       const body = bodyAt(drawing, { nodeId: actor.id }, aspect, frame);
-      if (body.opacity <= .05 || fits(corners(body), project, .96)) continue;
-      throw new Error(`illustration: câmera corta ${actor.id} em ${aspect}, frame ${frame}; enquadre o corpo inteiro e o percurso com margem, ajustando camera.position/target sem mover o piso ou reduzir o ator`);
+      if (body.opacity <= .05) continue;
+      const points = corners(body);
+      if (!fits(points, project, .96)) {
+        throw new Error(`illustration: câmera corta ${actor.id} em ${aspect}, frame ${frame}; enquadre o corpo inteiro e o percurso com margem, ajustando camera.position/target sem mover o piso ou reduzir o ator`);
+      }
+      if (projectedHeight(points, project) < minHeight) {
+        throw new Error(`illustration: ator ${actor.id} pequeno demais em ${aspect}, frame ${frame}; aproxime a ação para ocupar ao menos ${Math.round(minHeight * 100)}% da altura do viewport, preservando corpo inteiro, percurso e objetos relevantes`);
+      }
     }
   }
 }
@@ -58,13 +70,18 @@ function repairActorFraming(drawing, sentence) {
   let changed = false;
   for (const aspect of ['landscape', 'portrait']) {
     const actors = drawing.nodes.filter(node => node.actorId);
-    const actorSamples = frames.map(frame => ({ frame, points: actors.flatMap(node => {
+    const actorSamples = frames.map(frame => ({ frame, bodies: actors.map(node => {
       const body = bodyAt(drawing, { nodeId: node.id }, aspect, frame);
       return body.opacity > .05 ? corners(body) : [];
     }) }));
-    if (actorSamples.every(sample => fits(sample.points, projection(drawing, aspect, sample.frame), .96))) continue;
+    const cropped = actorSamples.some(sample => sample.bodies.some(points => !fits(points, projection(drawing, aspect, sample.frame), .96)));
+    // A body can be entirely inside the frame yet be too small to read. Use
+    // the viewport height, not the full video height, for this geometric check.
+    const tooSmall = actorSamples.some(sample => sample.bodies.some(points => points.length
+      && projectedHeight(points, projection(drawing, aspect, sample.frame)) < MIN_ACTOR_VIEWPORT_HEIGHT));
+    if (!cropped && !tooSmall) continue;
     const refs = drawing.nodes.flatMap(node => node.actorId ? [{ nodeId: node.id }] : node.meshes.flatMap((mesh, meshIndex) =>
-      ['box', 'sphere', 'cylinder'].includes(mesh.type) && !(mesh.type === 'box' && mesh.size[1] <= .3 && mesh.size[0] >= 2 && mesh.size[2] >= 2)
+      node.solidRole !== 'wall' && ['box', 'sphere', 'cylinder'].includes(mesh.type) && !(mesh.type === 'box' && mesh.size[1] <= .3 && mesh.size[0] >= 2 && mesh.size[2] >= 2)
         ? [{ nodeId: node.id, meshIndex }] : []));
     // Do not guess camera placement around unsupported legacy motion.
     if ((drawing.motions || []).some(motion => refs.some(ref => ref.nodeId === motion.targetId) && !['draw', 'reveal'].includes(motion.kind))) continue;
@@ -80,11 +97,14 @@ function repairActorFraming(drawing, sentence) {
     });
     if (!target.every(v => Number.isFinite(v) && Math.abs(v) <= 12)) continue;
     const original = baseCamera(drawing, aspect), offset = sub(original.position, original.target);
-    for (let step = 0; step <= 20; step++) {
-      const scale = .5 + step * .05;
+    for (let step = 0; step <= 24; step++) {
+      const scale = .3 + step * .05;
       const camera = { ...original, target, position: add(target, offset.map(value => value * scale)) };
       if (!camera.position.every(v => Math.abs(v) <= 24)) continue;
       if (!samples.every(sample => fits(sample.points, projection(drawing, aspect, sample.frame, camera), .82))) continue;
+      if (!cropped && !actorSamples.every(sample => sample.bodies.every(points => !points.length
+        || projectedHeight(points, projection(drawing, aspect, sample.frame, camera))
+          > projectedHeight(points, projection(drawing, aspect, sample.frame)) + .01))) continue;
       candidate.camera ||= {};
       candidate.camera[aspect] = camera;
       changed = true;
@@ -93,4 +113,4 @@ function repairActorFraming(drawing, sentence) {
   }
   return changed ? candidate : drawing;
 }
-module.exports = { assertActorFraming, repairActorFraming };
+module.exports = { assertActorFraming, repairActorFraming, MIN_ACTOR_VIEWPORT_HEIGHT };

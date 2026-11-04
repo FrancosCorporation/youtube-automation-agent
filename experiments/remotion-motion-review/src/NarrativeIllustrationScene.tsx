@@ -127,7 +127,7 @@ export const NarrativeIllustrationScene: React.FC<{ illustration: NarrativeIllus
     width: Array.from(node.label).length*22+20, height: 36
   })), sceneWidth, sceneHeight*.88, 8, projectedNodes.filter(({node}) => node.actorId).map(({bounds}) => bounds));
   return <div data-qa="adaptive-illustration" data-dimension={illustration.dimension} data-cue={illustration.cueSentenceId}
-    style={{ position: "absolute", left: portrait ? "4%" : is3d ? "3%" : side === "left" ? "35%" : "3%", top: portrait ? "21%" : "22%", width: sceneWidth, height: sceneHeight }}>
+    style={{ position: "absolute", left: portrait ? "4%" : is3d ? "3%" : side === "left" ? "35%" : "3%", top: portrait ? "21%" : "32%", width: sceneWidth, height: sceneHeight }}>
     {illustration.dimension === "3d" ? <>
       <ThreeCanvas width={sceneWidth} height={sceneHeight} camera={{ position: cameraPlan.position, rotation: [camera.rotation.x, camera.rotation.y, camera.rotation.z], fov: cameraPlan.fov }} shadows gl={{ alpha: true, antialias: true }}>
         <DirectedCamera {...cameraPlan} />

@@ -394,6 +394,7 @@ module.exports = {
   decodeAndroidText,
   detectAppSession,
   extractAppAccountHandle,
+  findInstagramProfileTab,
   hasRecentPackageCrash,
   inspectAndroidAppSession,
   parseUiNodes,

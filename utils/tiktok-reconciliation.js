@@ -24,7 +24,7 @@ function uniqueCaptionCandidate(candidates, actual) {
 }
 
 async function scanTikTokPublicPosts({ control, accountHandle, candidates, maxPosts = 6,
-  pageOffset = 0, wait = sleep, capture = async () => null, timeoutMs = 15000, onConfirmed = async () => {} }) {
+  pageOffset = 0, wait = sleep, capture = async () => null, timeoutMs = 45000, onConfirmed = async () => {} }) {
   const expected = normalizeAccountHandle(accountHandle);
   if (!expected) throw new Error('TikTok: identidade configurada ausente');
   const until = async (predicate, label = 'perfil/vídeo') => {
@@ -59,7 +59,8 @@ async function scanTikTokPublicPosts({ control, accountHandle, candidates, maxPo
     if (close) await control.tap(close.x, close.y);
   }
   const session = await inspectAndroidAppSession({ control, platform: 'tiktok', timeoutMs, wait });
-  if (session.status !== 'logged_in' || normalizeAccountHandle(session.accountHandle) !== expected) {
+  if (session.status !== 'logged_in') throw new Error(`TikTok: inspeção do perfil inconclusiva (${session.status})`);
+  if (normalizeAccountHandle(session.accountHandle) !== expected) {
     throw new Error('TikTok: perfil de reconciliação não corresponde à conta configurada');
   }
   nodes = await control.dumpUi();

@@ -1,6 +1,6 @@
 'use strict';
 
-const { inspectAndroidAppSession } = require('./android-emulator-control');
+const { inspectAndroidAppSession, findInstagramProfileTab } = require('./android-emulator-control');
 const { normalizeAccountHandle } = require('./android-session-state');
 const { recoverInstagramOwnReelView } = require('./instagram-upload-flow');
 const { uniqueCaptionCandidate } = require('./tiktok-reconciliation');
@@ -31,7 +31,7 @@ function ownPostCaptions(nodes, account) {
 }
 
 async function scanInstagramPosts({ control, accountHandle, candidates, maxPosts = 6, pageOffset = 0,
-  wait = sleep, capture = async () => null, timeoutMs = 15000, onConfirmed = async () => {} }) {
+  wait = sleep, capture = async () => null, timeoutMs = 45000, onConfirmed = async () => {} }) {
   const expected = normalizeAccountHandle(accountHandle);
   if (!expected) throw new Error('Instagram: identidade configurada ausente');
   let nodes = await control.dumpUi();
@@ -42,7 +42,8 @@ async function scanInstagramPosts({ control, accountHandle, candidates, maxPosts
     await recoverInstagramOwnReelView(control, nodes, expected, { wait });
   }
   const session = await inspectAndroidAppSession({ control, platform: 'instagram', timeoutMs, wait });
-  if (session.status !== 'logged_in' || normalizeAccountHandle(session.accountHandle) !== expected) {
+  if (session.status !== 'logged_in') throw new Error(`Instagram: inspeção do perfil inconclusiva (${session.status})`);
+  if (normalizeAccountHandle(session.accountHandle) !== expected) {
     throw new Error('Instagram: perfil de reconciliação não corresponde à conta configurada');
   }
   const until = async predicate => {
@@ -53,6 +54,14 @@ async function scanInstagramPosts({ control, accountHandle, candidates, maxPosts
   const tiles = current => byId(current, 'image_button').filter(n => n.clickable && /^Reel by .+ at row \d+, column \d+$/i.test(n.description || '')
     && n.y > 225 && n.y < 1100).sort((a, b) => a.y - b.y || a.x - b.x);
   nodes = await control.dumpUi();
+  // Tapping the verified own-profile tab returns the grid to its head. Without
+  // this, every scheduled pageOffset is added to the previous scan's position.
+  const profileTab = findInstagramProfileTab(nodes);
+  if (profileTab) {
+    await control.tap(profileTab.x, profileTab.y);
+    await wait(700);
+    nodes = await until(current => byId(current, 'profile_tab_icon_view').length > 0);
+  }
   const selectGrid = async () => {
     const grid = byId(nodes, 'profile_tab_icon_view').filter(n => n.clickable && /^(Grid view|Visualização em grade)$/i.test(n.description || ''));
     if (!tiles(nodes).length && grid.length === 1) {
@@ -61,7 +70,10 @@ async function scanInstagramPosts({ control, accountHandle, candidates, maxPosts
   };
   await selectGrid();
   for (let i = 0; !tiles(nodes).length && i < 5; i++) {
-    if (!byId(nodes, 'profile_tab').length) throw new Error('Instagram: navegação fora do perfil');
+    if (!byId(nodes, 'profile_tab').length) {
+      nodes = await until(current => byId(current, 'profile_tab').length > 0 || tiles(current).length > 0);
+      if (tiles(nodes).length) break;
+    }
     await control.shell(['input', 'swipe', '400', '1050', '400', '470', '350']);
     await wait(700); nodes = await control.dumpUi();
     await selectGrid();
@@ -76,12 +88,13 @@ async function scanInstagramPosts({ control, accountHandle, candidates, maxPosts
   await control.tap(first.x, first.y);
   nodes = await until(current => ownPostsView(current, expected));
   const confirmed = [];
+  const postsFeed = current => byId(current, 'action_bar_title').some(n => /^(Posts|Publicações)$/i.test(n.text))
+    && byId(current, 'action_bar_button_back').filter(n => n.clickable).length === 1;
   // A bounded read-only walk of the account Posts feed. No create/share/like.
   for (let step = 0; step < maxPosts * 3; step++) {
     // Between two posts the header and caption can both be outside the viewport.
     // Continue only inside the already authenticated Posts feed, without attributing evidence.
-    if (!byId(nodes, 'action_bar_title').some(n => /^(Posts|Publicações)$/i.test(n.text))
-      || byId(nodes, 'action_bar_button_back').length !== 1) throw new Error('Instagram: navegação saiu de Posts');
+    if (!postsFeed(nodes)) nodes = await until(postsFeed);
     const more = visible(nodes).filter(n => n.clickable && /^(more|mais)$/i.test(n.description || n.text || ''));
     if (more.length === 1) {
       await control.tap(more[0].x, more[0].y); await wait(700); nodes = await control.dumpUi();

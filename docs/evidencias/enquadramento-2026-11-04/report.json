@@ -1,0 +1,233 @@
+{
+  "sentence": {
+    "id": "section-2-sentence-2",
+    "groupId": "section-2",
+    "groupIndex": 2,
+    "sentenceIndex": 1,
+    "text": "Os locais de fósseis no Norte da África haviam produzido restos de macacos antigos do Mioceno Inferior, mas os pesquisadores nunca haviam encontrado evidências definitivas de primatas do mesmo período.",
+    "startFrame": 2254,
+    "endFrame": 2560,
+    "wordTimings": [
+      {
+        "text": "Os",
+        "startFrame": 2254,
+        "endFrame": 2258
+      },
+      {
+        "text": "locais",
+        "startFrame": 2257,
+        "endFrame": 2268
+      },
+      {
+        "text": "de",
+        "startFrame": 2268,
+        "endFrame": 2271
+      },
+      {
+        "text": "fósseis",
+        "startFrame": 2270,
+        "endFrame": 2284
+      },
+      {
+        "text": "no",
+        "startFrame": 2283,
+        "endFrame": 2286
+      },
+      {
+        "text": "Norte",
+        "startFrame": 2286,
+        "endFrame": 2295
+      },
+      {
+        "text": "da",
+        "startFrame": 2294,
+        "endFrame": 2298
+      },
+      {
+        "text": "África",
+        "startFrame": 2297,
+        "endFrame": 2310
+      },
+      {
+        "text": "haviam",
+        "startFrame": 2309,
+        "endFrame": 2318
+      },
+      {
+        "text": "produzido",
+        "startFrame": 2317,
+        "endFrame": 2332
+      },
+      {
+        "text": "restos",
+        "startFrame": 2332,
+        "endFrame": 2344
+      },
+      {
+        "text": "de",
+        "startFrame": 2343,
+        "endFrame": 2346
+      },
+      {
+        "text": "macacos",
+        "startFrame": 2345,
+        "endFrame": 2358
+      },
+      {
+        "text": "antigos",
+        "startFrame": 2357,
+        "endFrame": 2372
+      },
+      {
+        "text": "do",
+        "startFrame": 2371,
+        "endFrame": 2375
+      },
+      {
+        "text": "Mioceno",
+        "startFrame": 2374,
+        "endFrame": 2386
+      },
+      {
+        "text": "Inferior,",
+        "startFrame": 2386,
+        "endFrame": 2400
+      },
+      {
+        "text": "mas",
+        "startFrame": 2403,
+        "endFrame": 2408
+      },
+      {
+        "text": "os",
+        "startFrame": 2407,
+        "endFrame": 2412
+      },
+      {
+        "text": "pesquisadores",
+        "startFrame": 2411,
+        "endFrame": 2432
+      },
+      {
+        "text": "nunca",
+        "startFrame": 2432,
+        "endFrame": 2440
+      },
+      {
+        "text": "haviam",
+        "startFrame": 2439,
+        "endFrame": 2449
+      },
+      {
+        "text": "encontrado",
+        "startFrame": 2448,
+        "endFrame": 2463
+      },
+      {
+        "text": "evidências",
+        "startFrame": 2462,
+        "endFrame": 2477
+      },
+      {
+        "text": "definitivas",
+        "startFrame": 2476,
+        "endFrame": 2495
+      },
+      {
+        "text": "de",
+        "startFrame": 2494,
+        "endFrame": 2497
+      },
+      {
+        "text": "primatas",
+        "startFrame": 2496,
+        "endFrame": 2511
+      },
+      {
+        "text": "do",
+        "startFrame": 2510,
+        "endFrame": 2514
+      },
+      {
+        "text": "mesmo",
+        "startFrame": 2513,
+        "endFrame": 2524
+      },
+      {
+        "text": "período.",
+        "startFrame": 2523,
+        "endFrame": 2536
+      }
+    ]
+  },
+  "readable": true,
+  "originalCamera": {
+    "landscape": {
+      "position": [
+        0,
+        3,
+        14
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "fov": 34
+    },
+    "portrait": {
+      "position": [
+        0,
+        3,
+        14
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "fov": 34
+    }
+  },
+  "fixedCamera": {
+    "landscape": {
+      "position": [
+        0,
+        -0.3839857101440436,
+        3.835
+      ],
+      "target": [
+        0,
+        -1.2839857101440435,
+        -0.365
+      ],
+      "fov": 34
+    },
+    "portrait": {
+      "position": [
+        0,
+        0.5160142898559568,
+        8.035000000000002
+      ],
+      "target": [
+        0,
+        -1.2839857101440435,
+        -0.365
+      ],
+      "fov": 34
+    }
+  },
+  "captures": [
+    "landscape-before-2400.png",
+    "landscape-after-2400.png",
+    "landscape-seek-2410.png",
+    "landscape-seek-2400.png",
+    "portrait-before-2400.png",
+    "portrait-after-2400.png",
+    "portrait-seek-2410.png",
+    "portrait-seek-2400.png"
+  ],
+  "landscapeDeterministic": false,
+  "portraitDeterministic": false,
+  "errors": []
+}

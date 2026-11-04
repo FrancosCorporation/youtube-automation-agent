@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { enqueueVisualRebuilds, finishVisualRebuild, prepareVisualRebuildOutput } = require('../utils/visual-rebuild-recovery');
+const { enqueueVisualRebuilds, finishVisualRebuild, prepareVisualRebuildOutput,
+  clearCompletedGenerationCheckpoint } = require('../utils/visual-rebuild-recovery');
 const { createGenerationAttemptStore, validateAttempt } = require('../utils/generation-attempt');
 const { createDeferredGenerationQueue } = require('../utils/deferred-generation-queue');
 const { assessSourceEvidence, createPublicationReview } = require('../utils/source-evidence');
@@ -58,6 +59,34 @@ test('reservation survives a crash before queue enqueue and terminal failure sto
   await finishVisualRebuild({ ledgerPath: f.ledgerPath, jobId: job.jobId, status: 'failed' });
   await f.store.clear();
   assert.equal(await enqueueVisualRebuilds(f.options), 0);
+  assert.equal(await f.queue.claimNext(), null);
+});
+
+test('boot reconciliation closes a completed reservation before clearing its checkpoint, even across a crash', async t => {
+  const f = await fixture(t);
+  await enqueueVisualRebuilds(f.options);
+  const job = await f.queue.claimNext();
+  await assert.rejects(clearCompletedGenerationCheckpoint({ ledgerPath: f.ledgerPath, attempt: job,
+    attemptStore: { clear: async () => { throw new Error('crash before clear'); } } }), /crash/);
+  assert.deepEqual(await f.store.read(), job);
+  assert.equal(JSON.parse(await fs.readFile(f.ledgerPath)).entries[0].visualRecovery.status, 'completed');
+  await clearCompletedGenerationCheckpoint({ ledgerPath: f.ledgerPath, attempt: job, attemptStore: f.store });
+  assert.equal(await enqueueVisualRebuilds(f.options), 0);
+  assert.equal(await f.queue.claimNext(), null);
+});
+
+test('a new publication hold or disabled theme prevents replay of a reserved reconstruction', async t => {
+  const f = await fixture(t);
+  await assert.rejects(enqueueVisualRebuilds({ ...f.options,
+    queue: { enqueue: async () => { throw new Error('crash'); } } }), /crash/);
+  const ledger = JSON.parse(await fs.readFile(f.ledgerPath));
+  ledger.entries[0].publicationHold = { reason: 'new_source_rejection' };
+  await fs.writeFile(f.ledgerPath, JSON.stringify(ledger));
+  await enqueueVisualRebuilds(f.options);
+  assert.equal(await f.queue.claimNext(), null);
+  delete ledger.entries[0].publicationHold;
+  await fs.writeFile(f.ledgerPath, JSON.stringify(ledger));
+  await enqueueVisualRebuilds({ ...f.options, activeThemes: [] });
   assert.equal(await f.queue.claimNext(), null);
 });
 

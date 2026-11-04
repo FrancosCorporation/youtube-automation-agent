@@ -34,3 +34,20 @@ test('Instagram refuses a different signed-in account before navigation', async 
     tap: async () => { throw new Error('must not navigate'); } };
   await assert.rejects(scanInstagramPosts({ control, accountHandle: 'owner', candidates: [] }), /não corresponde/);
 });
+
+test('each Instagram scan resets the authenticated grid before applying its page offset', async () => {
+  let state = 'oldPage'; const actions = [];
+  const nav = ['feed_tab', 'clips_tab', 'direct_tab', 'search_tab', 'profile_tab'].map((id, i) => n(id, '', 20 + i));
+  const grid = row => [n('action_bar_title', 'owner', 1), n('button_container', '', 2, { description: 'Edit profile' }),
+    n('profile_tab_icon_view', '', 6, { description: 'Grid view' }),
+    n('image_button', '', 3, { description: `Reel by Owner at row ${row}, column 1` }), ...nav];
+  const states = { oldPage: grid(81), top: grid(1), page: grid(4), post: post('Exact caption') };
+  const control = { dumpUi: async () => states[state], isPackageInstalled: async () => true,
+    getResumedActivity: () => 'com.instagram.android/Main',
+    tap: async x => { actions.push(x); state = ({ 24: 'top', 3: 'post', 9: 'page' })[x] || state; },
+    shell: async args => { assert.equal(state, 'top'); assert.equal(args[1], 'swipe'); actions.push('page'); state = 'page'; } };
+  const confirmed = await scanInstagramPosts({ control, accountHandle: 'owner',
+    candidates: [{ id: 'one', caption: 'Exact caption' }], pageOffset: 1, wait: async () => {} });
+  assert.equal(confirmed.length, 1);
+  assert.deepEqual(actions, [24, 'page', 3, 9]);
+});
