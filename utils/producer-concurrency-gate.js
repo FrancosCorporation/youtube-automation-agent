@@ -14,10 +14,14 @@ function producerMustWait({ queuedCount, maxQueue, inFlight, allowPublicationOve
 }
 
 function producerMustWaitForRetry({ youtubeRetryPending, socialRetryPending, youtubeRetryInProgress,
-  inFlight, allowPublicationOverlap = false }) {
+  allowPublicationOverlap = false }) {
+  // The shared profile already permits retries during generation. Apply the
+  // same rule when the retry starts first (including the startup scan), or a
+  // slow/uncertain social destination can starve the producer indefinitely.
+  // The device lock still serializes Android work; this gate grants no upload.
+  if (allowPublicationOverlap) return false;
   if (youtubeRetryInProgress) return true;
-  return Boolean(youtubeRetryPending || socialRetryPending)
-    && !(allowPublicationOverlap && Boolean(inFlight));
+  return Boolean(youtubeRetryPending || socialRetryPending);
 }
 
 function queuedPublicationImminent(queue, now = Date.now(), leadMs = 120000, missedSlotAt = null, scheduledSlotAt = null) {

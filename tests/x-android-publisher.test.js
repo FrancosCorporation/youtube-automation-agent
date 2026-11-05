@@ -71,6 +71,8 @@ test('upload failure, unfinished processing and existing draft do not click Post
   for (const options of [{ failUpload: true }, { ready: false }, { residual: true }]) {
     const f = fixture(t, options), result = await publishXOnPage(f.payload);
     assert.equal(result.status, 'failed'); assert.equal(result.evidence.kind, 'confirmed_no_send');
+    assert.equal(result.failureCode, options.failUpload ? 'x_media_upload_failed'
+      : options.residual ? 'x_existing_draft_failed' : 'x_media_readiness_failed');
     assert.equal(f.counts().clicks, 0);
   }
 });

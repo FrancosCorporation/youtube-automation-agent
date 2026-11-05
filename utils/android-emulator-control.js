@@ -316,7 +316,7 @@ function createAndroidEmulatorControl(options = {}) {
       return hasRecentPackageCrash(log, packageName, sinceMs);
     },
     isBooted() {
-      return String(shell(['getprop', 'sys.boot_completed'], { allowFailure: true })).trim() === '1';
+      return String(shell(['getprop', 'sys.boot_completed'], { allowFailure: true, timeout: 5000 })).trim() === '1';
     },
     isKeyboardVisible() {
       const output = String(shell(['dumpsys', 'input_method'], { allowFailure: true }));

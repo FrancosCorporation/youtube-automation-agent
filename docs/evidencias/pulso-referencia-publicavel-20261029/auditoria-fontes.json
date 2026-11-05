@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "jobId": "pulso-internet-reference-20261029",
+  "status": "approved",
+  "reviewer": "owner-approved-reference-source-audit-v1",
+  "sourceHash": "34410029c8a61ad66439587fea28ac9e34ace9a1a54b49eae667ef18ed6fa26f",
+  "narrationSha256": "d514d06dbeaf38d245f64a7a6c49aeb2e33f0f1c9ea70718c47dc6ac3db4fd15",
+  "approvedLandscapeSha256": "573ee1802fdac2bc294acc51b101a8e0c7e5e5fababc40aeb5854efe4f3838aa",
+  "portraitSha256": "5b902a7348522e466c5be1a203de872a36f1c373f816e7d516cbf9beb8ee2882",
+  "sourceUrls": [
+    "https://www.cloudflare.com/pt-br/learning/network-layer/how-does-the-internet-work/",
+    "https://www.cloudflare.com/pt-br/learning/network-layer/what-is-routing/",
+    "https://www.lenovo.com/br/pt/glossary/packet-switching/"
+  ],
+  "factualClaims": [
+    {
+      "narration": "Primeiro, os dados são divididos em pequenos pacotes.",
+      "quote": "Quando os dados são enviados pela internet, eles são primeiro divididos em pacotes menores, que depois são traduzidos em bits."
+    },
+    {
+      "narration": "Cada pacote carrega informações que ajudam a encaminhá-lo.",
+      "quote": "Ele contém os dados transmitidos e as informações de controle que ajudam a chegar ao seu destino."
+    },
+    {
+      "narration": "No caminho, roteadores recebem esses pacotes e escolhem por onde enviá-los.",
+      "quote": "Os roteadores funcionam da seguinte maneira: quando um roteador recebe um pacote, ele lê os cabeçalhos* do pacote para ver seu destino pretendido"
+    },
+    {
+      "narration": "Eles podem seguir trajetos diferentes até alcançar o destino.",
+      "quote": "Esses pacotes atravessam a rede de forma independente, seguindo rotas diferentes, se necessário."
+    },
+    {
+      "narration": "Ao chegar, os dados são organizados novamente para que o aparelho possa mostrar a mensagem.",
+      "quote": "Quando os pacotes chegam ao seu destino, o dispositivo receptor monta novamente os pacotes na ordem correta e pode então usar ou exibir os dados."
+    }
+  ],
+  "nonFactual": [
+    "Pergunta inicial e frase de encerramento são apresentação; a indicação de mapa ilustrativo descreve a própria animação."
+  ],
+  "note": "Auditoria pontual da referência explicitamente aprovada pelo proprietário; correspondência de sentido revisada para cada citação, além das checagens exatas de texto e hash."
+}

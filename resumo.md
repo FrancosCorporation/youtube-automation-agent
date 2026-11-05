@@ -1,5 +1,13 @@
 # Resumo de entregas do Pulso
 
+## 04/11/2026 — concorrência de geração/retry, X e Android, v2.40.0
+
+A retomada corrigiu a assimetria que deixava retries começarem durante geração, mas bloqueava geração quando um retry já estava ativo no perfil compartilhado. O composer X distingue upload real, barra ociosa e contador de caracteres; texto da legenda não vira mensagem de erro. Falhas anteriores ao clique guardam a etapa, enquanto cliques incertos continuam exigindo reconciliação.
+
+Identificada e recuperada VM Android pausada apesar da unit ativa. O controle comum confirma `stopped`, obtém o lock e retoma sem reiniciar; resposta atrasada é reconciliada por estado, sem repetir start. Probe de boot limitado a cinco segundos. CI isolada completa e lint passaram, além dos 97 testes de integração e 30 focados. Worker NVIDIA deixou patch incompleto e atingiu timeout; implementação Android final foi feita pelo orquestrador. Sem dependências novas; helpers de controle, lock e CDP reaproveitados.
+
+Chrome tinha configuração inicial e ANRs; CDP recuperado, autenticação X em verificação. Serviço continua gerando/adiando conforme providers e recursos; fila sem episódio novo. Reconstrução e revisão visual ainda pendentes: não há prova de autonomia completa. Pausa de llama-cpp foi feita pela sessão anterior com timer de restauração de 90 minutos; treinamento preservado. Alterações preexistentes de TTS, geração, apoio, experimentos e planning ficaram fora da entrega. [Evidências](docs/evidencias/autonomia-2026-11-04/retry-e-x.md).
+
 ## 04/11/2026 — retomada visual e X Android, v2.39.0
 
 Recuperados seis checkpoints após troca de conta. Finalização da reconstrução agora encerra a reserva antes de limpar o marcador; espera de recursos/interrupção preserva a mesma tentativa. Crítica feita durante o render é aplicada ao manifesto concluído, permitindo a reconstrução posterior. Enquadramento passou a ter tamanho mínimo obrigatório na autoria, com reparo de câmera e espaço para o título horizontal; capturas reais dos dois formatos inspecionadas. A cena dos fósseis continua semanticamente reprovada, apesar da aproximação.

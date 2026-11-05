@@ -131,10 +131,34 @@ async function findXPost(page, criteria, { wait = sleep, attempts = 3 } = {}) {
   }
   return null;
 }
+// X also marks its character counter and idle submission bar as progressbars.
+// Only visible, active work blocks readiness; caption text is user content, not
+// upload status (a video about "uploading" must still be publishable).
+async function readXComposerState(page) {
+  return page.evaluate(() => {
+    const content = document.body.cloneNode(true);
+    for (const node of content.querySelectorAll('[data-testid="tweetTextarea_0"],script,style,noscript,[hidden],[aria-hidden="true"]')) node.remove();
+    const pending = [...document.querySelectorAll('[role="progressbar"]')].some(node => {
+      if (node.closest('[data-testid="countdown-circle"]') || !node.getClientRects().length
+        || window.getComputedStyle(node).visibility === 'hidden') return false;
+      const value = node.getAttribute('aria-valuenow'), maximum = node.getAttribute('aria-valuemax');
+      // The full-width bar above the composer exists at 0 even while idle.
+      // Progress inside attachments is still active at 0.
+      if (node.querySelector('[data-testid="progressBar-bar"]') && value === '0'
+        && !node.closest('[data-testid="attachments"]')) return false;
+      return value === null || maximum === null || Number(value) < Number(maximum);
+    });
+    return {
+      video: Boolean(document.querySelector('video,[data-testid="videoPlayer"]')),
+      pending, text: content.textContent || '',
+      button: Boolean(document.querySelector('[data-testid="tweetButton"]:not([disabled]):not([aria-disabled="true"])'))
+    };
+  });
+}
 async function publishXOnPage({ page, videoPath, caption, accountHandle, timeoutMs = 150000,
   inspect = inspectXPageIdentity, findPost = findXPost, now = Date.now, wait = sleep }) {
   const source = path.resolve(videoPath), expected = normalizeAccountHandle(accountHandle);
-  let clickAttempted = false, artifactSha256, submittedAt;
+  let clickAttempted = false, artifactSha256, submittedAt, stage = 'input';
   const result = (status, failureCode, observed, extra = {}) => createPublicationResult({ platform: 'x', videoPath: source,
     artifactSha256, account: expected, status, failureCode,
     evidence: { kind: clickAttempted ? 'submission_unverified' : 'confirmed_no_send', observed }, ...extra });
@@ -145,10 +169,12 @@ async function publishXOnPage({ page, videoPath, caption, accountHandle, timeout
     artifactSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     const text = xCaptionForInput(caption);
     if (!text || xTextWeight(text) > 280) throw new Error('Legenda X inválida');
+    stage = 'identity';
     const session = await inspect(page, expected);
     if (session.status !== 'logged_in' || normalizeAccountHandle(session.accountHandle) !== expected) {
       return result('failed', 'social_account_identity_unverified', 'Menu próprio do X não corresponde à conta autorizada; envio não iniciado');
     }
+    stage = 'composer';
     await page.goto('https://x.com/compose/post', { waitUntil: 'domcontentloaded', timeout: 30000 });
     const editor = page.getByTestId('tweetTextarea_0');
     await editor.waitFor({ state: 'visible', timeout: 30000 });
@@ -158,19 +184,17 @@ async function publishXOnPage({ page, videoPath, caption, accountHandle, timeout
       throw new Error('Editor X não é um campo de texto reconhecido');
     });
     if ((await editorText()).trim() || await page.locator('[data-testid="attachments"]').count()) {
+      stage = 'existing_draft';
       throw new Error('Editor contém rascunho; preservar conteúdo existente');
     }
     await editor.fill(text);
+    stage = 'media_upload';
     await page.getByTestId('fileInput').setInputFiles({ name: path.basename(source), mimeType: 'video/mp4', buffer: bytes }, { timeout: 60000 });
+    stage = 'media_readiness';
     const deadline = now() + timeoutMs;
     let ready = false;
     while (now() < deadline) {
-      const ui = await page.evaluate(() => ({
-        video: Boolean(document.querySelector('video,[data-testid="videoPlayer"]')),
-        pending: Boolean(document.querySelector('[role="progressbar"]')),
-        text: document.body.innerText,
-        button: Boolean(document.querySelector('[data-testid="tweetButton"]:not([disabled]):not([aria-disabled="true"])'))
-      }));
+      const ui = await readXComposerState(page);
       if (/upload failed|could not be uploaded|falha no upload|não foi possível carregar/i.test(ui.text)) throw new Error('X recusou o vídeo antes de publicar');
       ready = ui.video && !ui.pending && ui.button && !/uploading|processing video|carregando|processando vídeo/i.test(ui.text);
       if (ready) break;
@@ -193,8 +217,8 @@ async function publishXOnPage({ page, videoPath, caption, accountHandle, timeout
     });
     return { ...result('submitted', null, 'Post clicado uma vez; aguarda reconciliação no perfil X'), submittedAt };
   } catch (_error) {
-    return { ...result(clickAttempted ? 'unknown' : 'failed', clickAttempted ? null : 'pre_submit_ui_error',
-      clickAttempted ? 'Resultado do clique no X incerto; reconciliar antes de reenviar' : 'Pré-checagem ou preparo do X falhou antes do clique de publicação'),
+    return { ...result(clickAttempted ? 'unknown' : 'failed', clickAttempted ? null : `x_${stage}_failed`,
+      clickAttempted ? 'Resultado do clique no X incerto; reconciliar antes de reenviar' : `X falhou na etapa ${stage} antes do clique de publicação`),
     ...(submittedAt ? { submittedAt } : {}) };
   }
 }
@@ -245,4 +269,4 @@ async function scanXPublicPosts({ target, accountHandle, candidates, maxPosts = 
   }, { target, withLock: action => action() });
 }
 module.exports = { xTextWeight, xCaptionForInput, ownXMenuIdentity, inspectXPageIdentity, withXAndroidPage,
-  inspectXAndroidSession, matchingXPost, readXPosts, findXPost, publishXOnPage, publishXAndroid, scanXPublicPosts };
+  inspectXAndroidSession, matchingXPost, readXPosts, findXPost, readXComposerState, publishXOnPage, publishXAndroid, scanXPublicPosts };

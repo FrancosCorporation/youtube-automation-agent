@@ -66,13 +66,13 @@ test('perfil compartilhado prepara só um próximo episódio durante a publicaç
   assert.equal(producerMustWait({ ...profile, ...state }), false);
 });
 
-test('retry pendente permite preparar durante envio, mas ganha prioridade quando este termina', () => {
+test('perfil compartilhado permite geração durante retries pendentes ou ativos', () => {
   assert.equal(producerMustWaitForRetry({ youtubeRetryPending: true, socialRetryPending: true,
     inFlight: true, allowPublicationOverlap: true }), false);
   assert.equal(producerMustWaitForRetry({ youtubeRetryPending: true,
-    inFlight: false, allowPublicationOverlap: true }), true);
+    inFlight: false, allowPublicationOverlap: true }), false);
   assert.equal(producerMustWaitForRetry({ youtubeRetryInProgress: true,
-    inFlight: true, allowPublicationOverlap: true }), true);
+    inFlight: true, allowPublicationOverlap: true }), false);
   assert.equal(backgroundRetryMustWait({ generationInProgress: true, allowPublicationOverlap: true }), false);
   assert.equal(backgroundRetryMustWait({ generationInProgress: true, inFlight: true, allowPublicationOverlap: true }), true);
   assert.equal(backgroundRetryMustWait({ generationInProgress: true, retryInProgress: true, allowPublicationOverlap: true }), true);
@@ -81,4 +81,18 @@ test('retry pendente permite preparar durante envio, mas ganha prioridade quando
   assert.equal(backgroundRetryMustWait({ queuedCount: 1, allowPublicationOverlap: true }), false);
   assert.equal(backgroundRetryMustWait({ inFlight: true, allowPublicationOverlap: true }), true);
   assert.equal(backgroundRetryMustWait({ retryInProgress: true, allowPublicationOverlap: true }), true);
+});
+
+
+test('startup retry cannot starve generation, while queue capacity and serial publication remain enforced', () => {
+  const shared = { allowPublicationOverlap: true };
+  const retry = { youtubeRetryInProgress: true };
+  assert.equal(producerMustWaitForRetry({ ...shared, ...retry }), false);
+  assert.equal(producerMustWait({ ...shared, queuedCount: 0, maxQueue: 1 }), false);
+  // After producing one ready episode, the producer waits even if retry persists.
+  assert.equal(producerMustWait({ ...shared, queuedCount: 1, maxQueue: 1 }), true);
+  assert.equal(backgroundRetryMustWait({ ...shared, retryInProgress: true }), true);
+  assert.equal(backgroundRetryMustWait({ ...shared, inFlight: true }), true);
+  // The nonshared profile retains its exclusive retry window.
+  assert.equal(producerMustWaitForRetry(retry), true);
 });
