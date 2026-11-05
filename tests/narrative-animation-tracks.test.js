@@ -12,6 +12,28 @@ const raw = () => [{ targetId: 'wheel', property: 'rotation3d', keyframes: [
   { cueSentenceId: 's1', boundary: 'word', cueText: 'gira', value: [0, 0, 0] },
   { cueSentenceId: 's2', boundary: 'end', value: [0, 0, 36] },
 ] }];
+test('authorship joins duplicate fragments only at exactly shared cues and preserves every pose', () => {
+  const base = raw()[0];
+  const middle = { cueSentenceId: 's2', boundary: 'start', value: [0, 0, 12] };
+  const first = { ...base, keyframes: [base.keyframes[0], middle] };
+  const second = { ...base, keyframes: [middle, base.keyframes[1]] };
+  const input = [second, first, globalThis.structuredClone(second)];
+  const snapshot = globalThis.structuredClone(input);
+  const [expected] = normalizeAnimationTracks([{ ...base, keyframes: [base.keyframes[0], middle, base.keyframes[1]] }], nodes, sentences, 20);
+  const [actual] = normalizeAnimationTracks(input, nodes, sentences, 20, { orderByTime: true });
+  assert.deepEqual(input, snapshot);
+  assert.deepEqual(actual, expected);
+  for (const frame of [...Array(205).keys(), 70, 199, 0]) {
+    assert.deepEqual(evaluateAnimationTrack(actual, frame), evaluateAnimationTrack(expected, frame));
+  }
+  assert.throws(() => normalizeAnimationTracks(input, nodes, sentences, 20), /trilhas concorrentes/);
+  const conflict = globalThis.structuredClone(second);
+  conflict.keyframes[0].value = [0, 0, 13];
+  assert.throws(() => normalizeAnimationTracks([first, conflict], nodes, sentences, 20, { orderByTime: true }), /trilhas concorrentes/);
+  const branch = globalThis.structuredClone(second);
+  branch.keyframes[1].value = [0, 0, 15];
+  assert.throws(() => normalizeAnimationTracks([first, second, branch], nodes, sentences, 20, { orderByTime: true }), /trilhas concorrentes/);
+});
 test('continuous rotation crosses captions and gives the same pose after backward seeks', () => {
   const [track] = normalizeAnimationTracks(raw(), nodes, sentences, 20);
   assert.deepEqual(evaluateAnimationTrack(track, 100), [0, 0, 16]);

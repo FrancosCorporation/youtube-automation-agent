@@ -1,15 +1,48 @@
 'use strict';
+const { isDeepStrictEqual } = require('node:util');
 const { narrativeLabelCueFrame, narrativeLabelCueFrames, narrativeWordCues } = require('./narrative-word-cue');
 const fail = message => { throw new Error(`illustration: ${message}`); };
 const PROPERTIES = new Set(['position3d', 'rotation3d', 'scale3d', 'opacity', 'target3d']);
 const EASINGS = new Set(['linear', 'smooth', 'ease-in', 'ease-out']);
 const fold = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Writers sometimes repeat a track or split it at an identical endpoint.
+// Join only an unambiguous chain of explicit states during authorship. Every
+// cue, value and easing still passes the normal validation below.
+function joinAuthoredTracks(raw) {
+  const groups = new Map();
+  for (const track of raw) {
+    const id = `${track.targetId}:${track.meshIndex ?? 'node'}:${track.property}`;
+    const group = groups.get(id) || [];
+    if (!group.some(other => isDeepStrictEqual(other, track))) group.push(track);
+    groups.set(id, group);
+  }
+  return [...groups.values()].map(group => {
+    if (group.length === 1) return group[0];
+    if (group.some(track => !Array.isArray(track.keyframes) || track.keyframes.length < 2)) return group;
+    const links = track => group.filter(other => other !== track
+      && isDeepStrictEqual(track.keyframes.at(-1), other.keyframes[0]));
+    const starts = group.filter(track => !group.some(other => links(other).includes(track)));
+    if (starts.length !== 1) return group;
+    let current = starts[0];
+    const visited = new Set([current]), keys = [...current.keyframes];
+    while (links(current).length === 1) {
+      current = links(current)[0];
+      if (visited.has(current)) return group;
+      visited.add(current);
+      keys.push(...current.keyframes.slice(1));
+    }
+    if (visited.size !== group.length || links(current).length) return group;
+    return { ...starts[0], keyframes: keys };
+  }).flat();
+}
+
 // Keyframes reference the chapter's spoken timeline, not the active sentence.
 // This preserves object identity and motion across cuts and caption changes.
 function normalizeAnimationTracks(raw, nodes, sentences, fps, { orderByTime = false } = {}) {
   if (raw == null) return [];
   if (!Array.isArray(raw) || raw.length > 128) fail('trilhas excessivas');
+  if (orderByTime) raw = joinAuthoredTracks(raw);
   const start = Math.min(...sentences.map(s => s.startFrame));
   const end = Math.max(...sentences.map(s => s.endFrame));
   const seen = new Set();

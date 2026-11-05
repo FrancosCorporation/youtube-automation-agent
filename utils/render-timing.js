@@ -255,8 +255,11 @@ function probeRenderHardwareGate({ excludePids = [process.pid], lowMemoryContinu
   // swap and competing-render protections; reject mismatched GPU backends.
   const softwareRequested = process.env.PULSO_RENDER_SOFTWARE_ONLY === '1';
   const softwareEligible = softwareRequested && trainingSharedEligible && process.env.PULSO_REMOTION_GL === 'swangle';
+  const configuredLoadRatio = Number(process.env.PULSO_SHARED_RENDER_LOAD_RATIO || 0.95);
+  // Honor the installed training-sharing profile (1.10), with a hard ceiling
+  // and a conservative default for malformed configuration.
   const sharedLoadRatio = trainingSharedEligible
-    ? Math.min(1, Math.max(0.80, Number(process.env.PULSO_SHARED_RENDER_LOAD_RATIO || 0.95)))
+    ? Math.min(1.10, Math.max(0.80, Number.isFinite(configuredLoadRatio) ? configuredLoadRatio : 0.95))
     : 0.80;
   const loadAverageLimit = constrainedEligible
     ? hostLogicalCpus * sharedLoadRatio

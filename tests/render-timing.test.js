@@ -200,6 +200,9 @@ test('resource gate blocks render jobs but not passive preview servers', () => {
 });
 
 for (const scenario of [
+  { name: 'installed 110 percent shared profile admits its configured load', shared: true, nice: 10, memory: 8, vram: 6, load: 30, ratio: '1.10', allowed: true },
+  { name: 'shared profile remains capped at 110 percent', shared: true, nice: 10, memory: 8, vram: 6, load: 31, ratio: '9', reason: 'load_average_above_limit' },
+  { name: 'malformed load configuration retains a finite conservative limit', shared: true, nice: 10, memory: 8, vram: 6, load: 28, ratio: 'invalid', reason: 'load_average_above_limit' },
   { name: 'GPU compute busy with spare VRAM', shared: true, nice: 10, memory: 8, vram: 6, allowed: true },
   { name: 'sharing flag without low process priority', shared: true, nice: 0, memory: 8, vram: 6, reason: 'training_shared_render_requires_constrained_process' },
   { name: 'insufficient RAM during training', shared: true, nice: 10, memory: 4, vram: 6, reason: 'available_memory_below_6_gib' },
@@ -223,7 +226,7 @@ for (const scenario of [
     const syncFs = require('node:fs');
     const originalRead = syncFs.readFileSync;
     const originalList = syncFs.readdirSync;
-    const keys = ['PULSO_CONSTRAINED_RENDER', 'PULSO_RENDER_WITH_TRAINING', 'PULSO_RENDER_LOW_MEMORY', 'PULSO_RENDER_SOFTWARE_ONLY', 'PULSO_REMOTION_GL'];
+    const keys = ['PULSO_CONSTRAINED_RENDER', 'PULSO_RENDER_WITH_TRAINING', 'PULSO_RENDER_LOW_MEMORY', 'PULSO_RENDER_SOFTWARE_ONLY', 'PULSO_REMOTION_GL', 'PULSO_SHARED_RENDER_LOAD_RATIO'];
     const previous = keys.map(key => process.env[key]);
     t.after(() => {
       for (const [index, key] of keys.entries()) {
@@ -236,10 +239,11 @@ for (const scenario of [
     process.env.PULSO_RENDER_LOW_MEMORY = scenario.lowMemory ? '1' : '0';
     process.env.PULSO_RENDER_SOFTWARE_ONLY = scenario.software ? '1' : '0';
     process.env.PULSO_REMOTION_GL = scenario.gl || 'angle';
+    process.env.PULSO_SHARED_RENDER_LOAD_RATIO = scenario.ratio || '0.95';
     t.mock.method(os, 'availableParallelism', () => 6);
     t.mock.method(os, 'cpus', () => Array(28).fill({}));
     t.mock.method(os, 'getPriority', () => scenario.nice);
-    t.mock.method(os, 'loadavg', () => [12, 11, 10]);
+    t.mock.method(os, 'loadavg', () => [scenario.load ?? 12, 11, 10]);
     t.mock.method(syncFs, 'readdirSync', (directory, ...args) => directory === '/proc' ? []
       : directory === '/sys/class/drm' ? ['card1'] : originalList(directory, ...args));
     t.mock.method(syncFs, 'readFileSync', (file, ...args) => {

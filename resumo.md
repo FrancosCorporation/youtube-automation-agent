@@ -1,5 +1,11 @@
 # Resumo de entregas do Pulso
 
+## 05/11/2026 — autoria fragmentada, recursos e sessão X, v2.41.0
+
+Recuperada a autenticação X com a conta Google existente; identidade própria conferida. Eliminadas apenas duplicatas e fragmentações inequívocas de trilhas na autoria; comparação por frame preserva movimentos. Corrigido clamp de carga que ignorava 1,10 configurado no perfil instalado, com fallback finito para configuração inválida. 54 testes focados e lint passaram; CI isolada completa passou; 48 testes adicionais de retry/X e lint também passaram. O rascunho real passou de sete para três trilhas válidas, ainda retido pela colisão seguinte. Reutilizados normalizador, controles, locks e guard existentes.
+
+Kwai ocioso foi parado sob lock após consumo anormal; llama-cpp pausado temporariamente conforme autorização anterior e timer de restauração armado. Treino preservado. Reconstrução/revisão e publicação nova permanecem pendentes. [Detalhes](docs/releases/v2.41.0.md).
+
 ## 04/11/2026 — concorrência de geração/retry, X e Android, v2.40.0
 
 A retomada corrigiu a assimetria que deixava retries começarem durante geração, mas bloqueava geração quando um retry já estava ativo no perfil compartilhado. O composer X distingue upload real, barra ociosa e contador de caracteres; texto da legenda não vira mensagem de erro. Falhas anteriores ao clique guardam a etapa, enquanto cliques incertos continuam exigindo reconciliação.

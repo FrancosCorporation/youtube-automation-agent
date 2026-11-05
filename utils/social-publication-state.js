@@ -65,6 +65,8 @@ function retryIsDue(previous, now = Date.now()) {
 function isConfirmedPreSubmitFailure(previous) {
   return previous?.status === 'failed'
     && (['pre_submit_ui_error', 'android_storage_insufficient', 'youtube_upload_limit'].includes(previous.failureCode)
+      || (previous.platform === 'x'
+        && /^x_(?:input|identity|composer|existing_draft|media_upload|media_readiness)_failed$/.test(String(previous.failureCode || '')))
       || (['youtube', 'shorts'].includes(previous.platform)
         && (/^YOUTUBE_STUDIO_[A-Z0-9_]+$/.test(String(previous.failureCode || ''))
           || (previous.failureCode === 'youtube_studio_pre_submit_failed'

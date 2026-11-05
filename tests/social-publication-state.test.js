@@ -275,6 +275,21 @@ test('confirmed OAuth rejection can retry after reauthorization only for hash-bo
   assert.equal(shouldAttemptPublication(unknown, retryAt, target), false);
 });
 
+test('X stage failures become retryable only after cooldown with explicit no-send evidence', () => {
+  const at = Date.parse('2026-11-05T10:00:00Z');
+  for (const stage of ['input', 'identity', 'composer', 'existing_draft', 'media_upload', 'media_readiness']) {
+    const result = createPublicationResult({ platform: 'x', videoPath: '/tmp/x.mp4', status: 'failed',
+      failureCode: `x_${stage}_failed`, evidence: { kind: 'confirmed_no_send', observed: 'failed before Post' } });
+    result.submittedAt = new Date(at).toISOString();
+    assert.equal(shouldRetrySocialAutomatically(result, at), false);
+    assert.equal(shouldRetrySocialAutomatically(result, at + 60000), true);
+    assert.equal(shouldRetrySocialAutomatically({ ...result, status: 'unknown' }, at + 60000), false);
+    assert.equal(shouldRetrySocialAutomatically({ ...result, platform: 'instagram' }, at + 60000), false);
+    assert.equal(shouldRetrySocialAutomatically({ ...result, evidence: { kind: 'submission_unverified', observed: 'uncertain' } }, at + 60000), false);
+    assert.equal(shouldRetrySocialAutomatically({ ...result, failureCode: 'x_post_failed' }, at + 60000), false);
+  }
+});
+
 test('social retry allows only safe no-send or due retryable outcomes', () => {
   assert.equal(shouldRetrySocialAutomatically(undefined), false);
   assert.equal(shouldRetrySocialAutomatically('não logado'), true);
